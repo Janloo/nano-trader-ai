@@ -1,0 +1,19 @@
+# Chiavi API e Segreti
+.env
+config.json
+*.env
+config/local_credentials.json
+
+# Ambienti Virtuali Python
+venv/
+.venv/
+env/
+_venv/
+
+# Cache di sistema e Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.DS_Store
