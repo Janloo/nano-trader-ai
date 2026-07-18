@@ -240,12 +240,22 @@ def generate_dashboard():
     das_articles_count = daily_selection.get("macro_articles_analyzed", 0)
 
     # Format timestamp (always defined for template)
-    das_ts_str = ""
     if das_timestamp:
         try:
-            das_ts_str = datetime.fromisoformat(das_timestamp.replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M UTC")
+            das_dt = datetime.fromisoformat(das_timestamp.replace("Z", "+00:00"))
+            das_ts_str = das_dt.strftime("%Y-%m-%d %H:%M UTC")
+            
+            # Health check: if last run was within the last 2.5 hours
+            hours_since = (datetime.now(timezone.utc) - das_dt).total_seconds() / 3600
+            if hours_since <= 2.5:
+                das_health_badge = '<span class="px-3 py-1 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 uppercase flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Healthy (Syncing)</span>'
+            else:
+                das_health_badge = '<span class="px-3 py-1 text-[10px] font-bold bg-amber-500/10 text-amber-400 rounded-full border border-amber-500/20 uppercase flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Delayed</span>'
         except Exception:
             das_ts_str = das_timestamp
+            das_health_badge = '<span class="px-3 py-1 text-[10px] font-bold bg-slate-500/10 text-slate-400 rounded-full border border-slate-500/20 uppercase">Unknown Status</span>'
+    else:
+        das_health_badge = '<span class="px-3 py-1 text-[10px] font-bold bg-slate-500/10 text-slate-400 rounded-full border border-slate-500/20 uppercase">Awaiting Run</span>'
 
     if das_selected_assets:
         for asset in das_selected_assets:
@@ -544,7 +554,10 @@ def generate_dashboard():
                             {f'Last updated: {das_ts_str} &nbsp;&bull;&nbsp; {das_articles_count} macro articles analyzed' if das_ts_str else 'Awaiting first DAS cycle...'}
                         </p>
                     </div>
-                    <span class="px-3 py-1 text-xs font-bold bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 uppercase tracking-wider">Live AI Selection</span>
+                    <div class="flex items-center gap-2">
+                        {das_health_badge}
+                        <span class="px-3 py-1 text-xs font-bold bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-500/20 uppercase tracking-wider">Live AI Selection</span>
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {das_cards_html}

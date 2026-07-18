@@ -1,5 +1,5 @@
 {
-    "timestamp": "2026-07-18T11:36:52.501060+00:00",
+    "timestamp": "2026-07-18T11:41:58.127477+00:00",
     "macro_articles_analyzed": 30,
     "selected_assets": [
         {
@@ -7,14 +7,14 @@
             "type": "crypto",
             "sentiment_score": 0.0,
             "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
-            "selected_at": "2026-07-18T11:36:52.500550+00:00"
+            "selected_at": "2026-07-18T11:41:58.127340+00:00"
         },
         {
             "symbol": "ETHUSD",
             "type": "crypto",
             "sentiment_score": 0.0,
             "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
-            "selected_at": "2026-07-18T11:36:52.500570+00:00"
+            "selected_at": "2026-07-18T11:41:58.127362+00:00"
         }
     ]
 }
