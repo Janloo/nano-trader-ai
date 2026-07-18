@@ -21,6 +21,7 @@ import asyncio
 from collections import deque
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, List
+import threading
 
 from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, logger
 
@@ -463,6 +464,42 @@ class RealtimeExecutor:
                     bias_info.get("reasoning", ""), "", False
                 )
 
+    def on_stock_bar(self, bar):
+        """
+        Called on each incoming bar for stocks (QQQ).
+        Detects +0.25% spikes and triggers crypto LEAD-LAG buying.
+        """
+        symbol = bar.symbol
+        price = float(bar.close)
+        bar_time = bar.timestamp if hasattr(bar, "timestamp") else datetime.now(timezone.utc)
+
+        if bar_time.tzinfo is None:
+            bar_time = bar_time.replace(tzinfo=timezone.utc)
+
+        dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time)
+
+        # QQQ Lead-Lag Trigger threshold is +0.25%
+        if spike_pct is not None and spike_pct >= 0.25:
+            logger.info(f"[WS LEAD-LAG] {symbol} jumped {spike_pct:.2f}% in {DIP_WINDOW_SECONDS}s. Price: ${price:.2f}")
+
+            # Cross-Asset Check: if QQQ spikes, look for BULLISH cryptos
+            for crypto_sym in self.symbols:
+                if self._is_on_cooldown(crypto_sym):
+                    continue
+
+                bias_info = BiasReader.get_bias_for_symbol(crypto_sym)
+                bias = bias_info.get("bias", "NEUTRAL")
+                sentiment_score = bias_info.get("sentiment_score", 0.0)
+
+                if bias == "BULLISH" and sentiment_score >= 0.75:
+                    logger.info(f"[WS LEAD-LAG TRIGGER] QQQ Spike + BULLISH {crypto_sym} confirmed! Executing anticipatory BUY order...")
+                    
+                    # We pass spike_pct as the 'change' for logging purposes
+                    self._execute_order(crypto_sym, price, spike_pct, bias_info, is_short=False)
+                    
+                    # Prevent multiple executions immediately
+                    self._last_order_time[crypto_sym] = datetime.now(timezone.utc)
+
     def _run_simulation(self):
         """Simulates incoming bars for testing, dry-runs, and credential-free modes."""
         logger.info("[WS SIMULATION] Starting real-time simulation loop (2s updates)...")
@@ -533,31 +570,56 @@ class RealtimeExecutor:
             return
 
         from alpaca.data.live.crypto import CryptoDataStream
+        from alpaca.data.live.stock import StockDataStream
 
         # Map symbols to Alpaca format
         ws_symbols = [s.replace("BTCUSD", "BTC/USD").replace("ETHUSD", "ETH/USD") for s in self.symbols]
 
-        stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
+        crypto_stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
+        # Using IEX as it's free and sufficient for large cap tracking like QQQ
+        stock_stream = StockDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY, feed="iex")
 
-        async def bar_handler(bar):
+        async def crypto_handler(bar):
             self.on_bar(bar)
+            
+        async def stock_handler(bar):
+            self.on_stock_bar(bar)
 
-        stream.subscribe_bars(bar_handler, *ws_symbols)
+        crypto_stream.subscribe_bars(crypto_handler, *ws_symbols)
+        stock_stream.subscribe_bars(stock_handler, "QQQ")
 
         logger.info(f"[WS] Connecting to Alpaca CryptoDataStream for {ws_symbols}...")
+        logger.info("[WS] Connecting to Alpaca StockDataStream for ['QQQ'] (Lead-Lag)...")
+        
+        def run_crypto():
+            try:
+                crypto_stream.run()
+            except Exception as e:
+                logger.error(f"[WS] Crypto stream error: {e}")
+
+        def run_stock():
+            try:
+                stock_stream.run()
+            except Exception as e:
+                logger.error(f"[WS] Stock stream error: {e}")
+
+        t_crypto = threading.Thread(target=run_crypto, daemon=True)
+        t_stock = threading.Thread(target=run_stock, daemon=True)
+
         try:
-            stream.run()
+            t_crypto.start()
+            t_stock.start()
+            
+            # Keep main thread alive while streams run in background
+            while t_crypto.is_alive() or t_stock.is_alive():
+                time.sleep(1)
+                
         except KeyboardInterrupt:
             logger.info("[WS] Shutting down WebSocket executor gracefully.")
         except Exception as e:
-            # Fall back to simulation if auth failed
-            if "auth failed" in str(e).lower() or "authentication" in str(e).lower():
-                logger.warning("[WS] Authentication failed! Falling back to --simulate mode automatically.")
-                self._run_simulation()
-            else:
-                logger.error(f"[WS] WebSocket stream error: {e}")
-                WSTradeLogger.write_logbook(f"[WS ERROR] Stream disconnected: {e}")
-                raise
+            logger.error(f"[WS] WebSocket thread manager error: {e}")
+            WSTradeLogger.write_logbook(f"[WS ERROR] Thread manager disconnected: {e}")
+            raise
 
 
 def main():
