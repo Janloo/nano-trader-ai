@@ -170,8 +170,16 @@ def run_iteration(
     logger.info("[DAS Phase 1] Fetching global macro news...")
     macro_articles = fetch_macro_news(max_articles=30)
 
+    feed_payload = []
     macro_news_text = "--- GLOBAL MACRO NEWS ---\n"
     for idx, art in enumerate(macro_articles, 1):
+        feed_payload.append({
+            "source": art.get('feed', 'Macro News'),
+            "title": art.get('title', ''),
+            "summary": art.get("summary", ""),
+            "link": art.get("link", "#"),
+            "timestamp": art.get("timestamp", datetime.now(timezone.utc).isoformat())
+        })
         macro_news_text += f"{idx}. [{art.get('feed', 'News')}] {art['title']}\n"
         if art.get("summary"):
             macro_news_text += f"   Summary: {art['summary'][:200]}\n"
@@ -189,9 +197,24 @@ def run_iteration(
         if alpaca_articles:
             macro_news_text += f"\nLatest news for {symbol}:\n"
             for idx, art in enumerate(alpaca_articles[:3], 1): # Top 3 per asset to save tokens
+                feed_payload.append({
+                    "source": f"Alpaca - {symbol}",
+                    "title": art.get('title', ''),
+                    "summary": art.get("summary", ""),
+                    "link": art.get("link", "#"),
+                    "timestamp": art.get("timestamp", datetime.now(timezone.utc).isoformat())
+                })
                 macro_news_text += f"{idx}. {art['title']}\n"
                 if art.get("summary"):
                     macro_news_text += f"   Summary: {art['summary'][:150]}\n"
+
+    # Save collected news to a JSON file for the dashboard
+    try:
+        with open("market_news.json", "w", encoding="utf-8") as f:
+            json.dump(feed_payload, f, indent=4)
+        logger.info(f"Saved {len(feed_payload)} news items to market_news.json")
+    except Exception as e:
+        logger.error(f"Failed to write market_news.json: {e}")
 
     if not macro_news_text.strip() or len(macro_news_text) < 100:
         macro_news_text = "No news articles retrieved in the last 24 hours."

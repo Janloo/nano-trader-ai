@@ -233,6 +233,52 @@ def generate_dashboard():
         except Exception as e:
             print(f"Error loading market_bias.json: {e}")
 
+    # 4.5 Load Market News Feed
+    market_news = []
+    news_path = "market_news.json"
+    if os.path.exists(news_path):
+        try:
+            with open(news_path, "r", encoding="utf-8") as f:
+                market_news = json.load(f)
+        except Exception as e:
+            print(f"Error loading market_news.json: {e}")
+
+    # Build News Feed HTML
+    news_feed_html = ""
+    for article in market_news:
+        source = article.get("source", "News")
+        title = article.get("title", "")
+        summary = article.get("summary", "")
+        link = article.get("link", "#")
+        timestamp_str = article.get("timestamp", "")
+        
+        try:
+            dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+            time_formatted = dt.strftime("%Y-%m-%d %H:%M")
+        except:
+            time_formatted = timestamp_str
+
+        is_alpaca = "Alpaca" in source
+        source_color = "text-indigo-400 border-indigo-500/20 bg-indigo-500/10" if is_alpaca else "text-blue-400 border-blue-500/20 bg-blue-500/10"
+
+        news_feed_html += f"""
+        <div class="py-3 border-b border-slate-800/40 last:border-0">
+            <div class="flex items-center justify-between mb-1">
+                <span class="px-2 py-0.5 text-[10px] font-bold {source_color} rounded border uppercase tracking-wider">{source}</span>
+                <span class="text-xs text-slate-500 font-mono">{time_formatted}</span>
+            </div>
+            <a href="{link}" target="_blank" class="text-sm font-semibold text-slate-200 hover:text-white hover:underline block mb-1">
+                {title}
+            </a>
+            <p class="text-xs text-slate-400 line-clamp-2">
+                {summary}
+            </p>
+        </div>
+        """
+        
+    if not news_feed_html:
+        news_feed_html = '<div class="py-6 text-center text-slate-500 text-sm">No recent news fetched.</div>'
+
     # Build DAS selection cards HTML
     das_cards_html = ""
     das_selected_assets = daily_selection.get("target_assets", [])
@@ -606,6 +652,21 @@ def generate_dashboard():
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {das_cards_html}
+                </div>
+            </div>
+
+            <!-- Market News Feed -->
+            <div class="mb-8 rounded-2xl border border-slate-700/60 bg-slate-900/30 p-6 backdrop-blur-md">
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">📰 Market News Feed</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Real-time intelligence feed consumed by the AI
+                        </p>
+                    </div>
+                </div>
+                <div class="overflow-y-auto pr-2" style="max-height: 400px;">
+                    {news_feed_html}
                 </div>
             </div>
 
