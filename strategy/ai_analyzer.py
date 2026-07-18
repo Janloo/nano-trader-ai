@@ -1,4 +1,5 @@
 import json
+import os
 import google.generativeai as genai
 from strategy.base import BaseStrategy
 from config.settings import GEMINI_API_KEY, logger
@@ -25,75 +26,138 @@ class GeminiSentimentStrategy(BaseStrategy):
 
     def analyze_news_text(self, symbol: str, news_text: str) -> dict:
         """
-        Sends macroeconomic news context to Gemini API.
-        Returns a dict containing sentiment_score, action, confidence, and reasoning.
+        Wrapper around analyze_all_assets for backwards compatibility.
         """
-        if self.is_mocked or not news_text.strip():
-            logger.info(f"[MOCK Gemini] Simulating macroeconomic sentiment analysis for {symbol}...")
-            
-            # Simple simulation logic
-            text_lower = news_text.lower()
-            if "surged" in text_lower or "profit" in text_lower or "rally" in text_lower or "bullish" in text_lower:
-                score = 0.85
-                action = "BUY"
-                confidence = 90
-            elif "drop" in text_lower or "fall" in text_lower or "loss" in text_lower or "bearish" in text_lower:
-                score = -0.75
-                action = "SELL"
-                confidence = 80
-            else:
-                score = 0.15
-                action = "HOLD"
-                confidence = 60
-                
-            return {
-                "sentiment_score": score,
-                "action": action,
-                "confidence": confidence,
-                "reasoning": f"Mock analysis: Headlines suggest standard market activity for {symbol}."
-            }
+        res = self.analyze_all_assets({symbol: news_text})
+        return res.get(symbol, {
+            "sentiment_score": 0.0,
+            "action": "HOLD",
+            "confidence": 0,
+            "reasoning": "Batch analysis failed to return result for this symbol."
+        })
+
+    def analyze_all_assets(self, assets_news: dict) -> dict:
+        """
+        Sends aggregated news context for all assets to Gemini API in a single call.
+        Returns a dict mapping symbol -> decision dict (sentiment_score, action, confidence, reasoning).
+        """
+        if self.is_mocked:
+            logger.info("[MOCK Gemini] Simulating aggregated sentiment analysis...")
+            results = {}
+            for symbol, news_text in assets_news.items():
+                results[symbol] = self._mock_analyze(symbol, news_text)
+            return results
 
         system_prompt = (
             "You are a senior macroeconomic and quantitative financial analyst.\n"
-            "Analyze the provided news context for the asset and evaluate its impact.\n"
-            "You must return ONLY a structured JSON response matching the following schema, "
+            "Analyze the provided news context for the following assets. Evaluate their macroeconomic impact and return a decision for each asset.\n"
+            "You must return ONLY a structured JSON response mapping each symbol to its decision matching the following schema, "
             "with no extra text, no markdown backticks, and no conversation:\n"
             "{\n"
-            "  \"sentiment_score\": <float from -1.0 to 1.0>,\n"
-            "  \"action\": <\"BUY\" or \"SELL\" or \"HOLD\">,\n"
-            "  \"confidence\": <int from 0 to 100>,\n"
-            "  \"reasoning\": <\"short explanation sentence\">\n"
+            "  \"SYMBOL_NAME\": {\n"
+            "    \"sentiment_score\": <float from -1.0 to 1.0>,\n"
+            "    \"action\": <\"BUY\" or \"SELL\" or \"HOLD\">,\n"
+            "    \"confidence\": <int from 0 to 100>,\n"
+            "    \"reasoning\": <\"short explanation sentence\">\n"
+            "  }\n"
             "}"
         )
 
-        user_content = f"Asset: {symbol}\nNews Context:\n{news_text}"
+        user_content = "Assets and news contexts to analyze:\n"
+        for symbol, news_text in assets_news.items():
+            user_content += f"=== Asset: {symbol} ===\nNews:\n{news_text}\n\n"
 
+        max_retries = 3
+        backoff = 30
+        last_error = ""
+
+        for attempt in range(max_retries):
+            try:
+                response = self.model.generate_content(
+                    contents=f"{system_prompt}\n\n{user_content}",
+                    generation_config={"response_mime_type": "application/json"}
+                )
+                raw_text = response.text.strip()
+                
+                if raw_text.startswith("```"):
+                    lines = raw_text.split("\n")
+                    if len(lines) >= 3:
+                        raw_text = "\n".join(lines[1:-1]).strip()
+                    else:
+                        raw_text = raw_text.replace("```json", "").replace("```", "").strip()
+                
+                parsed = json.loads(raw_text)
+                
+                # Verify that all requested symbols exist in parsed result
+                for symbol in assets_news.keys():
+                    if symbol not in parsed:
+                        parsed[symbol] = {
+                            "sentiment_score": 0.0,
+                            "action": "HOLD",
+                            "confidence": 0,
+                            "reasoning": "Symbol was omitted from Gemini JSON output."
+                        }
+                    else:
+                        logger.info(
+                            f"[{symbol} Gemini Result] Action: {parsed[symbol].get('action')} | "
+                            f"Score: {parsed[symbol].get('sentiment_score')} | Conf: {parsed[symbol].get('confidence')}%"
+                        )
+                return parsed
+
+            except Exception as e:
+                last_error = str(e)
+                if "429" in last_error or "quota" in last_error.lower():
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            f"Gemini API rate limit (429) hit. Retrying in {backoff} seconds "
+                            f"(Attempt {attempt + 1}/{max_retries})..."
+                        )
+                        import time
+                        time.sleep(backoff)
+                        backoff *= 2
+                        continue
+                logger.error(f"Gemini API attempt {attempt + 1} failed: {e}")
+
+        # If retries exceeded, write warning to human logbook and raise exception
+        from datetime import datetime
+        log_msg = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [API WARNING] Quota Gemini esaurita. Il bot riprovera' al prossimo ciclo orario."
+        log_path = os.path.join("data", "human_logbook.txt")
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
         try:
-            response = self.model.generate_content(
-                contents=f"{system_prompt}\n\n{user_content}",
-                generation_config={"response_mime_type": "application/json"}
-            )
-            raw_text = response.text.strip()
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(log_msg + "\n")
+        except Exception as e_log:
+            logger.error(f"Failed to write to human logbook: {e_log}")
             
-            # Clean potential markdown output wraps
-            if raw_text.startswith("```"):
-                lines = raw_text.split("\n")
-                if len(lines) >= 3:
-                    # Strip first and last lines
-                    raw_text = "\n".join(lines[1:-1])
-            raw_text = raw_text.strip()
-
-            result = json.loads(raw_text)
-            logger.info(
-                f"[{symbol} Gemini Result] Action: {result.get('action')} | "
-                f"Score: {result.get('sentiment_score')} | Conf: {result.get('confidence')}%"
-            )
-            return result
-        except Exception as e:
-            logger.error(f"Gemini API analysis failed: {e}. Falling back to HOLD.")
-            return {
+        # Return fallback HOLD decisions for all symbols
+        fallback = {}
+        for symbol in assets_news.keys():
+            fallback[symbol] = {
                 "sentiment_score": 0.0,
                 "action": "HOLD",
                 "confidence": 0,
-                "reasoning": f"Failed to query Gemini API: {e}"
+                "reasoning": f"Gemini API rate limit or error persisted: {last_error}"
             }
+        return fallback
+
+    def _mock_analyze(self, symbol: str, news_text: str) -> dict:
+        text_lower = news_text.lower()
+        if "surged" in text_lower or "profit" in text_lower or "rally" in text_lower or "bullish" in text_lower:
+            score = 0.85
+            action = "BUY"
+            confidence = 90
+        elif "drop" in text_lower or "fall" in text_lower or "loss" in text_lower or "bearish" in text_lower:
+            score = -0.75
+            action = "SELL"
+            confidence = 80
+        else:
+            score = 0.15
+            action = "HOLD"
+            confidence = 60
+            
+        return {
+            "sentiment_score": score,
+            "action": action,
+            "confidence": confidence,
+            "reasoning": f"Mock analysis: Headlines suggest standard market activity for {symbol}."
+        }

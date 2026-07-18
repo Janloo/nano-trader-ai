@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "description": "Nano-Trader-AI Market Universe - High-liquidity assets supported by Alpaca (equity + crypto).",
+  "assets": [
+    {"symbol": "SPY",    "type": "equity", "name": "S&P 500 ETF"},
+    {"symbol": "QQQ",    "type": "equity", "name": "Nasdaq 100 ETF"},
+    {"symbol": "AAPL",   "type": "equity", "name": "Apple Inc."},
+    {"symbol": "NVDA",   "type": "equity", "name": "NVIDIA Corp."},
+    {"symbol": "MSFT",   "type": "equity", "name": "Microsoft Corp."},
+    {"symbol": "AMZN",   "type": "equity", "name": "Amazon.com Inc."},
+    {"symbol": "TSLA",   "type": "equity", "name": "Tesla Inc."},
+    {"symbol": "COIN",   "type": "equity", "name": "Coinbase Global Inc."},
+    {"symbol": "BTCUSD", "type": "crypto", "name": "Bitcoin / USD"},
+    {"symbol": "ETHUSD", "type": "crypto", "name": "Ethereum / USD"}
+  ],
+  "max_selections": 2,
+  "sentiment_threshold": 0.75
+}

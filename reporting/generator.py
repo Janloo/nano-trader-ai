@@ -30,6 +30,28 @@ def generate_dashboard():
         except Exception as e:
             print(f"Error loading ai_analytics_logs.json for reporting: {e}")
 
+    ws_triggers = []
+    ws_triggers_path = os.path.join("data", "ws_triggers.json")
+    if os.path.exists(ws_triggers_path):
+        try:
+            with open(ws_triggers_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if content:
+                    ws_triggers = json.loads(content)
+        except Exception as e:
+            print(f"Error loading ws_triggers.json for reporting: {e}")
+
+    price_history = {}
+    price_history_path = os.path.join("data", "realtime_price_history.json")
+    if os.path.exists(price_history_path):
+        try:
+            with open(price_history_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if content:
+                    price_history = json.loads(content)
+        except Exception as e:
+            print(f"Error loading realtime_price_history.json for reporting: {e}")
+
     history = data.get("portfolio_history", [])
     trades = data.get("trades", [])
 
@@ -80,6 +102,12 @@ def generate_dashboard():
                     except Exception:
                         pass
 
+            exec_type = t.get("execution_type", "cron_macro")
+            if exec_type == "hybrid_websocket_trigger":
+                type_badge = '<span class="ml-2 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">⚡ WS Trigger</span>'
+            else:
+                type_badge = '<span class="ml-2 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Cron Macro</span>'
+
             trades_rows.append(f"""
             <tr class="hover:bg-slate-900/20 transition-colors">
                 <td class="py-3.5 text-slate-400 font-mono text-xs">{datetime.fromisoformat(t["timestamp"].replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M:%S")}</td>
@@ -88,16 +116,17 @@ def generate_dashboard():
                     <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                         BUY
                     </span>
+                    {type_badge}
                 </td>
                 <td class="py-3.5 text-right font-mono">{t["qty"]:.6f}</td>
                 <td class="py-3.5 text-right font-mono">${t["price"]:.2f}</td>
                 <td class="py-3.5 text-right font-mono">${t["notional"]:.2f}</td>
                 <td class="py-3.5 text-center font-mono">
-                    <span class="px-2 py-0.5 rounded text-xs font-bold {
+                    <span class="px-2 py-0.5 rounded text-xs font-bold {{
                         'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' if t.get('sentiment_score', 0) > 0
                         else 'bg-rose-500/10 text-rose-400 border border-rose-500/20' if t.get('sentiment_score', 0) < 0
                         else 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                    }">
+                    }}">
                         {t.get('sentiment_score', 0.0):+.2f}
                     </span>
                 </td>
@@ -153,6 +182,166 @@ def generate_dashboard():
     else:
         ai_rows.append('<tr><td colspan="7" class="py-6 text-center text-slate-500">No AI decision logs found.</td></tr>')
 
+
+    # 3. Read and format human-readable logbook entries
+    logbook_rows = []
+    logbook_path = os.path.join("data", "human_logbook.txt")
+    if os.path.exists(logbook_path):
+        try:
+            with open(logbook_path, "r", encoding="utf-8") as f:
+                logbook_entries = f.readlines()
+            
+            # Show latest 15 logs first
+            for log in reversed(logbook_entries[-15:]):
+                log = log.strip()
+                if not log:
+                    continue
+                
+                # Check for diagnostics tags and color code them accordingly
+                if "[API WARNING]" in log:
+                    text_class = "text-amber-400"
+                    badge = '<span class="px-2 py-0.5 text-[10px] font-bold bg-amber-500/10 text-amber-400 rounded border border-amber-500/20 uppercase tracking-wider">Warning</span>'
+                elif "[WEEKEND]" in log:
+                    text_class = "text-blue-400"
+                    badge = '<span class="px-2 py-0.5 text-[10px] font-bold bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 uppercase tracking-wider">Weekend</span>'
+                else:
+                    text_class = "text-slate-300"
+                    badge = '<span class="px-2 py-0.5 text-[10px] font-bold bg-slate-500/10 text-slate-400 rounded border border-slate-500/20 uppercase tracking-wider">Info</span>'
+                
+                logbook_rows.append(f"""
+                <div class="py-3 flex items-start gap-3 border-b border-slate-800/40 last:border-b-0">
+                    <div class="flex-shrink-0 mt-0.5">{badge}</div>
+                    <div class="{text_class} text-sm font-medium">{log}</div>
+                </div>
+                """)
+        except Exception as e:
+            logger.error(f"Error reading human logbook: {e}")
+            
+    if not logbook_rows:
+        logbook_rows.append('<div class="py-6 text-center text-slate-500 text-sm">No logbook diagnostics recorded yet.</div>')
+
+    # 4. Load AI Dynamic Asset Selection data
+    daily_selection = {"selected_assets": [], "timestamp": "", "macro_articles_analyzed": 0}
+    selection_path = os.path.join("data", "daily_selection.json")
+    if os.path.exists(selection_path):
+        try:
+            with open(selection_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if content:
+                    daily_selection = json.loads(content)
+        except Exception as e:
+            print(f"Error loading daily_selection.json: {e}")
+
+    # Build DAS selection cards HTML
+    das_cards_html = ""
+    das_selected_assets = daily_selection.get("selected_assets", [])
+    das_timestamp = daily_selection.get("timestamp", "")
+    das_articles_count = daily_selection.get("macro_articles_analyzed", 0)
+
+    # Format timestamp (always defined for template)
+    das_ts_str = ""
+    if das_timestamp:
+        try:
+            das_ts_str = datetime.fromisoformat(das_timestamp.replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M UTC")
+        except Exception:
+            das_ts_str = das_timestamp
+
+    if das_selected_assets:
+        for asset in das_selected_assets:
+            sym = asset.get("symbol", "?")
+            asset_type = asset.get("type", "unknown")
+            score = asset.get("sentiment_score", 0.0)
+            reason = asset.get("reasoning", "")
+
+            # Type badge
+            if asset_type == "crypto":
+                type_badge = '<span class="px-2 py-0.5 text-[10px] font-bold bg-violet-500/10 text-violet-400 rounded border border-violet-500/20 uppercase tracking-wider">Crypto</span>'
+                icon = "&#8383;"
+            else:
+                type_badge = '<span class="px-2 py-0.5 text-[10px] font-bold bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 uppercase tracking-wider">Equity</span>'
+                icon = "&#x1F4C8;"
+
+            # Sentiment score bar
+            score_pct = int(abs(score) * 100)
+            score_color = "bg-emerald-500" if score >= 0 else "bg-rose-500"
+            score_label_color = "text-emerald-400" if score >= 0 else "text-rose-400"
+
+            das_cards_html += f"""
+            <div class="relative overflow-hidden rounded-2xl border border-slate-700/60 bg-gradient-to-br from-slate-900/80 to-slate-800/40 p-5 backdrop-blur-md">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-2xl">{icon}</div>
+                        <div>
+                            <div class="text-xl font-bold text-white tracking-tight">{sym}</div>
+                            <div class="mt-0.5">{type_badge}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold {score_label_color}">{score:+.2f}</div>
+                        <div class="text-[10px] text-slate-500 uppercase tracking-wider">Sentiment</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="flex justify-between text-[10px] text-slate-500 mb-1">
+                        <span>Bullish Strength</span>
+                        <span>{score_pct}%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5">
+                        <div class="{score_color} h-1.5 rounded-full transition-all" style="width: {score_pct}%"></div>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed line-clamp-2" title="{reason}">{reason}</p>
+            </div>
+            """
+    else:
+        das_cards_html = """
+        <div class="col-span-full py-8 text-center text-slate-500">
+            <div class="text-3xl mb-2">&#x23F3;</div>
+            <div class="text-sm font-medium">Waiting for next cycle — no AI selection available yet.</div>
+        </div>
+        """
+
+    # Build WebSocket Trigger Rows
+    ws_rows = []
+    if ws_triggers:
+        for trig in reversed(ws_triggers[-15:]):
+            timestamp_str = trig.get("timestamp", "")
+            try:
+                dt_str = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                dt_str = timestamp_str
+
+            sym = trig.get("symbol", "")
+            price = trig.get("price", 0.0)
+            dip = trig.get("dip_pct", 0.0)
+            bias = trig.get("bias", "NEUTRAL")
+            score = trig.get("sentiment_score", 0.0)
+            executed = trig.get("executed", False)
+            reason = trig.get("reasoning", "")
+
+            # Badge color logic
+            if executed:
+                status_badge = '<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">⚡ EXECUTED</span>'
+            elif bias == "COOLDOWN":
+                status_badge = '<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border bg-yellow-500/10 text-yellow-400 border-yellow-500/20">COOLDOWN</span>'
+            else:
+                status_badge = '<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border bg-slate-500/10 text-slate-400 border-slate-500/20">IGNORED</span>'
+
+            bias_color = "text-emerald-400" if bias == "BULLISH" else "text-rose-400" if bias == "BEARISH" else "text-slate-400"
+
+            ws_rows.append(f"""
+            <tr class="hover:bg-slate-900/20 transition-colors border-b border-slate-800/40 last:border-b-0">
+                <td class="py-3 text-slate-400 font-mono text-xs">{dt_str}</td>
+                <td class="py-3"><span class="font-bold text-white">{sym}</span></td>
+                <td class="py-3 text-right font-mono">${price:,.2f}</td>
+                <td class="py-3 text-right font-mono text-rose-400">{dip:+.2f}%</td>
+                <td class="py-3 text-center"><span class="{bias_color} font-bold text-xs">{bias} ({score:+.2f})</span></td>
+                <td class="py-3 text-center">{status_badge}</td>
+                <td class="py-3 pl-4 text-slate-400 max-w-[250px] truncate" title="{reason}">{reason}</td>
+            </tr>
+            """)
+    else:
+        ws_rows.append('<tr><td colspan="7" class="py-6 text-center text-slate-500 text-sm">No real-time WebSocket trigger logs recorded yet.</td></tr>')
 
     html_template = f"""<!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950 text-slate-100">
@@ -328,6 +517,72 @@ def generate_dashboard():
                 </div>
             </div>
 
+            <!-- AI Asset Selection of the Day -->
+            <div class="mb-8 rounded-2xl border border-slate-700/60 bg-slate-900/30 p-6 backdrop-blur-md">
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">&#127916; AI Asset Selection of the Day</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            {f'Last updated: {das_ts_str} &nbsp;&bull;&nbsp; {das_articles_count} macro articles analyzed' if das_ts_str else 'Awaiting first DAS cycle...'}
+                        </p>
+                    </div>
+                    <span class="px-3 py-1 text-xs font-bold bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 uppercase tracking-wider">Live AI Selection</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {das_cards_html}
+                </div>
+            </div>
+
+            <!-- Real-Time WebSocket Activity (Live Price Chart + Trigger Logs) -->
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
+                <!-- Live Price Chart -->
+                <div class="lg:col-span-2 rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-white">📊 WebSocket Live Price & AI Trigger Points</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Real-time micro price tracking with AI execution points overlay</p>
+                        </div>
+                        <!-- Tabs / Symbol Selectors -->
+                        <div class="flex gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800/60">
+                            <button id="wsTabBTC" onclick="switchWSSymbol('BTCUSD')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition-all">BTCUSD</button>
+                            <button id="wsTabETH" onclick="switchWSSymbol('ETHUSD')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">ETHUSD</button>
+                        </div>
+                    </div>
+                    <div class="h-80 w-full">
+                        <canvas id="wsRealtimeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Trigger Logs -->
+                <div class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-white">⚡ WS Trigger Logs</h2>
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                    </div>
+                    <div class="flex-grow overflow-x-auto overflow-y-auto max-h-[320px]">
+                        <table class="min-w-full divide-y divide-slate-800/50">
+                            <thead>
+                                <tr class="text-[10px] font-semibold text-slate-400 text-left uppercase tracking-wider">
+                                    <th class="pb-2">Time</th>
+                                    <th class="pb-2">Asset</th>
+                                    <th class="pb-2 text-right">Price</th>
+                                    <th class="pb-2 text-right">Dip%</th>
+                                    <th class="pb-2 text-center">Bias</th>
+                                    <th class="pb-2 text-center">Status</th>
+                                    <th class="pb-2 pl-4">Reasoning</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/40 text-xs font-medium text-slate-300">
+                                {"".join(ws_rows)}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Charts Section -->
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
                 <div class="lg:col-span-2 rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md">
@@ -392,6 +647,14 @@ def generate_dashboard():
                     </table>
                 </div>
             </div>
+
+            <!-- Human Logbook Panel -->
+            <div class="mb-8 rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden">
+                <h2 class="text-lg font-bold text-white mb-4">Human Logbook & Warning Diagnostics</h2>
+                <div class="max-h-[300px] overflow-y-auto">
+                    {"".join(logbook_rows)}
+                </div>
+            </div>
         </main>
         <!-- Toast Notification Container -->
         <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3"></div>
@@ -401,6 +664,130 @@ def generate_dashboard():
     <script>
         const portfolioData = {json.dumps(history)};
         const tradesData = {json.dumps(trades)};
+        const priceHistoryData = {json.dumps(price_history)};
+        const wsTriggersData = {json.dumps(ws_triggers)};
+
+        let wsChartInstance = null;
+        let activeWSSymbol = 'BTCUSD';
+
+        function renderWSRealtimeChart(symbol) {{
+            const ctx = document.getElementById('wsRealtimeChart').getContext('2d');
+            if (!ctx) return;
+            
+            const history = priceHistoryData[symbol] || [];
+            const labels = history.map(h => {{
+                const date = new Date(h.timestamp);
+                return date.toLocaleTimeString([], {{hour: '2-digit', minute:'2-digit'}});
+            }});
+            const prices = history.map(h => h.price);
+
+            const symbolTriggers = wsTriggersData.filter(t => t.symbol === symbol && t.executed);
+            
+            const triggerPoints = [];
+            symbolTriggers.forEach(trig => {{
+                const trigTime = new Date(trig.timestamp).getTime();
+                let closestIndex = -1;
+                let minDiff = Infinity;
+                history.forEach((h, idx) => {{
+                    const diff = Math.abs(new Date(h.timestamp).getTime() - trigTime);
+                    if (diff < minDiff && diff < 120000) {{ // within 2 mins
+                        minDiff = diff;
+                        closestIndex = idx;
+                    }}
+                }});
+
+                if (closestIndex !== -1) {{
+                    triggerPoints.push({{
+                        x: labels[closestIndex],
+                        y: prices[closestIndex],
+                        reason: trig.reasoning,
+                        dip: trig.dip_pct
+                    }});
+                }}
+            }});
+
+            if (wsChartInstance) {{
+                wsChartInstance.destroy();
+            }}
+
+            wsChartInstance = new Chart(ctx, {{
+                type: 'line',
+                data: {{
+                    labels: labels.length > 0 ? labels : ['No Data'],
+                    datasets: [
+                        {{
+                            label: `${{symbol}} Price ($)`,
+                            data: prices.length > 0 ? prices : [0.0],
+                            borderColor: '#818cf8',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.15,
+                            fill: false
+                        }},
+                        {{
+                            label: '⚡ AI Buy Trigger',
+                            data: triggerPoints,
+                            type: 'scatter',
+                            backgroundColor: '#10b981',
+                            borderColor: '#34d399',
+                            borderWidth: 2,
+                            pointRadius: 8,
+                            pointStyle: 'triangle',
+                            showLine: false
+                        }}
+                    ]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {{
+                        x: {{
+                            grid: {{ display: false }},
+                            ticks: {{ color: '#64748b', font: {{ family: 'Outfit' }} }}
+                        }},
+                        y: {{
+                            grid: {{ color: '#1e293b' }},
+                            ticks: {{ color: '#64748b', font: {{ family: 'Outfit' }} }}
+                        }}
+                    }},
+                    plugins: {{
+                        tooltip: {{
+                            callbacks: {{
+                                label: function(context) {{
+                                    if (context.datasetIndex === 1) {{
+                                        const pt = triggerPoints[context.dataIndex];
+                                        return `⚡ BUY TRIGGER: $${{pt.y.toFixed(2)}} (DIP: ${{pt.dip.toFixed(2)}}%)`;
+                                    }}
+                                    return `Price: $${{context.raw.toFixed(2)}}`;
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        function switchWSSymbol(symbol) {{
+            activeWSSymbol = symbol;
+            
+            const btcBtn = document.getElementById('wsTabBTC');
+            const ethBtn = document.getElementById('wsTabETH');
+            
+            if (symbol === 'BTCUSD') {{
+                btcBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition-all";
+                ethBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all";
+            }} else {{
+                ethBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition-all";
+                btcBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all";
+            }}
+            
+            renderWSRealtimeChart(symbol);
+        }}
+
+        // Initialize WS chart
+        window.addEventListener("DOMContentLoaded", () => {{
+            renderWSRealtimeChart(activeWSSymbol);
+        }});
 
         // Render Correlation Chart
         const correlationCtx = document.getElementById('correlationChart').getContext('2d');

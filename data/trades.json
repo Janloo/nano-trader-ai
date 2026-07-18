@@ -1,245 +1,26 @@
 {
     "portfolio_history": [
         {
-            "timestamp": "2026-07-17T16:06:43.774719+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0
-        },
-        {
-            "timestamp": "2026-07-17T16:06:49.383790+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0
-        },
-        {
-            "timestamp": "2026-07-17T16:06:58.792281+00:00",
-            "equity": 99999.97,
-            "buying_power": 399975.93,
-            "unrealized_pnl": -0.033819
-        },
-        {
-            "timestamp": "2026-07-17T21:20:29.310703+00:00",
+            "timestamp": "2026-07-18T08:19:57.898977+00:00",
             "equity": 99999.95,
-            "buying_power": 399975.9,
-            "unrealized_pnl": -0.045838
+            "buying_power": 399965.87,
+            "unrealized_pnl": -0.04232299999999999,
+            "average_sentiment": 0.075
         },
         {
-            "timestamp": "2026-07-17T21:42:13.239269+00:00",
+            "timestamp": "2026-07-18T09:20:02.247165+00:00",
+            "equity": 99999.95,
+            "buying_power": 399965.87,
+            "unrealized_pnl": -0.04232299999999999,
+            "average_sentiment": 0.075
+        },
+        {
+            "timestamp": "2026-07-18T09:58:12.462807+00:00",
             "equity": 100000.0,
             "buying_power": 400000.0,
             "unrealized_pnl": 0.0,
-            "average_sentiment": 0.15
-        },
-        {
-            "timestamp": "2026-07-17T21:42:26.303476+00:00",
-            "equity": 99999.97,
-            "buying_power": 399970.94,
-            "unrealized_pnl": -0.029106000000000007,
-            "average_sentiment": 0.15
-        },
-        {
-            "timestamp": "2026-07-17T21:42:38.522910+00:00",
-            "equity": 99999.97,
-            "buying_power": 399970.94,
-            "unrealized_pnl": -0.029106000000000007,
-            "average_sentiment": 0.5
-        },
-        {
-            "timestamp": "2026-07-17T21:43:59.885957+00:00",
-            "equity": 99999.97,
-            "buying_power": 399965.94,
-            "unrealized_pnl": -0.030105000000000007,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T21:44:25.969944+00:00",
-            "equity": 99999.97,
-            "buying_power": 399965.93,
-            "unrealized_pnl": -0.034948,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T21:50:34.573232+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T21:50:42.413320+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T21:57:28.086768+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T21:57:43.385100+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T21:58:00.777383+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T22:05:18.770409+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T22:05:41.290474+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T22:09:00.103814+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T22:09:21.059031+00:00",
-            "equity": 100000.0,
-            "buying_power": 400000.0,
-            "unrealized_pnl": 0.0,
-            "average_sentiment": 0.075
-        },
-        {
-            "timestamp": "2026-07-17T22:33:07.084511+00:00",
-            "equity": 99999.97,
-            "buying_power": 399965.95,
-            "unrealized_pnl": -0.027823,
-            "average_sentiment": 0.075
+            "average_sentiment": 0.0
         }
     ],
-    "trades": [
-        {
-            "timestamp": "2026-07-17T16:06:43.703658+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "SPY",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:43.717917+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "QQQ",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:43.733121+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "AAPL",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:43.747569+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "MSFT",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:43.762448+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "NVDA",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:49.308128+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "SPY",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:49.326652+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "QQQ",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:49.341077+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "AAPL",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:49.356866+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "MSFT",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T16:06:49.372768+00:00",
-            "order_id": "mock-buy-id",
-            "symbol": "NVDA",
-            "side": "BUY",
-            "qty": 0.07722007722007722,
-            "notional": 10.0,
-            "price": 129.5
-        },
-        {
-            "timestamp": "2026-07-17T21:20:28.588229+00:00",
-            "order_id": "d7df7169-8880-4539-b6c2-4b03c24a689b",
-            "symbol": "SPY",
-            "side": "BUY",
-            "qty": 0.006726940049510279,
-            "notional": 5.0,
-            "price": 743.28
-        },
-        {
-            "timestamp": "2026-07-17T21:42:37.894912+00:00",
-            "order_id": "4312b626-e4c7-4d0b-9b85-5b8a56398ba5",
-            "symbol": "SPY",
-            "side": "BUY",
-            "qty": 0.006726940049510279,
-            "notional": 5.0,
-            "price": 743.28,
-            "sentiment_score": 0.85,
-            "reasoning": "Mock analysis: Headlines suggest standard market activity for SPY."
-        }
-    ]
+    "trades": []
 }

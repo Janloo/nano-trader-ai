@@ -31,6 +31,10 @@ APCA_API_SECRET_KEY = local_config.get("secret_key", os.getenv("APCA_API_SECRET_
 APCA_API_BASE_URL = local_config.get("base_url", os.getenv("APCA_API_BASE_URL", "https://paper-api.alpaca.markets"))
 GEMINI_API_KEY = local_config.get("gemini_key", os.getenv("GEMINI_API_KEY"))
 
+# Telegram notifications (optional)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+
 # Trading parameters
 TICKERS_STR = os.getenv("TICKERS", "SPY,BTCUSD")
 TICKERS = [t.strip().upper() for t in TICKERS_STR.split(",") if t.strip()]

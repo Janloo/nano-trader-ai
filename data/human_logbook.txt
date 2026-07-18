@@ -1,0 +1,4 @@
+[2026-07-18 10:00:28] [API WARNING] DAS: Quota Gemini esaurita nella selezione asset. Il bot riprovera' al prossimo ciclo orario.
+[2026-07-18 11:57:54] [API WARNING] DAS: Quota Gemini esaurita nella selezione asset. Il bot riprovera' al prossimo ciclo orario.
+[2026-07-18 11:58:12] [API WARNING] DAS: Quota Gemini esaurita nella selezione asset. Il bot riprovera' al prossimo ciclo orario.
+[2026-07-18 11:59:52] [API WARNING] DAS: Quota Gemini esaurita nella selezione asset. Il bot riprovera' al prossimo ciclo orario.

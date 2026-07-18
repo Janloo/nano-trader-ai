@@ -154,7 +154,10 @@ class AITrader:
                     "notional": 5.00,
                     "price": price,
                     "sentiment_score": sentiment_score,
-                    "reasoning": reasoning
+                    "reasoning": reasoning,
+                    "execution_type": ai_decision.get("execution_type", "cron_macro"),
+                    "das_selected": ai_decision.get("das_selected", False),
+                    "das_reasoning": ai_decision.get("das_reasoning", "")
                 })
                 self._write_data(data)
                 
@@ -163,8 +166,24 @@ class AITrader:
                 return order_id
                 
             except Exception as e:
+                err_msg = str(e)
+                # Catch closed market errors (like "market is closed" or code 400101) for SPY specifically
+                if symbol == "SPY" and ("closed" in err_msg.lower() or "not open" in err_msg.lower() or "400101" in err_msg):
+                    log_msg = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [WEEKEND] Mercato azionario USA chiuso. Ordine su SPY posticipato alla riapertura di Lunedi'."
+                    log_path = os.path.join("data", "human_logbook.txt")
+                    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+                    try:
+                        with open(log_path, "a", encoding="utf-8") as f:
+                            f.write(log_msg + "\n")
+                    except Exception as e_log:
+                        logger.error(f"Failed to write to human logbook: {e_log}")
+                        
+                    logger.info(f"[{symbol} AI Trader] Intercepted closed USA market on weekend. Deferred order successfully.")
+                    self.log_ai_analytics(symbol, current_price, raw_news_titles, ai_decision, False, f"[WEEKEND] US market is closed. {err_msg}")
+                    return None
+                
                 logger.error(f"[{symbol} AI Trader] Order execution failed for {symbol}: {e}")
-                self.log_ai_analytics(symbol, current_price, raw_news_titles, ai_decision, False, str(e))
+                self.log_ai_analytics(symbol, current_price, raw_news_titles, ai_decision, False, err_msg)
                 return None
         else:
             logger.info(
