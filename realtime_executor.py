@@ -28,10 +28,11 @@ from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, logger
 # Configuration
 # ─────────────────────────────────────────────
 DIP_THRESHOLD_PCT = -0.50      # Minimum % drop to trigger a DIP signal
+SPIKE_THRESHOLD_PCT = 0.50     # Minimum % rise to trigger a SPIKE signal
 DIP_WINDOW_SECONDS = 300      # 5-minute rolling window
 ORDER_COOLDOWN_SECONDS = 300  # 5 minutes between orders on same asset
 BIAS_EXPIRY_HOURS = 72        # Temporarily extended for the weekend
-NOTIONAL_USD = 10.00          # Order size per trigger
+NOTIONAL_USD = 10.00          # Fallback static order size
 
 BIAS_FILE = os.path.join("data", "state", "market_bias.json")
 TRADES_FILE_JSONL = os.path.join("data", "archives", "trades.jsonl")
@@ -89,22 +90,25 @@ class BiasReader:
 
 
 # ─────────────────────────────────────────────
-# DipDetector — Rolling window micro-fluctuation detector
+# VolatilityDetector — Rolling window micro-fluctuation detector
 # ─────────────────────────────────────────────
-class DipDetector:
-    """Tracks prices over a rolling window and detects DIP events."""
+class VolatilityDetector:
+    """Tracks prices over a rolling window and detects DIP and SPIKE events."""
 
     def __init__(self, window_seconds: int = DIP_WINDOW_SECONDS,
-                 dip_threshold_pct: float = DIP_THRESHOLD_PCT):
+                 dip_threshold_pct: float = DIP_THRESHOLD_PCT,
+                 spike_threshold_pct: float = SPIKE_THRESHOLD_PCT):
         self.window_seconds = window_seconds
         self.dip_threshold_pct = dip_threshold_pct
+        self.spike_threshold_pct = spike_threshold_pct
         # {symbol: deque of (timestamp_utc, price)}
         self._prices: Dict[str, deque] = {}
 
-    def update(self, symbol: str, price: float, timestamp: datetime) -> Optional[float]:
+    def update(self, symbol: str, price: float, timestamp: datetime):
         """
-        Records a new price point. Returns the % change from the window high
-        if a DIP is detected, otherwise None.
+        Records a new price point. Returns (dip_pct, spike_pct).
+        dip_pct is the % change from window high if <= dip_threshold_pct.
+        spike_pct is the % change from window low if >= spike_threshold_pct.
         """
         if symbol not in self._prices:
             self._prices[symbol] = deque()
@@ -118,19 +122,25 @@ class DipDetector:
             window.popleft()
 
         if len(window) < 2:
-            return None
+            return None, None
 
-        # Calculate % change from window high
+        # Calculate % change from window high (DIP)
         window_high = max(p for _, p in window)
-        if window_high <= 0:
-            return None
+        dip_pct = None
+        if window_high > 0:
+            pct_change_high = ((price - window_high) / window_high) * 100.0
+            if pct_change_high <= self.dip_threshold_pct:
+                dip_pct = pct_change_high
 
-        pct_change = ((price - window_high) / window_high) * 100.0
+        # Calculate % change from window low (SPIKE)
+        window_low = min(p for _, p in window)
+        spike_pct = None
+        if window_low > 0:
+            pct_change_low = ((price - window_low) / window_low) * 100.0
+            if pct_change_low >= self.spike_threshold_pct:
+                spike_pct = pct_change_low
 
-        if pct_change <= self.dip_threshold_pct:
-            return pct_change
-
-        return None
+        return dip_pct, spike_pct
 
 
 # ─────────────────────────────────────────────
@@ -248,13 +258,14 @@ class WSTradeLogger:
 class RealtimeExecutor:
     """
     Connects to Alpaca CryptoDataStream, monitors prices, and executes
-    DIP-based trades when the macro AI bias is BULLISH.
+    DIP-based trades when the macro AI bias is BULLISH, or SPIKE-based
+    trades when the macro AI bias is BEARISH.
     """
 
     def __init__(self, symbols: List[str], dry_run: bool = False):
         self.symbols = symbols
         self.dry_run = dry_run
-        self.dip_detector = DipDetector()
+        self.vol_detector = VolatilityDetector()
         self._last_order_time: Dict[str, datetime] = {}
         self._trading_client = None
 
@@ -277,30 +288,75 @@ class RealtimeExecutor:
         elapsed = (datetime.now(timezone.utc) - last).total_seconds()
         return elapsed < ORDER_COOLDOWN_SECONDS
 
-    def _execute_order(self, symbol: str, price: float, dip_pct: float,
-                       bias_info: Dict) -> Optional[str]:
-        """Places a $5 fractional market buy order."""
+    def _calculate_position_size(self, symbol: str, price: float) -> float:
+        """Calculates the position size dynamically based on buying power."""
+        fallback = NOTIONAL_USD
+        if self.dry_run:
+            return fallback
+
+        try:
+            self._init_trading_client()
+            account = self._trading_client.get_account()
+            bp = float(account.buying_power)
+            # Allocate 5% of Buying Power, capped at max $500, min $5
+            allocation = min(max(bp * 0.05, 5.0), 500.0)
+            return allocation
+        except Exception as e:
+            logger.warning(f"[WS] Failed to calculate dynamic size: {e}. Using fallback ${fallback}")
+            return fallback
+
+    def _execute_order(self, symbol: str, price: float, change_pct: float,
+                       bias_info: Dict, is_short: bool = False) -> Optional[str]:
+        """Places a Bracket Order with dynamic TP/SL."""
         sentiment_score = bias_info.get("sentiment_score", 0.0)
         reasoning = bias_info.get("reasoning", "")
+        bias_type = "BEARISH" if is_short else "BULLISH"
+        
+        # Determine asset class
+        is_crypto = symbol.endswith("USD")
+        
+        if is_short and is_crypto:
+            logger.warning(f"[WS] Cannot short Crypto {symbol} on Alpaca. Skipping execution.")
+            WSTradeLogger.write_logbook(f"[WS INFO] Salto lo Short su Crypto {symbol} (non supportato).")
+            return None
+
+        size_usd = self._calculate_position_size(symbol, price)
 
         if self.dry_run:
             order_id = f"dry-ws-{int(time.time())}"
+            side_str = "SHORT" if is_short else "BUY"
             logger.info(
-                f"[WS DRY-RUN] Would BUY ${NOTIONAL_USD} of {symbol} at ${price:.2f} "
-                f"(DIP: {dip_pct:.2f}%, Bias: BULLISH, Score: {sentiment_score:.2f})"
+                f"[WS DRY-RUN] Would {side_str} ${size_usd:.2f} of {symbol} at ${price:.2f} "
+                f"(Change: {change_pct:.2f}%, Bias: {bias_type}, Score: {sentiment_score:.2f})"
             )
         else:
             try:
                 self._init_trading_client()
-                from alpaca.trading.requests import MarketOrderRequest
+                from alpaca.trading.requests import MarketOrderRequest, TakeProfitRequest, StopLossRequest
                 from alpaca.trading.enums import OrderSide, TimeInForce
 
+                # Dynamic TP/SL (e.g. +2.5% TP, -1.5% SL)
+                if is_short:
+                    tp_price = round(price * 0.975, 2) # Target lower price
+                    sl_price = round(price * 1.015, 2) # Stop loss higher price
+                    side = OrderSide.SELL
+                else:
+                    tp_price = round(price * 1.025, 2) # Target higher price
+                    sl_price = round(price * 0.985, 2) # Stop loss lower price
+                    side = OrderSide.BUY
+
                 order_symbol = symbol.replace("BTCUSD", "BTC/USD").replace("ETHUSD", "ETH/USD")
+                
+                qty = size_usd / price if price > 0 else 0.0
+                qty = round(qty, 4) if is_crypto else round(qty, 2)
+
                 order_data = MarketOrderRequest(
                     symbol=order_symbol,
-                    notional=NOTIONAL_USD,
-                    side=OrderSide.BUY,
-                    time_in_force=TimeInForce.GTC
+                    qty=qty,
+                    side=side,
+                    time_in_force=TimeInForce.GTC,
+                    take_profit=TakeProfitRequest(limit_price=tp_price),
+                    stop_loss=StopLossRequest(stop_price=sl_price)
                 )
                 order = self._trading_client.submit_order(order_data)
                 order_id = str(order.id)
@@ -312,36 +368,33 @@ class RealtimeExecutor:
                     except (ValueError, TypeError):
                         pass
 
+                side_str = "SHORT" if is_short else "BUY"
                 logger.info(
-                    f"[WS TRIGGER] BUY ${NOTIONAL_USD} of {symbol} EXECUTED! "
-                    f"Price: ${price:.2f} | DIP: {dip_pct:.2f}% | Order: {order_id}"
+                    f"[WS TRIGGER] {side_str} ${size_usd:.2f} of {symbol} EXECUTED! "
+                    f"Price: ${price:.2f} | Change: {change_pct:.2f}% | Order: {order_id}"
                 )
             except Exception as e:
                 logger.error(f"[WS] Order execution failed for {symbol}: {e}")
-                WSTradeLogger.write_logbook(
-                    f"[WS ERROR] Ordine fallito su {symbol}: {e}"
-                )
-                WSTradeLogger.log_trigger(
-                    symbol, price, dip_pct, "BULLISH", sentiment_score,
-                    reasoning, "FAILED", False
-                )
+                WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
+                WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, "FAILED", False)
                 return None
 
         # Log the trade
-        qty = NOTIONAL_USD / price if price > 0 else 0.0
-        WSTradeLogger.log_trade(symbol, price, qty, order_id, sentiment_score, reasoning, dip_pct)
-        WSTradeLogger.log_trigger(symbol, price, dip_pct, "BULLISH", sentiment_score, reasoning, order_id, True)
+        qty = size_usd / price if price > 0 else 0.0
+        side_str = "SELL" if is_short else "BUY"
+        WSTradeLogger.log_trade(symbol, price, qty, order_id, sentiment_score, reasoning, change_pct)
+        WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, order_id, True)
         WSTradeLogger.write_logbook(
-            f"[WS TRIGGER] BUY ${NOTIONAL_USD} di {symbol} a ${price:.2f} (DIP: {dip_pct:.2f}%, AI Bias: BULLISH)"
+            f"[WS TRIGGER] {side_str} ${size_usd:.2f} di {symbol} a ${price:.2f} (Change: {change_pct:.2f}%, AI Bias: {bias_type})"
         )
 
         # Send Telegram notification
         try:
             from notifications.telegram_notifier import notify_trade_executed
             notify_trade_executed(
-                symbol=symbol, action="BUY", notional=NOTIONAL_USD,
+                symbol=symbol, action=side_str, notional=size_usd,
                 price=price, sentiment_score=sentiment_score,
-                reasoning=f"WebSocket DIP Trigger ({dip_pct:.2f}%): {reasoning}",
+                reasoning=f"WebSocket Trigger ({change_pct:.2f}%): {reasoning}",
                 order_id=order_id
             )
         except Exception:
@@ -354,7 +407,7 @@ class RealtimeExecutor:
     def on_bar(self, bar):
         """
         Called on each incoming 1-minute bar from the WebSocket stream.
-        Evaluates DIP + Bias conditions and triggers orders.
+        Evaluates DIP/SPIKE + Bias conditions and triggers orders.
         """
         symbol_raw = bar.symbol  # e.g. "BTC/USD"
         # Normalize symbol back to our format
@@ -369,21 +422,20 @@ class RealtimeExecutor:
         # Log streaming price for the real-time dashboard chart
         WSTradeLogger.log_price(symbol, price, bar_time)
 
-        # Update DIP detector
-        dip_pct = self.dip_detector.update(symbol, price, bar_time)
+        # Update Volatility detector
+        dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time)
 
-        if dip_pct is not None:
-            logger.info(
-                f"[WS DIP] {symbol} dropped {dip_pct:.2f}% in {DIP_WINDOW_SECONDS}s "
-                f"window. Price: ${price:.2f}"
-            )
+        if dip_pct is not None or spike_pct is not None:
+            if dip_pct is not None:
+                logger.info(f"[WS DIP] {symbol} dropped {dip_pct:.2f}% in {DIP_WINDOW_SECONDS}s. Price: ${price:.2f}")
+            if spike_pct is not None:
+                logger.info(f"[WS SPIKE] {symbol} jumped {spike_pct:.2f}% in {DIP_WINDOW_SECONDS}s. Price: ${price:.2f}")
 
             # Check cooldown
             if self._is_on_cooldown(symbol):
                 logger.info(f"[WS] {symbol} is on cooldown — skipping trigger.")
-                WSTradeLogger.log_trigger(
-                    symbol, price, dip_pct, "COOLDOWN", 0.0, "Cooldown active", "", False
-                )
+                # Pass 0.0 for change_pct just to log
+                WSTradeLogger.log_trigger(symbol, price, dip_pct or spike_pct or 0.0, "COOLDOWN", 0.0, "Cooldown active", "", False)
                 return
 
             # Read AI bias
@@ -393,14 +445,21 @@ class RealtimeExecutor:
 
             logger.info(f"[WS] {symbol} bias check: {bias} (score: {sentiment_score:.2f})")
 
-            if bias == "BULLISH" and sentiment_score >= 0.75:
-                # TRIGGER! DIP + BULLISH = BUY
-                logger.info(f"[WS TRIGGER] DIP + BULLISH confirmed for {symbol}! Executing order...")
-                self._execute_order(symbol, price, dip_pct, bias_info)
+            # Logic 1: DIP + BULLISH = BUY
+            if dip_pct is not None and bias == "BULLISH" and sentiment_score >= 0.75:
+                logger.info(f"[WS TRIGGER] DIP + BULLISH confirmed for {symbol}! Executing BUY order...")
+                self._execute_order(symbol, price, dip_pct, bias_info, is_short=False)
+            
+            # Logic 2: SPIKE + BEARISH = SHORT
+            elif spike_pct is not None and bias == "BEARISH" and sentiment_score <= -0.75:
+                logger.info(f"[WS TRIGGER] SPIKE + BEARISH confirmed for {symbol}! Executing SHORT order...")
+                self._execute_order(symbol, price, spike_pct, bias_info, is_short=True)
+            
             else:
-                logger.info(f"[WS] {symbol} DIP detected but bias is {bias} — ignoring.")
+                change = dip_pct if dip_pct is not None else spike_pct
+                logger.info(f"[WS] {symbol} fluctuation detected but bias is {bias} — ignoring.")
                 WSTradeLogger.log_trigger(
-                    symbol, price, dip_pct, bias, sentiment_score,
+                    symbol, price, change, bias, sentiment_score,
                     bias_info.get("reasoning", ""), "", False
                 )
 
