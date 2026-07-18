@@ -143,6 +143,62 @@ class VolatilityDetector:
 
         return dip_pct, spike_pct
 
+# ─────────────────────────────────────────────
+# IndicatorManager — ATR & RSI Calculation
+# ─────────────────────────────────────────────
+class IndicatorManager:
+    """Calculates ATR and RSI from incoming OHLC bars."""
+    def __init__(self, period=14):
+        self.period = period
+        self._bars: Dict[str, deque] = {}
+
+    def update(self, symbol: str, high: float, low: float, close: float):
+        if symbol not in self._bars:
+            self._bars[symbol] = deque(maxlen=self.period + 1)
+        self._bars[symbol].append({"high": high, "low": low, "close": close})
+
+    def get_last_price(self, symbol: str) -> Optional[float]:
+        if symbol in self._bars and len(self._bars[symbol]) > 0:
+            return self._bars[symbol][-1]["close"]
+        return None
+
+    def get_atr(self, symbol: str) -> Optional[float]:
+        bars = self._bars.get(symbol, [])
+        if len(bars) < self.period + 1:
+            return None
+        
+        trs = []
+        for i in range(1, len(bars)):
+            prev_close = bars[i-1]["close"]
+            h = bars[i]["high"]
+            l = bars[i]["low"]
+            tr = max(h - l, abs(h - prev_close), abs(l - prev_close))
+            trs.append(tr)
+        return sum(trs[-self.period:]) / self.period
+
+    def get_rsi(self, symbol: str) -> Optional[float]:
+        bars = self._bars.get(symbol, [])
+        if len(bars) < self.period + 1:
+            return None
+
+        gains = []
+        losses = []
+        for i in range(1, len(bars)):
+            change = bars[i]["close"] - bars[i-1]["close"]
+            if change > 0:
+                gains.append(change)
+                losses.append(0)
+            else:
+                gains.append(0)
+                losses.append(abs(change))
+                
+        avg_gain = sum(gains[-self.period:]) / self.period
+        avg_loss = sum(losses[-self.period:]) / self.period
+        
+        if avg_loss == 0:
+            return 100.0
+        rs = avg_gain / avg_loss
+        return 100.0 - (100.0 / (1.0 + rs))
 
 # ─────────────────────────────────────────────
 # Trade Logger — Writes to trades.json and ws_triggers.json
@@ -267,6 +323,7 @@ class RealtimeExecutor:
         self.symbols = symbols
         self.dry_run = dry_run
         self.vol_detector = VolatilityDetector()
+        self.indicator_mgr = IndicatorManager(period=14)
         self._last_order_time: Dict[str, datetime] = {}
         self._trading_client = None
 
@@ -289,8 +346,8 @@ class RealtimeExecutor:
         elapsed = (datetime.now(timezone.utc) - last).total_seconds()
         return elapsed < ORDER_COOLDOWN_SECONDS
 
-    def _calculate_position_size(self, symbol: str, price: float) -> float:
-        """Calculates the position size dynamically based on buying power."""
+    def _calculate_position_size(self, symbol: str, price: float, sentiment_score: float) -> float:
+        """Calculates the position size dynamically based on buying power and AI confidence."""
         fallback = NOTIONAL_USD
         if self.dry_run:
             return fallback
@@ -299,15 +356,24 @@ class RealtimeExecutor:
             self._init_trading_client()
             account = self._trading_client.get_account()
             bp = float(account.buying_power)
-            # Allocate 5% of Buying Power, capped at max $500, min $5
-            allocation = min(max(bp * 0.05, 5.0), 500.0)
+            
+            # Confidence Sizing: scale between 5% and 15% of BP based on score (0.75 to 1.0)
+            base_alloc_pct = 0.05
+            max_alloc_pct = 0.15
+            score_abs = min(max(abs(sentiment_score), 0.75), 1.0)
+            
+            # Linear interpolation
+            alloc_pct = base_alloc_pct + (max_alloc_pct - base_alloc_pct) * ((score_abs - 0.75) / 0.25)
+            
+            # Cap at max $500, min $5
+            allocation = min(max(bp * alloc_pct, 5.0), 500.0)
             return allocation
         except Exception as e:
             logger.warning(f"[WS] Failed to calculate dynamic size: {e}. Using fallback ${fallback}")
             return fallback
 
     def _execute_order(self, symbol: str, price: float, change_pct: float,
-                       bias_info: Dict, is_short: bool = False) -> Optional[str]:
+                       bias_info: Dict, is_short: bool = False, atr: float = 0.0) -> Optional[str]:
         """Places a Bracket Order with dynamic TP/SL."""
         sentiment_score = bias_info.get("sentiment_score", 0.0)
         reasoning = bias_info.get("reasoning", "")
@@ -321,14 +387,14 @@ class RealtimeExecutor:
             WSTradeLogger.write_logbook(f"[WS INFO] Salto lo Short su Crypto {symbol} (non supportato).")
             return None
 
-        size_usd = self._calculate_position_size(symbol, price)
+        size_usd = self._calculate_position_size(symbol, price, sentiment_score)
 
         if self.dry_run:
             order_id = f"dry-ws-{int(time.time())}"
             side_str = "SHORT" if is_short else "BUY"
             logger.info(
                 f"[WS DRY-RUN] Would {side_str} ${size_usd:.2f} of {symbol} at ${price:.2f} "
-                f"(Change: {change_pct:.2f}%, Bias: {bias_type}, Score: {sentiment_score:.2f})"
+                f"(Change: {change_pct:.2f}%, Bias: {bias_type}, Score: {sentiment_score:.2f}, ATR: {atr:.4f})"
             )
         else:
             try:
@@ -336,15 +402,25 @@ class RealtimeExecutor:
                 from alpaca.trading.requests import MarketOrderRequest, TakeProfitRequest, StopLossRequest
                 from alpaca.trading.enums import OrderSide, TimeInForce
 
-                # Dynamic TP/SL (e.g. +2.5% TP, -1.5% SL)
-                if is_short:
-                    tp_price = round(price * 0.975, 2) # Target lower price
-                    sl_price = round(price * 1.015, 2) # Stop loss higher price
-                    side = OrderSide.SELL
+                # Dynamic TP/SL using ATR if available, else fallback
+                if atr > 0:
+                    if is_short:
+                        tp_price = round(price - (3.0 * atr), 2) # Target lower price
+                        sl_price = round(price + (2.0 * atr), 2) # Stop loss higher price
+                        side = OrderSide.SELL
+                    else:
+                        tp_price = round(price + (3.0 * atr), 2) # Target higher price
+                        sl_price = round(price - (2.0 * atr), 2) # Stop loss lower price
+                        side = OrderSide.BUY
                 else:
-                    tp_price = round(price * 1.025, 2) # Target higher price
-                    sl_price = round(price * 0.985, 2) # Stop loss lower price
-                    side = OrderSide.BUY
+                    if is_short:
+                        tp_price = round(price * 0.975, 2)
+                        sl_price = round(price * 1.015, 2)
+                        side = OrderSide.SELL
+                    else:
+                        tp_price = round(price * 1.025, 2)
+                        sl_price = round(price * 0.985, 2)
+                        side = OrderSide.BUY
 
                 order_symbol = symbol.replace("BTCUSD", "BTC/USD").replace("ETHUSD", "ETH/USD")
                 
@@ -420,6 +496,19 @@ class RealtimeExecutor:
         if bar_time.tzinfo is None:
             bar_time = bar_time.replace(tzinfo=timezone.utc)
 
+        # Update Indicator Manager with OHLC
+        high = float(bar.high) if hasattr(bar, "high") else price
+        low = float(bar.low) if hasattr(bar, "low") else price
+        self.indicator_mgr.update(symbol, high, low, price)
+
+        # Check Warm-up
+        atr = self.indicator_mgr.get_atr(symbol)
+        rsi = self.indicator_mgr.get_rsi(symbol)
+        
+        if atr is None or rsi is None:
+            # Silent return during 14-min warmup
+            return
+
         # Log streaming price for the real-time dashboard chart
         WSTradeLogger.log_price(symbol, price, bar_time)
 
@@ -448,13 +537,16 @@ class RealtimeExecutor:
 
             # Logic 1: DIP + BULLISH = BUY
             if dip_pct is not None and bias == "BULLISH" and sentiment_score >= 0.75:
+                if rsi > 70:
+                    logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping BUY to avoid overbought entry.")
+                    return
                 logger.info(f"[WS TRIGGER] DIP + BULLISH confirmed for {symbol}! Executing BUY order...")
-                self._execute_order(symbol, price, dip_pct, bias_info, is_short=False)
+                self._execute_order(symbol, price, dip_pct, bias_info, is_short=False, atr=atr)
             
             # Logic 2: SPIKE + BEARISH = SHORT
             elif spike_pct is not None and bias == "BEARISH" and sentiment_score <= -0.75:
                 logger.info(f"[WS TRIGGER] SPIKE + BEARISH confirmed for {symbol}! Executing SHORT order...")
-                self._execute_order(symbol, price, spike_pct, bias_info, is_short=True)
+                self._execute_order(symbol, price, spike_pct, bias_info, is_short=True, atr=atr)
             
             else:
                 change = dip_pct if dip_pct is not None else spike_pct
@@ -476,6 +568,11 @@ class RealtimeExecutor:
         if bar_time.tzinfo is None:
             bar_time = bar_time.replace(tzinfo=timezone.utc)
 
+        # Update Indicator Manager with OHLC
+        high = float(bar.high) if hasattr(bar, "high") else price
+        low = float(bar.low) if hasattr(bar, "low") else price
+        self.indicator_mgr.update(symbol, high, low, price)
+
         dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time)
 
         # QQQ Lead-Lag Trigger threshold is +0.25%
@@ -486,16 +583,28 @@ class RealtimeExecutor:
             for crypto_sym in self.symbols:
                 if self._is_on_cooldown(crypto_sym):
                     continue
+                
+                # Check warm-up status of the target crypto
+                atr = self.indicator_mgr.get_atr(crypto_sym)
+                rsi = self.indicator_mgr.get_rsi(crypto_sym)
+                crypto_price = self.indicator_mgr.get_last_price(crypto_sym)
+                
+                if atr is None or rsi is None or crypto_price is None:
+                    continue
 
                 bias_info = BiasReader.get_bias_for_symbol(crypto_sym)
                 bias = bias_info.get("bias", "NEUTRAL")
                 sentiment_score = bias_info.get("sentiment_score", 0.0)
 
                 if bias == "BULLISH" and sentiment_score >= 0.75:
+                    if rsi > 70:
+                        logger.info(f"[WS FILTER] {crypto_sym} RSI is {rsi:.2f} (>70). Skipping Lead-Lag BUY.")
+                        continue
+                        
                     logger.info(f"[WS LEAD-LAG TRIGGER] QQQ Spike + BULLISH {crypto_sym} confirmed! Executing anticipatory BUY order...")
                     
-                    # We pass spike_pct as the 'change' for logging purposes
-                    self._execute_order(crypto_sym, price, spike_pct, bias_info, is_short=False)
+                    # Execute on the crypto symbol
+                    self._execute_order(crypto_sym, crypto_price, spike_pct, bias_info, is_short=False, atr=atr)
                     
                     # Prevent multiple executions immediately
                     self._last_order_time[crypto_sym] = datetime.now(timezone.utc)
