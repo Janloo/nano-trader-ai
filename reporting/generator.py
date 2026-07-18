@@ -445,12 +445,18 @@ def generate_dashboard():
                         </div>
                     </div>
                     <div class="flex items-center gap-4">
+                        <!-- Market Clock -->
+                        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 hidden sm:flex" id="marketClockContainer">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">US Market</span>
+                            <span id="marketStatus" class="text-xs font-bold text-slate-500">...</span>
+                            <span id="marketTimer" class="text-[11px] font-mono text-slate-400 ml-1"></span>
+                        </div>
                         <!-- Environment selector -->
                         <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Env:</span>
-                            <select id="envSelect" onchange="changeEnvironment()" class="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-none focus:border-blue-500 cursor-pointer">
-                                <option value="sandbox">Sandbox (Paper)</option>
-                                <option value="production">Production (Live)</option>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden sm:block">Env:</span>
+                            <select id="envSelect" onchange="changeEnvironment()" class="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs font-bold text-white focus:outline-none focus:border-blue-500 cursor-pointer">
+                                <option value="sandbox">Sandbox</option>
+                                <option value="production">Live</option>
                             </select>
                         </div>
                         <!-- Live Auto-Refresh toggle -->
@@ -1362,6 +1368,64 @@ def generate_dashboard():
                 btn.classList.add("border-emerald-500/50", "text-emerald-400");
             }}
         }});
+
+        // Market Clock Logic
+        function updateMarketClock() {{
+            const now = new Date();
+            const nyTimeString = now.toLocaleString("en-US", {{timeZone: "America/New_York"}});
+            const nyTime = new Date(nyTimeString);
+            
+            const day = nyTime.getDay();
+            const h = nyTime.getHours();
+            const m = nyTime.getMinutes();
+            const s = nyTime.getSeconds();
+
+            const isWeekend = day === 0 || day === 6;
+            const currentTimeStr = h * 3600 + m * 60 + s;
+            const marketOpen = 9 * 3600 + 30 * 60; // 9:30 AM
+            const marketClose = 16 * 3600; // 4:00 PM
+
+            let status = "CLOSED";
+            let color = "text-rose-400";
+            let timeDiff = 0;
+
+            if (!isWeekend && currentTimeStr >= marketOpen && currentTimeStr < marketClose) {{
+                status = "OPEN";
+                color = "text-emerald-400";
+                timeDiff = marketClose - currentTimeStr;
+            }} else {{
+                status = "CLOSED";
+                color = "text-rose-400";
+                if (isWeekend) {{
+                    let daysToAdd = day === 6 ? 2 : 1;
+                    timeDiff = (24 * 3600 - currentTimeStr) + marketOpen + ((daysToAdd - 1) * 24 * 3600);
+                }} else {{
+                    if (currentTimeStr < marketOpen) {{
+                        timeDiff = marketOpen - currentTimeStr;
+                    }} else {{
+                        let daysToAdd = day === 5 ? 3 : 1;
+                        timeDiff = (24 * 3600 - currentTimeStr) + marketOpen + ((daysToAdd - 1) * 24 * 3600);
+                    }}
+                }}
+            }}
+
+            const hLeft = Math.floor(timeDiff / 3600);
+            const mLeft = Math.floor((timeDiff % 3600) / 60);
+            const sLeft = timeDiff % 60;
+            const timerStr = (status === "OPEN" ? "Closes in " : "Opens in ") + 
+                             (hLeft > 24 ? Math.floor(hLeft/24) + "d " + (hLeft%24) + "h " : (hLeft > 0 ? hLeft + "h " : "")) + 
+                             mLeft + "m " + sLeft + "s";
+
+            const statusEl = document.getElementById("marketStatus");
+            const timerEl = document.getElementById("marketTimer");
+            if (statusEl && timerEl) {{
+                statusEl.textContent = status;
+                statusEl.className = "text-xs font-bold " + color;
+                timerEl.textContent = timerStr;
+            }}
+        }}
+        setInterval(updateMarketClock, 1000);
+        updateMarketClock();
     </script>
 </body>
 </html>
