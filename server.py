@@ -83,26 +83,43 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             gemini_status = "failed"
             gemini_error = ""
             
+            cache_file = os.path.join("data", "state", "api_key_cache.json")
+            cache_data = {}
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        cache_data = json.load(f)
+                except Exception:
+                    pass
+            
             # Check Alpaca Key ID / Secret Key connection
             if api_key and secret_key:
                 if "your_api" in api_key.lower() or "your_api" in secret_key.lower():
                     alpaca_status = "failed"
                     alpaca_error = "API key or Secret key is using default placeholder values."
                 else:
-                    try:
-                        from alpaca.trading.client import TradingClient
-                        is_paper = "paper" in base_url.lower()
-                        tc = TradingClient(
-                            api_key=api_key.strip(),
-                            secret_key=secret_key.strip(),
-                            paper=is_paper,
-                            url_override=base_url.strip()
-                        )
-                        tc.get_account()
+                    cache_key_alpaca = f"{api_key}:{secret_key}:{base_url}"
+                    if cache_data.get("alpaca_key") == cache_key_alpaca and cache_data.get("alpaca_status") == "connected":
                         alpaca_status = "connected"
-                    except Exception as e:
-                        logger.warning(f"Connection check failed for Alpaca API: {e}")
-                        alpaca_error = str(e)
+                    else:
+                        try:
+                            from alpaca.trading.client import TradingClient
+                            is_paper = "paper" in base_url.lower()
+                            tc = TradingClient(
+                                api_key=api_key.strip(),
+                                secret_key=secret_key.strip(),
+                                paper=is_paper,
+                                url_override=base_url.strip()
+                            )
+                            tc.get_account()
+                            alpaca_status = "connected"
+                            cache_data["alpaca_key"] = cache_key_alpaca
+                            cache_data["alpaca_status"] = "connected"
+                        except Exception as e:
+                            logger.warning(f"Connection check failed for Alpaca API: {e}")
+                            alpaca_error = str(e)
+                            cache_data["alpaca_key"] = cache_key_alpaca
+                            cache_data["alpaca_status"] = "failed"
 
             # Check Gemini Key connection
             if gemini_key:
@@ -110,15 +127,29 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                     gemini_status = "failed"
                     gemini_error = "Gemini key is missing or using default placeholder value."
                 else:
-                    try:
-                        from google import genai
-                        client = genai.Client(api_key=gemini_key.strip())
-                        # list_models() returns an iterator; evaluate the first element to force the API call
-                        next(client.models.list(), None)
+                    if cache_data.get("gemini_key") == gemini_key and cache_data.get("gemini_status") == "connected":
                         gemini_status = "connected"
-                    except Exception as e:
-                        logger.warning(f"Connection check failed for Gemini API: {e}")
-                        gemini_error = str(e)
+                    else:
+                        try:
+                            from google import genai
+                            client = genai.Client(api_key=gemini_key.strip())
+                            # list_models() returns an iterator; evaluate the first element to force the API call
+                            next(client.models.list(), None)
+                            gemini_status = "connected"
+                            cache_data["gemini_key"] = gemini_key
+                            cache_data["gemini_status"] = "connected"
+                        except Exception as e:
+                            logger.warning(f"Connection check failed for Gemini API: {e}")
+                            gemini_error = str(e)
+                            cache_data["gemini_key"] = gemini_key
+                            cache_data["gemini_status"] = "failed"
+
+            try:
+                os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump(cache_data, f)
+            except Exception:
+                pass
 
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

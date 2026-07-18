@@ -252,6 +252,9 @@ def run_iteration(
     bias_assets = []
     sentiment_threshold = universe_config.get("sentiment_threshold", 0.75)
 
+    analytics_path = os.path.join("data", "archives", "ai_analytics_logs.jsonl")
+    os.makedirs(os.path.dirname(analytics_path), exist_ok=True)
+
     for asset in selected_assets:
         symbol = asset["symbol"]
         sentiment_score = asset.get("sentiment_score", 0.0)
@@ -262,10 +265,13 @@ def run_iteration(
         # Determine bias from sentiment score
         if sentiment_score >= sentiment_threshold:
             bias = "BULLISH"
+            action = "BUY"
         elif sentiment_score <= -sentiment_threshold:
             bias = "BEARISH"
+            action = "SELL"
         else:
             bias = "NEUTRAL"
+            action = "HOLD"
 
         bias_assets.append({
             "symbol": symbol,
@@ -279,6 +285,27 @@ def run_iteration(
             f"[DAS Phase 3] {symbol} | Bias: {bias} | "
             f"Score: {sentiment_score:.2f} | Type: {asset_type}"
         )
+
+        # Write AI Telemetry logs for Dashboard
+        telemetry_record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "asset": symbol,
+            "price": 0.0, # Fetching live price here would slow down macro execution
+            "raw_news_titles": [n.get("title", "") for n in feed_payload if n.get("source") in (f"Alpaca - {symbol}", "Macro News")][:5],
+            "ai_raw_output": {
+                "action": action,
+                "confidence": int(abs(sentiment_score) * 100),
+                "sentiment_score": sentiment_score
+            },
+            "execution_success": True,
+            "error_details": "",
+            "feedback_loop_metric": {}
+        }
+        try:
+            with open(analytics_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(telemetry_record) + "\n")
+        except Exception as e:
+            logger.error(f"Failed to append to ai_analytics_logs.jsonl: {e}")
 
     # Write market_bias.json atomically (write to .tmp then replace)
     _write_market_bias(bias_assets, len(macro_articles))
