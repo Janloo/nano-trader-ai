@@ -23,3 +23,6 @@ data/*.json
 data/*.txt
 dashboard.html
 *.log
+
+data/state/ws_triggers.json
+data/state/realtime_price_history.json
