@@ -221,9 +221,9 @@ def generate_dashboard():
     if not logbook_rows:
         logbook_rows.append('<div class="py-6 text-center text-slate-500 text-sm">No logbook diagnostics recorded yet.</div>')
 
-    # 4. Load AI Dynamic Asset Selection data
-    daily_selection = {"selected_assets": [], "timestamp": "", "macro_articles_analyzed": 0}
-    selection_path = os.path.join("data", "state", "daily_selection.json")
+    # 4. Load AI Live Market Bias data
+    daily_selection = {"target_assets": [], "timestamp": "", "macro_articles_analyzed": 0}
+    selection_path = os.path.join("data", "state", "market_bias.json")
     if os.path.exists(selection_path):
         try:
             with open(selection_path, "r", encoding="utf-8") as f:
@@ -231,11 +231,11 @@ def generate_dashboard():
                 if content:
                     daily_selection = json.loads(content)
         except Exception as e:
-            print(f"Error loading daily_selection.json: {e}")
+            print(f"Error loading market_bias.json: {e}")
 
     # Build DAS selection cards HTML
     das_cards_html = ""
-    das_selected_assets = daily_selection.get("selected_assets", [])
+    das_selected_assets = daily_selection.get("target_assets", [])
     das_timestamp = daily_selection.get("timestamp", "")
     das_articles_count = daily_selection.get("macro_articles_analyzed", 0)
 
@@ -276,6 +276,8 @@ def generate_dashboard():
             score_pct = int(abs(score) * 100)
             score_color = "bg-emerald-500" if score >= 0 else "bg-rose-500"
             score_label_color = "text-emerald-400" if score >= 0 else "text-rose-400"
+            bias_text = asset.get("bias", "BULLISH" if score >= 0 else "BEARISH").upper()
+            strength_label = f"{bias_text} Strength"
 
             das_cards_html += f"""
             <div class="relative overflow-hidden rounded-2xl border border-slate-700/60 bg-gradient-to-br from-slate-900/80 to-slate-800/40 p-5 backdrop-blur-md">
@@ -288,14 +290,14 @@ def generate_dashboard():
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="text-2xl font-bold {score_label_color}">{score:+.2f}</div>
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider">Sentiment</div>
+                        <div class="text-xl font-bold {score_label_color}">{bias_text}</div>
+                        <div class="text-[10px] text-slate-500 uppercase tracking-wider">Live Bias</div>
                     </div>
                 </div>
                 <div class="mb-3">
                     <div class="flex justify-between text-[10px] text-slate-500 mb-1">
-                        <span>Bullish Strength</span>
-                        <span>{score_pct}%</span>
+                        <span>{strength_label}</span>
+                        <span class="{score_label_color} font-bold">{score_pct}%</span>
                     </div>
                     <div class="w-full bg-slate-800 rounded-full h-1.5">
                         <div class="{score_color} h-1.5 rounded-full transition-all" style="width: {score_pct}%"></div>
