@@ -656,19 +656,25 @@ def generate_dashboard():
             </div>
 
             <!-- Market News Feed -->
-            <div class="mb-8 rounded-2xl border border-slate-700/60 bg-slate-900/30 p-6 backdrop-blur-md">
-                <div class="flex items-center justify-between mb-5">
+            <details class="group mb-8 rounded-2xl border border-slate-700/60 bg-slate-900/30 backdrop-blur-md overflow-hidden">
+                <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-slate-800/40 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <div>
-                        <h2 class="text-lg font-bold text-white">📰 Market News Feed</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">
-                            Real-time intelligence feed consumed by the AI
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            📰 Market News Feed
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5 ml-7">
+                            Click to expand and view the real-time intelligence feed consumed by the AI
                         </p>
                     </div>
+                    <div class="px-3 py-1 text-xs font-bold bg-slate-800 text-slate-300 rounded-full border border-slate-700">{len(market_news)} Articles</div>
+                </summary>
+                <div class="px-6 pb-6 pt-2 border-t border-slate-800/40">
+                    <div class="overflow-y-auto pr-2" style="max-height: 400px;">
+                        {news_feed_html}
+                    </div>
                 </div>
-                <div class="overflow-y-auto pr-2" style="max-height: 400px;">
-                    {news_feed_html}
-                </div>
-            </div>
+            </details>
 
             <!-- Macro Market Context (TradingView) -->
             <div class="mb-8 rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md">
