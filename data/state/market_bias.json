@@ -1,21 +1,21 @@
 {
     "target_assets": [
         {
-            "symbol": "BTCUSD",
-            "bias": "NEUTRAL",
-            "sentiment_score": 0.0,
-            "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
-            "asset_type": "crypto"
+            "symbol": "NVDA",
+            "bias": "BEARISH",
+            "sentiment_score": -0.85,
+            "reasoning": "A severe and broadening sell-off across semiconductor stocks is heavily weighing on the near-term outlook for chipmakers.",
+            "asset_type": "equity"
         },
         {
-            "symbol": "ETHUSD",
-            "bias": "NEUTRAL",
-            "sentiment_score": 0.0,
-            "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
-            "asset_type": "crypto"
+            "symbol": "QQQ",
+            "bias": "BEARISH",
+            "sentiment_score": -0.8,
+            "reasoning": "The Nasdaq faces intense downward pressure driven by a global tech sell-off and hawkish Federal Reserve commentary on interest rates.",
+            "asset_type": "equity"
         }
     ],
-    "timestamp": "2026-07-18T11:41:58.129215+00:00",
-    "expires_at": "2026-07-18T13:41:58.129215+00:00",
+    "timestamp": "2026-07-18T13:55:28.221428+00:00",
+    "expires_at": "2026-07-18T15:55:28.221428+00:00",
     "macro_articles_analyzed": 30
 }

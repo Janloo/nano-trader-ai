@@ -30,7 +30,8 @@ def fetch_price_at_time(client: AlpacaClientWrapper, symbol: str, target_time: d
             times = df.index
             time_diffs = []
             for t in times:
-                t_utc = t.tz_convert(timezone.utc) if t.tzinfo else t.replace(tzinfo=timezone.utc)
+                t_val = t[1] if isinstance(t, tuple) else t
+                t_utc = t_val.tz_convert(timezone.utc) if getattr(t_val, 'tzinfo', None) else t_val.replace(tzinfo=timezone.utc)
                 time_diffs.append(abs(t_utc - target_time))
                 
             df['diff'] = time_diffs

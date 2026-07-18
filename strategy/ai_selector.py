@@ -11,7 +11,8 @@ import time
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from config.settings import GEMINI_API_KEY, logger
 
 
@@ -54,8 +55,8 @@ class GeminiAssetSelector:
         self.is_mocked = not self.api_key or "YOUR_GEMINI_API_KEY" in self.api_key
 
         if not self.is_mocked:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel("gemini-2.0-flash")
+            self.client = genai.Client(api_key=self.api_key)
+            self.model_name = "gemini-3.1-pro-preview"
         else:
             logger.warning("[DAS] No GEMINI_API_KEY found. Running Asset Selector in MOCK mode.")
 
@@ -106,9 +107,12 @@ class GeminiAssetSelector:
 
         for attempt in range(max_retries):
             try:
-                response = self.model.generate_content(
+                response = self.client.models.generate_content(
+                    model=self.model_name,
                     contents=f"{system_prompt}\n\n{user_content}",
-                    generation_config={"response_mime_type": "application/json"}
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
                 )
                 raw_text = response.text.strip()
 
