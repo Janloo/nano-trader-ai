@@ -680,13 +680,14 @@ class RealtimeExecutor:
 
         from alpaca.data.live.crypto import CryptoDataStream
         from alpaca.data.live.stock import StockDataStream
+        from alpaca.data.enums import DataFeed
 
         # Map symbols to Alpaca format
         ws_symbols = [s.replace("BTCUSD", "BTC/USD").replace("ETHUSD", "ETH/USD") for s in self.symbols]
 
         crypto_stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
         # Using IEX as it's free and sufficient for large cap tracking like QQQ
-        stock_stream = StockDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY, feed="iex")
+        stock_stream = StockDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY, feed=DataFeed.IEX)
 
         async def crypto_handler(bar):
             self.on_bar(bar)
