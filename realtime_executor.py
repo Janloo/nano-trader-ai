@@ -30,7 +30,7 @@ from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, logger
 DIP_THRESHOLD_PCT = -0.50      # Minimum % drop to trigger a DIP signal
 DIP_WINDOW_SECONDS = 300      # 5-minute rolling window
 ORDER_COOLDOWN_SECONDS = 300  # 5 minutes between orders on same asset
-BIAS_EXPIRY_HOURS = 2         # Bias older than this = NEUTRAL (stale)
+BIAS_EXPIRY_HOURS = 72        # Temporarily extended for the weekend
 NOTIONAL_USD = 10.00          # Order size per trigger
 
 BIAS_FILE = os.path.join("data", "state", "market_bias.json")
