@@ -10,60 +10,32 @@ from config.settings import logger
 class AITrader:
     def __init__(self, client: AlpacaClientWrapper):
         self.client = client
-        self.file_path = os.path.join("data", "trades.json")
-        self.analytics_path = os.path.join("data", "ai_analytics_logs.json")
+        self.trades_path = os.path.join("data", "archives", "trades.jsonl")
+        self.portfolio_path = os.path.join("data", "archives", "portfolio_history.jsonl")
+        self.analytics_path = os.path.join("data", "archives", "ai_analytics_logs.jsonl")
 
-    def _read_data(self) -> dict:
-        """Reads trades.json database file."""
-        if not os.path.exists(self.file_path):
-            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-            return {"portfolio_history": [], "trades": []}
+    def _append_jsonl(self, path: str, record: dict):
+        """Appends a dictionary as a JSON Line to the specified file."""
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-                if not content:
-                    return {"portfolio_history": [], "trades": []}
-                return json.loads(content)
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
         except Exception as e:
-            logger.error(f"Error reading trades.json: {e}")
-            return {"portfolio_history": [], "trades": []}
-
-    def _write_data(self, data: dict):
-        """Writes data to trades.json database file."""
-        try:
-            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-            with open(self.file_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=4)
-        except Exception as e:
-            logger.error(f"Error writing to trades.json: {e}")
+            logger.error(f"Error appending to {path}: {e}")
 
     def log_portfolio_status(self, equity: float, buying_power: float, unrealized_pnl: float, average_sentiment: float):
         """Saves current portfolio value and the run's average AI sentiment score to history."""
-        data = self._read_data()
-        data["portfolio_history"].append({
+        self._append_jsonl(self.portfolio_path, {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "equity": equity,
             "buying_power": buying_power,
             "unrealized_pnl": unrealized_pnl,
             "average_sentiment": average_sentiment
         })
-        self._write_data(data)
 
     def log_ai_analytics(self, symbol: str, current_price: float, raw_news_titles: List[str], ai_raw_output: dict, execution_success: bool, error_details: str):
-        """Logs detailed AI decision telemetry to data/ai_analytics_logs.json."""
-        if not os.path.exists(self.analytics_path):
-            os.makedirs(os.path.dirname(self.analytics_path), exist_ok=True)
-            logs = []
-        else:
-            try:
-                with open(self.analytics_path, "r", encoding="utf-8") as f:
-                    content = f.read().strip()
-                    logs = json.loads(content) if content else []
-            except Exception as e:
-                logger.error(f"Error reading ai_analytics_logs.json: {e}")
-                logs = []
-
-        logs.append({
+        """Logs detailed AI decision telemetry to data/archives/ai_analytics_logs.jsonl."""
+        self._append_jsonl(self.analytics_path, {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "asset": symbol,
             "price": current_price,
@@ -78,12 +50,6 @@ class AITrader:
                 "return_4h": None
             }
         })
-
-        try:
-            with open(self.analytics_path, "w", encoding="utf-8") as f:
-                json.dump(logs, f, indent=4)
-        except Exception as e:
-            logger.error(f"Error writing to ai_analytics_logs.json: {e}")
 
     def execute_ai_decision(self, symbol: str, ai_decision: dict, current_price: float, positions: List, raw_news_titles: List[str]) -> Optional[str]:
         """
@@ -144,8 +110,7 @@ class AITrader:
                         pass
 
                 # Append transaction item to database
-                data = self._read_data()
-                data["trades"].append({
+                self._append_jsonl(self.trades_path, {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "order_id": order_id,
                     "symbol": symbol,
@@ -155,11 +120,10 @@ class AITrader:
                     "price": price,
                     "sentiment_score": sentiment_score,
                     "reasoning": reasoning,
-                    "execution_type": ai_decision.get("execution_type", "cron_macro"),
+                    "execution_type": ai_decision.get("execution_type", "macro_daily_decision"),
                     "das_selected": ai_decision.get("das_selected", False),
                     "das_reasoning": ai_decision.get("das_reasoning", "")
                 })
-                self._write_data(data)
                 
                 logger.info(f"[{symbol} AI Trader] Order placed and logged. ID: {order_id}")
                 self.log_ai_analytics(symbol, current_price, raw_news_titles, ai_decision, True, "")
@@ -170,7 +134,7 @@ class AITrader:
                 # Catch closed market errors (like "market is closed" or code 400101) for SPY specifically
                 if symbol == "SPY" and ("closed" in err_msg.lower() or "not open" in err_msg.lower() or "400101" in err_msg):
                     log_msg = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [WEEKEND] Mercato azionario USA chiuso. Ordine su SPY posticipato alla riapertura di Lunedi'."
-                    log_path = os.path.join("data", "human_logbook.txt")
+                    log_path = os.path.join("data", "archives", "human_logbook.txt")
                     os.makedirs(os.path.dirname(log_path), exist_ok=True)
                     try:
                         with open(log_path, "a", encoding="utf-8") as f:

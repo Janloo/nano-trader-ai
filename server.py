@@ -40,7 +40,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
 
         # Serve static database file trades.json
         if clean_path == "/data/trades.json":
-            filepath = "data/trades.json"
+            filepath = "data/archives/trades.jsonl"
             if not os.path.exists(filepath):
                 content = b'{"portfolio_history": [], "trades": []}'
             else:
@@ -55,7 +55,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
 
         # Serve static database file ai_analytics_logs.json
         if clean_path == "/data/ai_analytics_logs.json":
-            filepath = "data/ai_analytics_logs.json"
+            filepath = "data/archives/ai_analytics_logs.jsonl"
             if not os.path.exists(filepath):
                 content = b'[]'
             else:

@@ -65,7 +65,7 @@ def _market_status_str() -> str:
 
 def _save_daily_selection(selected_assets: list, macro_article_count: int):
     """Persists the current AI selection to data/daily_selection.json for the dashboard."""
-    selection_path = os.path.join("data", "daily_selection.json")
+    selection_path = os.path.join("data", "state", "daily_selection.json")
     os.makedirs(os.path.dirname(selection_path), exist_ok=True)
     payload = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -85,7 +85,7 @@ def _write_market_bias(bias_assets: list, macro_article_count: int):
     Uses write-to-tmp + os.replace() to prevent partial reads during concurrent access.
     Bias expires after 2 hours (set in expires_at).
     """
-    bias_path = os.path.join("data", "market_bias.json")
+    bias_path = os.path.join("data", "state", "market_bias.json")
     tmp_path = bias_path + ".tmp"
     os.makedirs(os.path.dirname(bias_path), exist_ok=True)
 

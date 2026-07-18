@@ -13,47 +13,30 @@ class OrderExecutor:
     def __init__(self, client: AlpacaClientWrapper):
         self.client = client
 
-    def _read_data(self) -> dict:
-        """Reads persisted portfolio and trade data from JSON file."""
-        file_path = os.path.join("data", "trades.json")
-        if not os.path.exists(file_path):
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            return {"portfolio_history": [], "trades": []}
-        try:
-            with open(file_path, "r") as f:
-                content = f.read().strip()
-                if not content:
-                    return {"portfolio_history": [], "trades": []}
-                return json.loads(content)
-        except Exception as e:
-            logger.error(f"Error reading trades.json: {e}")
-            return {"portfolio_history": [], "trades": []}
+        self.trades_path = os.path.join("data", "archives", "trades.jsonl")
+        self.portfolio_path = os.path.join("data", "archives", "portfolio_history.jsonl")
 
-    def _write_data(self, data: dict):
-        """Writes portfolio and trade data to JSON file."""
-        file_path = os.path.join("data", "trades.json")
+    def _append_jsonl(self, path: str, record: dict):
+        """Appends a dictionary as a JSON Line to the specified file."""
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         try:
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, "w") as f:
-                json.dump(data, f, indent=4)
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
         except Exception as e:
-            logger.error(f"Error writing to trades.json: {e}")
+            logger.error(f"Error appending to {path}: {e}")
 
     def log_portfolio_status(self, equity: float, buying_power: float, unrealized_pnl: float):
         """Appends portfolio snapshot status to historical logs."""
-        data = self._read_data()
-        data["portfolio_history"].append({
+        self._append_jsonl(self.portfolio_path, {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "equity": equity,
             "buying_power": buying_power,
             "unrealized_pnl": unrealized_pnl
         })
-        self._write_data(data)
 
     def log_trade(self, symbol: str, side: str, qty: float, notional: float, price: float, order_id: str):
         """Appends transaction trade details to historical logs."""
-        data = self._read_data()
-        data["trades"].append({
+        self._append_jsonl(self.trades_path, {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "order_id": order_id,
             "symbol": symbol,
@@ -62,7 +45,6 @@ class OrderExecutor:
             "notional": notional,
             "price": price
         })
-        self._write_data(data)
 
     def get_position_for_symbol(self, symbol: str, positions: List[Position]) -> Optional[Position]:
         """Finds the open position for a given symbol from a list of open positions (slash-insensitive)."""

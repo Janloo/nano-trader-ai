@@ -33,10 +33,10 @@ ORDER_COOLDOWN_SECONDS = 300  # 5 minutes between orders on same asset
 BIAS_EXPIRY_HOURS = 2         # Bias older than this = NEUTRAL (stale)
 NOTIONAL_USD = 5.00           # Order size per trigger
 
-BIAS_FILE = os.path.join("data", "market_bias.json")
-TRADES_FILE = os.path.join("data", "trades.json")
-WS_LOG_FILE = os.path.join("data", "ws_triggers.json")
-LOGBOOK_FILE = os.path.join("data", "human_logbook.txt")
+BIAS_FILE = os.path.join("data", "state", "market_bias.json")
+TRADES_FILE_JSONL = os.path.join("data", "archives", "trades.jsonl")
+WS_LOG_FILE = os.path.join("data", "state", "ws_triggers.json")
+LOGBOOK_FILE = os.path.join("data", "archives", "human_logbook.txt")
 
 
 # ─────────────────────────────────────────────
@@ -175,17 +175,10 @@ class WSTradeLogger:
     @staticmethod
     def log_trade(symbol: str, price: float, qty: float, order_id: str,
                   sentiment_score: float, reasoning: str, dip_pct: float):
-        """Appends a WebSocket-triggered trade to trades.json."""
-        os.makedirs(os.path.dirname(TRADES_FILE), exist_ok=True)
+        """Appends a WebSocket-triggered trade to trades.jsonl."""
+        os.makedirs(os.path.dirname(TRADES_FILE_JSONL), exist_ok=True)
         try:
-            data = {"portfolio_history": [], "trades": []}
-            if os.path.exists(TRADES_FILE):
-                with open(TRADES_FILE, "r", encoding="utf-8") as f:
-                    content = f.read().strip()
-                    if content:
-                        data = json.loads(content)
-
-            data["trades"].append({
+            trade_data = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "order_id": order_id,
                 "symbol": symbol,
@@ -199,10 +192,10 @@ class WSTradeLogger:
                 "dip_pct": round(dip_pct, 4),
                 "das_selected": True,
                 "das_reasoning": reasoning
-            })
+            }
 
-            with open(TRADES_FILE, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=4)
+            with open(TRADES_FILE_JSONL, "a", encoding="utf-8") as f:
+                f.write(json.dumps(trade_data) + "\n")
         except Exception as e:
             logger.error(f"[WS] Failed to log trade: {e}")
 
@@ -219,7 +212,7 @@ class WSTradeLogger:
     @staticmethod
     def log_price(symbol: str, price: float, timestamp: datetime):
         """Logs a price point to data/realtime_price_history.json, keeping the last 200 points."""
-        history_file = os.path.join("data", "realtime_price_history.json")
+        history_file = os.path.join("data", "state", "realtime_price_history.json")
         os.makedirs(os.path.dirname(history_file), exist_ok=True)
         try:
             history = {}

@@ -8,9 +8,20 @@ load_dotenv()
 
 # Logger configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+
+log_dir = os.path.join("data", "logs")
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, "nano_trader.log")
+
+from logging.handlers import TimedRotatingFileHandler
+file_handler = TimedRotatingFileHandler(log_file, when="midnight", interval=1, backupCount=7)
+file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.INFO),
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    handlers=[stream_handler, file_handler]
 )
 logger = logging.getLogger("nano-trader-ai")
 

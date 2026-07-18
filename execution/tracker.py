@@ -44,16 +44,18 @@ def update_feedback_loop_metrics(client: Optional[AlpacaClientWrapper]):
     """
     Scans data/ai_analytics_logs.json and updates metrics for entries older than +1h or +4h.
     """
-    file_path = os.path.join("data", "ai_analytics_logs.json")
+    file_path = os.path.join("data", "archives", "ai_analytics_logs.jsonl")
     if not os.path.exists(file_path) or client is None:
         return
 
+    logs = []
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read().strip()
-            logs = json.loads(content) if content else []
+            for line in f:
+                if line.strip():
+                    logs.append(json.loads(line))
     except Exception as e:
-        logger.error(f"Failed to read ai_analytics_logs.json for feedback update: {e}")
+        logger.error(f"Failed to read ai_analytics_logs.jsonl for feedback update: {e}")
         return
 
     updated = False

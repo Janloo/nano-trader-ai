@@ -198,7 +198,7 @@ class GeminiAssetSelector:
             "[API WARNING] DAS: Quota Gemini esaurita nella selezione asset. "
             "Il bot riprovera' al prossimo ciclo orario."
         )
-        log_path = os.path.join("data", "human_logbook.txt")
+        log_path = os.path.join("data", "archives", "human_logbook.txt")
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         try:
             with open(log_path, "a", encoding="utf-8") as f:

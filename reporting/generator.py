@@ -2,36 +2,37 @@ import json
 import os
 from datetime import datetime
 
+
+def read_jsonl(filepath):
+    data = []
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        data.append(json.loads(line))
+        except Exception as e:
+            print(f"Error reading jsonl {filepath}: {e}")
+    return data
+
 def generate_dashboard():
     """Reads trades.json and ai_analytics_logs.json to auto-generate an interactive Control Room HTML dashboard."""
-    json_path = os.path.join("data", "trades.json")
-    analytics_path = os.path.join("data", "ai_analytics_logs.json")
+    json_path = os.path.join("data", "archives", "trades.jsonl")
+    analytics_path = os.path.join("data", "archives", "ai_analytics_logs.jsonl")
     html_path = "dashboard.html"
 
     # Default structures
     data = {"portfolio_history": [], "trades": []}
     ai_logs = []
 
-    if os.path.exists(json_path):
-        try:
-            with open(json_path, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-                if content:
-                    data = json.loads(content)
-        except Exception as e:
-            print(f"Error loading trades.json for reporting: {e}")
+    portfolio_path = os.path.join("data", "archives", "portfolio_history.jsonl")
+    data["trades"] = read_jsonl(json_path)
+    data["portfolio_history"] = read_jsonl(portfolio_path)
 
-    if os.path.exists(analytics_path):
-        try:
-            with open(analytics_path, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-                if content:
-                    ai_logs = json.loads(content)
-        except Exception as e:
-            print(f"Error loading ai_analytics_logs.json for reporting: {e}")
+    ai_logs = read_jsonl(analytics_path)
 
     ws_triggers = []
-    ws_triggers_path = os.path.join("data", "ws_triggers.json")
+    ws_triggers_path = os.path.join("data", "state", "ws_triggers.json")
     if os.path.exists(ws_triggers_path):
         try:
             with open(ws_triggers_path, "r", encoding="utf-8") as f:
@@ -42,7 +43,7 @@ def generate_dashboard():
             print(f"Error loading ws_triggers.json for reporting: {e}")
 
     price_history = {}
-    price_history_path = os.path.join("data", "realtime_price_history.json")
+    price_history_path = os.path.join("data", "state", "realtime_price_history.json")
     if os.path.exists(price_history_path):
         try:
             with open(price_history_path, "r", encoding="utf-8") as f:
@@ -185,7 +186,7 @@ def generate_dashboard():
 
     # 3. Read and format human-readable logbook entries
     logbook_rows = []
-    logbook_path = os.path.join("data", "human_logbook.txt")
+    logbook_path = os.path.join("data", "archives", "human_logbook.txt")
     if os.path.exists(logbook_path):
         try:
             with open(logbook_path, "r", encoding="utf-8") as f:
@@ -222,7 +223,7 @@ def generate_dashboard():
 
     # 4. Load AI Dynamic Asset Selection data
     daily_selection = {"selected_assets": [], "timestamp": "", "macro_articles_analyzed": 0}
-    selection_path = os.path.join("data", "daily_selection.json")
+    selection_path = os.path.join("data", "state", "daily_selection.json")
     if os.path.exists(selection_path):
         try:
             with open(selection_path, "r", encoding="utf-8") as f:
