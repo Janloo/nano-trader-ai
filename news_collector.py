@@ -4,6 +4,59 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any
 from config.settings import logger
+from alpaca.data.historical.news import NewsClient
+from alpaca.data.requests import NewsRequest
+
+def fetch_alpaca_news(symbol: str, api_key: str, secret_key: str) -> List[Dict[str, Any]]:
+    """
+    Fetches latest news from Alpaca/Benzinga for a specific symbol.
+    Provides high-quality, trading-specific summaries and headlines.
+    """
+    logger.info(f"Fetching Alpaca News for '{symbol}'")
+    try:
+        news_client = NewsClient(api_key=api_key, secret_key=secret_key)
+        
+        # Format symbol for Alpaca (e.g. BTCUSD -> BTC/USD)
+        query_symbol = symbol.replace("USD", "/USD") if "USD" in symbol and ("BTC" in symbol or "ETH" in symbol) else symbol
+        
+        req = NewsRequest(symbols=query_symbol, limit=10)
+        news_response = news_client.get_news(req)
+        
+        articles = []
+        news_list = news_response.news if hasattr(news_response, 'news') else news_response.data.get('news', [])
+        
+        for article in news_list:
+            # Handle both dict and Pydantic object representations safely
+            is_dict = isinstance(article, dict)
+            created_at = article.get('created_at') if is_dict else getattr(article, 'created_at', None)
+            headline = article.get('headline', '') if is_dict else getattr(article, 'headline', '')
+            summary = article.get('summary', '') if is_dict else getattr(article, 'summary', '')
+            url = article.get('url', '') if is_dict else getattr(article, 'url', '')
+            
+            timestamp = ""
+            if created_at:
+                timestamp = created_at.isoformat() if hasattr(created_at, 'isoformat') else str(created_at)
+            
+            articles.append({
+                "title": headline,
+                "summary": summary,
+                "timestamp": timestamp,
+                "link": url
+            })
+            
+        logger.info(f"Retrieved {len(articles)} Alpaca news items for {symbol}")
+        
+        # If Alpaca returns no news (can happen for obscure assets), fallback to RSS
+        if not articles:
+            logger.info(f"No Alpaca news found for {symbol}, falling back to RSS")
+            return fetch_financial_news(symbol)
+            
+        return articles
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch Alpaca news for {symbol}: {e}. Falling back to RSS.")
+        return fetch_financial_news(symbol)
+
 
 def parse_rss_date(date_str: str) -> datetime:
     """

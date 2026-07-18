@@ -162,29 +162,45 @@ def run_iteration(
             logger.error(f"Error fetching account details: {e}")
             return
 
+    from news_collector import fetch_macro_news, fetch_alpaca_news
+
     # ─────────────────────────────────────────────
-    # Phase 1: Fetch global macro news headlines
+    # Phase 1: Fetch global macro news & specific asset news
     # ─────────────────────────────────────────────
     logger.info("[DAS Phase 1] Fetching global macro news...")
     macro_articles = fetch_macro_news(max_articles=30)
 
-    macro_news_text = ""
+    macro_news_text = "--- GLOBAL MACRO NEWS ---\n"
     for idx, art in enumerate(macro_articles, 1):
         macro_news_text += f"{idx}. [{art.get('feed', 'News')}] {art['title']}\n"
         if art.get("summary"):
             macro_news_text += f"   Summary: {art['summary'][:200]}\n"
         macro_news_text += "\n"
 
-    if not macro_news_text.strip():
-        macro_news_text = "No macro news articles retrieved in the last 24 hours."
-        logger.warning("[DAS Phase 1] No macro news found — proceeding with empty context.")
+    logger.info("[DAS Phase 1] Fetching asset-specific Alpaca news...")
+    universe_config = load_universe()
+    universe_assets = universe_config.get("assets", [])
+    
+    # Pre-fetch specific Alpaca news for the universe to give the AI an edge
+    macro_news_text += "\n--- ASSET-SPECIFIC NEWS (ALPACA) ---\n"
+    for asset in universe_assets:
+        symbol = asset["symbol"]
+        alpaca_articles = fetch_alpaca_news(symbol, APCA_API_KEY_ID, APCA_API_SECRET_KEY)
+        if alpaca_articles:
+            macro_news_text += f"\nLatest news for {symbol}:\n"
+            for idx, art in enumerate(alpaca_articles[:3], 1): # Top 3 per asset to save tokens
+                macro_news_text += f"{idx}. {art['title']}\n"
+                if art.get("summary"):
+                    macro_news_text += f"   Summary: {art['summary'][:150]}\n"
+
+    if not macro_news_text.strip() or len(macro_news_text) < 100:
+        macro_news_text = "No news articles retrieved in the last 24 hours."
+        logger.warning("[DAS Phase 1] No news found — proceeding with empty context.")
 
     # ─────────────────────────────────────────────
     # Phase 2: AI selects assets from universe
     # ─────────────────────────────────────────────
     logger.info("[DAS Phase 2] Running AI asset selection from universe...")
-    universe_config = load_universe()
-    universe_assets = universe_config.get("assets", [])
     sentiment_threshold = universe_config.get("sentiment_threshold", 0.75)
 
     selected_assets = selector.select_assets(universe_assets, macro_news_text)
