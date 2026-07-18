@@ -1,9 +1,9 @@
 [
     {
-        "timestamp": "2026-07-18T10:34:53.730859+00:00",
+        "timestamp": "2026-07-18T10:42:49.328142+00:00",
         "symbol": "BTCUSD",
-        "price": 62251.66579387007,
-        "dip_pct": -3.2536,
+        "price": 60291.97019592821,
+        "dip_pct": -5.6765,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -11,10 +11,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:34:53.761026+00:00",
+        "timestamp": "2026-07-18T10:42:49.379854+00:00",
         "symbol": "ETHUSD",
-        "price": 3093.6237102977802,
-        "dip_pct": -3.5705,
+        "price": 3044.846155478832,
+        "dip_pct": -5.2292,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -22,10 +22,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:34:55.807321+00:00",
+        "timestamp": "2026-07-18T10:42:51.427096+00:00",
         "symbol": "BTCUSD",
-        "price": 62312.35803565528,
-        "dip_pct": -3.1593,
+        "price": 60274.33490187835,
+        "dip_pct": -5.7041,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -33,10 +33,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:34:55.847001+00:00",
+        "timestamp": "2026-07-18T10:42:51.468719+00:00",
         "symbol": "ETHUSD",
-        "price": 3091.8267359548563,
-        "dip_pct": -3.6265,
+        "price": 3049.073516540342,
+        "dip_pct": -5.0976,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -44,10 +44,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:34:57.893808+00:00",
+        "timestamp": "2026-07-18T10:42:53.517626+00:00",
         "symbol": "BTCUSD",
-        "price": 62311.00055548095,
-        "dip_pct": -3.1614,
+        "price": 60248.55307808527,
+        "dip_pct": -5.7444,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -55,10 +55,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:34:57.935075+00:00",
+        "timestamp": "2026-07-18T10:42:53.565553+00:00",
         "symbol": "ETHUSD",
-        "price": 3089.255331948984,
-        "dip_pct": -3.7067,
+        "price": 3051.1646866117044,
+        "dip_pct": -5.0325,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -66,10 +66,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:34:59.971612+00:00",
+        "timestamp": "2026-07-18T10:42:55.611565+00:00",
         "symbol": "BTCUSD",
-        "price": 62325.56498234645,
-        "dip_pct": -3.1388,
+        "price": 60307.168783583686,
+        "dip_pct": -5.6527,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -77,10 +77,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:00.011289+00:00",
+        "timestamp": "2026-07-18T10:42:55.660391+00:00",
         "symbol": "ETHUSD",
-        "price": 3093.6182632627315,
-        "dip_pct": -3.5707,
+        "price": 3051.095795224656,
+        "dip_pct": -5.0347,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -88,10 +88,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:02.050288+00:00",
+        "timestamp": "2026-07-18T10:42:57.703482+00:00",
         "symbol": "BTCUSD",
-        "price": 62234.07397035834,
-        "dip_pct": -3.281,
+        "price": 60326.025792648405,
+        "dip_pct": -5.6232,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -99,10 +99,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:02.088394+00:00",
+        "timestamp": "2026-07-18T10:42:57.750978+00:00",
         "symbol": "ETHUSD",
-        "price": 3089.585063684542,
-        "dip_pct": -3.6964,
+        "price": 3053.797056232199,
+        "dip_pct": -4.9506,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -110,10 +110,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:04.126586+00:00",
+        "timestamp": "2026-07-18T10:42:59.810399+00:00",
         "symbol": "BTCUSD",
-        "price": 61810.8822673599,
-        "dip_pct": -3.9387,
+        "price": 60272.56264539105,
+        "dip_pct": -5.7069,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -121,10 +121,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:04.156851+00:00",
+        "timestamp": "2026-07-18T10:42:59.847036+00:00",
         "symbol": "ETHUSD",
-        "price": 3068.5758852514873,
-        "dip_pct": -4.3513,
+        "price": 3051.4232016024607,
+        "dip_pct": -5.0245,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -132,10 +132,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:06.193057+00:00",
+        "timestamp": "2026-07-18T10:43:01.906091+00:00",
         "symbol": "BTCUSD",
-        "price": 61749.54794678884,
-        "dip_pct": -4.034,
+        "price": 60225.44101945275,
+        "dip_pct": -5.7806,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -143,10 +143,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:06.223040+00:00",
+        "timestamp": "2026-07-18T10:43:01.943999+00:00",
         "symbol": "ETHUSD",
-        "price": 3071.2838876428605,
-        "dip_pct": -4.2668,
+        "price": 3051.7775671012155,
+        "dip_pct": -5.0135,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -154,10 +154,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:08.265812+00:00",
+        "timestamp": "2026-07-18T10:43:03.998732+00:00",
         "symbol": "BTCUSD",
-        "price": 61753.869998961345,
-        "dip_pct": -4.0273,
+        "price": 60194.44406014623,
+        "dip_pct": -5.8291,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -165,10 +165,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:08.304288+00:00",
+        "timestamp": "2026-07-18T10:43:04.045525+00:00",
         "symbol": "ETHUSD",
-        "price": 3073.1459458439936,
-        "dip_pct": -4.2088,
+        "price": 3048.919377354578,
+        "dip_pct": -5.1024,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -176,10 +176,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:10.355999+00:00",
+        "timestamp": "2026-07-18T10:43:06.100287+00:00",
         "symbol": "BTCUSD",
-        "price": 61845.224693582415,
-        "dip_pct": -3.8853,
+        "price": 60217.53345864073,
+        "dip_pct": -5.7929,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -187,10 +187,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:10.392367+00:00",
+        "timestamp": "2026-07-18T10:43:06.148095+00:00",
         "symbol": "ETHUSD",
-        "price": 3073.3122447900328,
-        "dip_pct": -4.2036,
+        "price": 3052.2989859412164,
+        "dip_pct": -4.9972,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -198,10 +198,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:12.439104+00:00",
+        "timestamp": "2026-07-18T10:43:08.202240+00:00",
         "symbol": "BTCUSD",
-        "price": 61910.20026818073,
-        "dip_pct": -3.7843,
+        "price": 59808.054231121976,
+        "dip_pct": -6.4335,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -209,10 +209,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:12.474455+00:00",
+        "timestamp": "2026-07-18T10:43:08.242469+00:00",
         "symbol": "ETHUSD",
-        "price": 3077.3340077611833,
-        "dip_pct": -4.0783,
+        "price": 3031.543352836816,
+        "dip_pct": -5.6433,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -220,10 +220,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:14.512854+00:00",
+        "timestamp": "2026-07-18T10:43:10.299363+00:00",
         "symbol": "BTCUSD",
-        "price": 61817.53518091461,
-        "dip_pct": -3.9283,
+        "price": 59848.81383860916,
+        "dip_pct": -6.3698,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -231,10 +231,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:35:14.548848+00:00",
+        "timestamp": "2026-07-18T10:43:10.342901+00:00",
         "symbol": "ETHUSD",
-        "price": 3073.6975457183503,
-        "dip_pct": -4.1916,
+        "price": 3029.0986829588155,
+        "dip_pct": -5.7194,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -242,10 +242,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:49.055411+00:00",
+        "timestamp": "2026-07-18T10:43:12.393318+00:00",
         "symbol": "BTCUSD",
-        "price": 63554.93697716782,
-        "dip_pct": -1.0212,
+        "price": 59856.23326072893,
+        "dip_pct": -6.3582,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -253,10 +253,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:49.094106+00:00",
+        "timestamp": "2026-07-18T10:43:12.428180+00:00",
         "symbol": "ETHUSD",
-        "price": 3187.1400748819683,
-        "dip_pct": -0.7743,
+        "price": 3028.7180241602773,
+        "dip_pct": -5.7312,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -264,10 +264,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:51.125237+00:00",
+        "timestamp": "2026-07-18T10:43:14.478692+00:00",
         "symbol": "BTCUSD",
-        "price": 63528.35917331247,
-        "dip_pct": -1.0626,
+        "price": 59911.12960723106,
+        "dip_pct": -6.2723,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -275,10 +275,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:51.161219+00:00",
+        "timestamp": "2026-07-18T10:43:14.530402+00:00",
         "symbol": "ETHUSD",
-        "price": 3187.8096128566985,
-        "dip_pct": -0.7535,
+        "price": 3030.110492852954,
+        "dip_pct": -5.6879,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -286,10 +286,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:53.205453+00:00",
+        "timestamp": "2026-07-18T10:43:16.584436+00:00",
         "symbol": "BTCUSD",
-        "price": 63466.52183118343,
-        "dip_pct": -1.1589,
+        "price": 59924.05643859496,
+        "dip_pct": -6.2521,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -297,10 +297,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:53.243478+00:00",
+        "timestamp": "2026-07-18T10:43:16.630966+00:00",
         "symbol": "ETHUSD",
-        "price": 3184.668984199131,
-        "dip_pct": -0.8513,
+        "price": 3027.9102681229456,
+        "dip_pct": -5.7563,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -308,10 +308,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:55.289219+00:00",
+        "timestamp": "2026-07-18T10:43:18.681203+00:00",
         "symbol": "BTCUSD",
-        "price": 63537.92535480794,
-        "dip_pct": -1.0477,
+        "price": 59995.64414208986,
+        "dip_pct": -6.1401,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -319,10 +319,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:55.334877+00:00",
+        "timestamp": "2026-07-18T10:43:18.722976+00:00",
         "symbol": "ETHUSD",
-        "price": 3182.9299706294564,
-        "dip_pct": -0.9054,
+        "price": 3031.978460136919,
+        "dip_pct": -5.6297,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -330,10 +330,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:57.370826+00:00",
+        "timestamp": "2026-07-18T10:43:20.778534+00:00",
         "symbol": "BTCUSD",
-        "price": 63626.99964030154,
-        "dip_pct": -0.9089,
+        "price": 60029.85964019735,
+        "dip_pct": -6.0865,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -341,10 +341,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:57.410947+00:00",
+        "timestamp": "2026-07-18T10:43:20.830953+00:00",
         "symbol": "ETHUSD",
-        "price": 3180.2902597573366,
-        "dip_pct": -0.9876,
+        "price": 3033.7083419030073,
+        "dip_pct": -5.5759,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -352,10 +352,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:59.453911+00:00",
+        "timestamp": "2026-07-18T10:43:22.885893+00:00",
         "symbol": "BTCUSD",
-        "price": 63559.23937359421,
-        "dip_pct": -1.0145,
+        "price": 60081.24199692299,
+        "dip_pct": -6.0062,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -363,10 +363,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:37:59.497040+00:00",
+        "timestamp": "2026-07-18T10:43:22.941140+00:00",
         "symbol": "ETHUSD",
-        "price": 3180.519630817579,
-        "dip_pct": -0.9805,
+        "price": 3038.05008029119,
+        "dip_pct": -5.4407,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -374,10 +374,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:01.544915+00:00",
+        "timestamp": "2026-07-18T10:43:24.996864+00:00",
         "symbol": "BTCUSD",
-        "price": 63551.32080699003,
-        "dip_pct": -1.0268,
+        "price": 60000.60750564887,
+        "dip_pct": -6.1323,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -385,10 +385,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:01.587013+00:00",
+        "timestamp": "2026-07-18T10:43:25.047750+00:00",
         "symbol": "ETHUSD",
-        "price": 3184.0870843560856,
-        "dip_pct": -0.8694,
+        "price": 3034.3783368227073,
+        "dip_pct": -5.555,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -396,10 +396,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:03.633467+00:00",
+        "timestamp": "2026-07-18T10:43:27.095793+00:00",
         "symbol": "BTCUSD",
-        "price": 63507.217799882375,
-        "dip_pct": -1.0955,
+        "price": 60025.82695136801,
+        "dip_pct": -6.0929,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -407,10 +407,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:03.668771+00:00",
+        "timestamp": "2026-07-18T10:43:27.132415+00:00",
         "symbol": "ETHUSD",
-        "price": 3180.658866473733,
-        "dip_pct": -0.9761,
+        "price": 3037.2496878375186,
+        "dip_pct": -5.4657,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -418,10 +418,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:05.706235+00:00",
+        "timestamp": "2026-07-18T10:43:29.187942+00:00",
         "symbol": "BTCUSD",
-        "price": 63527.37498882178,
-        "dip_pct": -1.0641,
+        "price": 60035.29105424948,
+        "dip_pct": -6.078,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -429,10 +429,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:05.744574+00:00",
+        "timestamp": "2026-07-18T10:43:29.240654+00:00",
         "symbol": "ETHUSD",
-        "price": 3177.7342987961897,
-        "dip_pct": -1.0672,
+        "price": 3039.590239852954,
+        "dip_pct": -5.3928,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -440,10 +440,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:07.796898+00:00",
+        "timestamp": "2026-07-18T10:43:31.297525+00:00",
         "symbol": "BTCUSD",
-        "price": 63485.27257276947,
-        "dip_pct": -1.1297,
+        "price": 59974.450107039265,
+        "dip_pct": -6.1732,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -451,10 +451,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:07.842484+00:00",
+        "timestamp": "2026-07-18T10:43:31.344982+00:00",
         "symbol": "ETHUSD",
-        "price": 3176.90222172274,
-        "dip_pct": -1.0931,
+        "price": 3038.8571935990394,
+        "dip_pct": -5.4156,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -462,10 +462,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:09.889666+00:00",
+        "timestamp": "2026-07-18T10:43:33.409891+00:00",
         "symbol": "BTCUSD",
-        "price": 63406.325829614994,
-        "dip_pct": -1.2526,
+        "price": 59566.6238463114,
+        "dip_pct": -6.8113,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -473,10 +473,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:09.929957+00:00",
+        "timestamp": "2026-07-18T10:43:33.456535+00:00",
         "symbol": "ETHUSD",
-        "price": 3173.8387523036367,
-        "dip_pct": -1.1884,
+        "price": 3018.192964682566,
+        "dip_pct": -6.0588,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -484,10 +484,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:11.975766+00:00",
+        "timestamp": "2026-07-18T10:43:35.513564+00:00",
         "symbol": "BTCUSD",
-        "price": 63396.256955823446,
-        "dip_pct": -1.2683,
+        "price": 59533.41435636778,
+        "dip_pct": -6.8632,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -495,10 +495,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:12.013544+00:00",
+        "timestamp": "2026-07-18T10:43:35.562294+00:00",
         "symbol": "ETHUSD",
-        "price": 3175.6712105295233,
-        "dip_pct": -1.1314,
+        "price": 3015.4812377197118,
+        "dip_pct": -6.1432,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -506,10 +506,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:14.058627+00:00",
+        "timestamp": "2026-07-18T10:43:37.613834+00:00",
         "symbol": "BTCUSD",
-        "price": 62965.16240852384,
-        "dip_pct": -1.9397,
+        "price": 59558.379009233744,
+        "dip_pct": -6.8242,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -517,10 +517,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:14.100145+00:00",
+        "timestamp": "2026-07-18T10:43:37.661099+00:00",
         "symbol": "ETHUSD",
-        "price": 3154.0766462979223,
-        "dip_pct": -1.8037,
+        "price": 3019.614737448826,
+        "dip_pct": -6.0145,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -528,10 +528,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:16.153196+00:00",
+        "timestamp": "2026-07-18T10:43:39.713485+00:00",
         "symbol": "BTCUSD",
-        "price": 62988.613071825894,
-        "dip_pct": -1.9031,
+        "price": 59571.41427948274,
+        "dip_pct": -6.8038,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -539,10 +539,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:16.198769+00:00",
+        "timestamp": "2026-07-18T10:43:39.761578+00:00",
         "symbol": "ETHUSD",
-        "price": 3151.9998649731883,
-        "dip_pct": -1.8684,
+        "price": 3024.0951306208817,
+        "dip_pct": -5.8751,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -550,10 +550,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:18.244358+00:00",
+        "timestamp": "2026-07-18T10:43:41.815364+00:00",
         "symbol": "BTCUSD",
-        "price": 63055.16980116313,
-        "dip_pct": -1.7995,
+        "price": 59592.86752709514,
+        "dip_pct": -6.7702,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -561,10 +561,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:18.280760+00:00",
+        "timestamp": "2026-07-18T10:43:41.884012+00:00",
         "symbol": "ETHUSD",
-        "price": 3149.063149776081,
-        "dip_pct": -1.9598,
+        "price": 3023.792287802648,
+        "dip_pct": -5.8845,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -572,10 +572,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:20.333634+00:00",
+        "timestamp": "2026-07-18T10:43:43.934203+00:00",
         "symbol": "BTCUSD",
-        "price": 62994.73887906286,
-        "dip_pct": -1.8936,
+        "price": 59556.767609939176,
+        "dip_pct": -6.8267,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -583,10 +583,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:20.366542+00:00",
+        "timestamp": "2026-07-18T10:43:43.984070+00:00",
         "symbol": "ETHUSD",
-        "price": 3148.1804393921993,
-        "dip_pct": -1.9873,
+        "price": 3026.645453870698,
+        "dip_pct": -5.7957,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -594,10 +594,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:22.410511+00:00",
+        "timestamp": "2026-07-18T10:43:46.033459+00:00",
         "symbol": "BTCUSD",
-        "price": 62957.85133070399,
-        "dip_pct": -1.9511,
+        "price": 59613.4622173957,
+        "dip_pct": -6.738,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -605,10 +605,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:22.449055+00:00",
+        "timestamp": "2026-07-18T10:43:46.084239+00:00",
         "symbol": "ETHUSD",
-        "price": 3147.246861654941,
-        "dip_pct": -2.0163,
+        "price": 3022.72395168738,
+        "dip_pct": -5.9178,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -616,10 +616,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:24.495388+00:00",
+        "timestamp": "2026-07-18T10:43:48.130223+00:00",
         "symbol": "BTCUSD",
-        "price": 62974.17920103856,
-        "dip_pct": -1.9256,
+        "price": 59561.3984401115,
+        "dip_pct": -6.8194,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -627,10 +627,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:24.540953+00:00",
+        "timestamp": "2026-07-18T10:43:48.175539+00:00",
         "symbol": "ETHUSD",
-        "price": 3144.004383653923,
-        "dip_pct": -2.1173,
+        "price": 3020.6824841039556,
+        "dip_pct": -5.9813,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -638,10 +638,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:26.581350+00:00",
+        "timestamp": "2026-07-18T10:43:50.235855+00:00",
         "symbol": "BTCUSD",
-        "price": 62980.259655341935,
-        "dip_pct": -1.9162,
+        "price": 59507.571516875345,
+        "dip_pct": -6.9036,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -649,10 +649,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:26.618661+00:00",
+        "timestamp": "2026-07-18T10:43:50.284249+00:00",
         "symbol": "ETHUSD",
-        "price": 3139.5627182387316,
-        "dip_pct": -2.2556,
+        "price": 3018.642521476942,
+        "dip_pct": -6.0448,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -660,10 +660,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:28.668790+00:00",
+        "timestamp": "2026-07-18T10:43:52.325034+00:00",
         "symbol": "BTCUSD",
-        "price": 62991.00239068785,
-        "dip_pct": -1.8994,
+        "price": 59534.547231230965,
+        "dip_pct": -6.8614,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -671,10 +671,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:28.707831+00:00",
+        "timestamp": "2026-07-18T10:43:52.376842+00:00",
         "symbol": "ETHUSD",
-        "price": 3140.1640044827636,
-        "dip_pct": -2.2368,
+        "price": 3014.216523070072,
+        "dip_pct": -6.1826,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -682,10 +682,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:30.757057+00:00",
+        "timestamp": "2026-07-18T10:43:54.439706+00:00",
         "symbol": "BTCUSD",
-        "price": 62938.80412183846,
-        "dip_pct": -1.9807,
+        "price": 59459.12973276293,
+        "dip_pct": -6.9794,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -693,10 +693,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:30.794124+00:00",
+        "timestamp": "2026-07-18T10:43:54.490803+00:00",
         "symbol": "ETHUSD",
-        "price": 3138.031492284838,
-        "dip_pct": -2.3032,
+        "price": 3011.2711971471176,
+        "dip_pct": -6.2742,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -704,10 +704,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:32.844086+00:00",
+        "timestamp": "2026-07-18T10:43:56.541063+00:00",
         "symbol": "BTCUSD",
-        "price": 62874.916947721526,
-        "dip_pct": -2.0802,
+        "price": 59513.1888888373,
+        "dip_pct": -6.8949,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -715,10 +715,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:32.881514+00:00",
+        "timestamp": "2026-07-18T10:43:56.587120+00:00",
         "symbol": "ETHUSD",
-        "price": 3135.9039421037833,
-        "dip_pct": -2.3695,
+        "price": 3015.2004160266138,
+        "dip_pct": -6.1519,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -726,10 +726,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:34.936113+00:00",
+        "timestamp": "2026-07-18T10:43:58.641520+00:00",
         "symbol": "BTCUSD",
-        "price": 62897.18715921126,
-        "dip_pct": -2.0455,
+        "price": 59108.49920439321,
+        "dip_pct": -7.528,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -737,10 +737,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:34.985069+00:00",
+        "timestamp": "2026-07-18T10:43:58.680800+00:00",
         "symbol": "ETHUSD",
-        "price": 3132.874688693689,
-        "dip_pct": -2.4638,
+        "price": 2994.6970531976326,
+        "dip_pct": -6.7901,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -748,10 +748,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:37.032951+00:00",
+        "timestamp": "2026-07-18T10:44:00.723784+00:00",
         "symbol": "BTCUSD",
-        "price": 62870.89332759888,
-        "dip_pct": -2.0865,
+        "price": 59143.81488354716,
+        "dip_pct": -7.4727,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -759,10 +759,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:37.069719+00:00",
+        "timestamp": "2026-07-18T10:44:00.767931+00:00",
         "symbol": "ETHUSD",
-        "price": 3136.3443371146145,
-        "dip_pct": -2.3558,
+        "price": 2990.8220695174273,
+        "dip_pct": -6.9107,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -770,10 +770,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:39.114815+00:00",
+        "timestamp": "2026-07-18T10:44:02.810148+00:00",
         "symbol": "BTCUSD",
-        "price": 62443.37125297121,
-        "dip_pct": -2.7523,
+        "price": 59168.21454433948,
+        "dip_pct": -7.4345,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -781,10 +781,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:39.150620+00:00",
+        "timestamp": "2026-07-18T10:44:02.850511+00:00",
         "symbol": "ETHUSD",
-        "price": 3115.0171956222352,
-        "dip_pct": -3.0197,
+        "price": 2986.684155526071,
+        "dip_pct": -7.0395,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -792,10 +792,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:41.201925+00:00",
+        "timestamp": "2026-07-18T10:44:04.896183+00:00",
         "symbol": "BTCUSD",
-        "price": 62452.2903444513,
-        "dip_pct": -2.7384,
+        "price": 59136.23412922265,
+        "dip_pct": -7.4846,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -803,10 +803,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:41.247829+00:00",
+        "timestamp": "2026-07-18T10:44:04.947187+00:00",
         "symbol": "ETHUSD",
-        "price": 3112.409652391247,
-        "dip_pct": -3.1009,
+        "price": 2990.037982705384,
+        "dip_pct": -6.9351,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -814,10 +814,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:43.295435+00:00",
+        "timestamp": "2026-07-18T10:44:06.993372+00:00",
         "symbol": "BTCUSD",
-        "price": 62432.16018997051,
-        "dip_pct": -2.7697,
+        "price": 59202.63086531128,
+        "dip_pct": -7.3807,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -825,10 +825,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:43.348831+00:00",
+        "timestamp": "2026-07-18T10:44:07.033333+00:00",
         "symbol": "ETHUSD",
-        "price": 3114.1685254069575,
-        "dip_pct": -3.0462,
+        "price": 2992.431078630184,
+        "dip_pct": -6.8606,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -836,10 +836,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:45.401954+00:00",
+        "timestamp": "2026-07-18T10:44:09.079651+00:00",
         "symbol": "BTCUSD",
-        "price": 62385.88338112839,
-        "dip_pct": -2.8418,
+        "price": 59139.20151073169,
+        "dip_pct": -7.4799,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -847,10 +847,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:45.435890+00:00",
+        "timestamp": "2026-07-18T10:44:09.123158+00:00",
         "symbol": "ETHUSD",
-        "price": 3118.1499328115183,
-        "dip_pct": -2.9222,
+        "price": 2991.1430449936524,
+        "dip_pct": -6.9007,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -858,10 +858,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:47.487469+00:00",
+        "timestamp": "2026-07-18T10:44:11.169405+00:00",
         "symbol": "BTCUSD",
-        "price": 62370.04108285688,
-        "dip_pct": -2.8665,
+        "price": 59145.09818342943,
+        "dip_pct": -7.4707,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -869,10 +869,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:47.528490+00:00",
+        "timestamp": "2026-07-18T10:44:11.215696+00:00",
         "symbol": "ETHUSD",
-        "price": 3118.606823578981,
-        "dip_pct": -2.908,
+        "price": 2987.973187644421,
+        "dip_pct": -6.9994,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -880,10 +880,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:49.584644+00:00",
+        "timestamp": "2026-07-18T10:44:13.259870+00:00",
         "symbol": "BTCUSD",
-        "price": 62385.95045889134,
-        "dip_pct": -2.8417,
+        "price": 59128.53279142053,
+        "dip_pct": -7.4966,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -891,10 +891,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:49.620435+00:00",
+        "timestamp": "2026-07-18T10:44:13.295202+00:00",
         "symbol": "ETHUSD",
-        "price": 3122.4429112567113,
-        "dip_pct": -2.7886,
+        "price": 2985.7231360914006,
+        "dip_pct": -7.0694,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -902,10 +902,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:51.677245+00:00",
+        "timestamp": "2026-07-18T10:44:15.348389+00:00",
         "symbol": "BTCUSD",
-        "price": 62423.28122202526,
-        "dip_pct": -2.7836,
+        "price": 59089.12384394696,
+        "dip_pct": -7.5583,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -913,10 +913,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:51.720810+00:00",
+        "timestamp": "2026-07-18T10:44:15.390621+00:00",
         "symbol": "ETHUSD",
-        "price": 3121.758486899713,
-        "dip_pct": -2.8099,
+        "price": 2988.0479538394966,
+        "dip_pct": -6.9971,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -924,10 +924,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:53.772086+00:00",
+        "timestamp": "2026-07-18T10:44:17.432245+00:00",
         "symbol": "BTCUSD",
-        "price": 62463.707354549355,
-        "dip_pct": -2.7206,
+        "price": 59084.46380899297,
+        "dip_pct": -7.5656,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -935,10 +935,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:53.813483+00:00",
+        "timestamp": "2026-07-18T10:44:17.469244+00:00",
         "symbol": "ETHUSD",
-        "price": 3118.2592647081615,
-        "dip_pct": -2.9188,
+        "price": 2986.191087259783,
+        "dip_pct": -7.0548,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -946,10 +946,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:55.873039+00:00",
+        "timestamp": "2026-07-18T10:44:19.521656+00:00",
         "symbol": "BTCUSD",
-        "price": 62526.50317764706,
-        "dip_pct": -2.6228,
+        "price": 59013.474161361155,
+        "dip_pct": -7.6766,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -957,10 +957,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:55.924366+00:00",
+        "timestamp": "2026-07-18T10:44:19.553828+00:00",
         "symbol": "ETHUSD",
-        "price": 3117.196125947765,
-        "dip_pct": -2.9519,
+        "price": 2987.1044454895195,
+        "dip_pct": -7.0264,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -968,10 +968,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:57.972783+00:00",
+        "timestamp": "2026-07-18T10:44:21.595735+00:00",
         "symbol": "BTCUSD",
-        "price": 62590.56550392904,
-        "dip_pct": -2.5231,
+        "price": 58981.940047589225,
+        "dip_pct": -7.726,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -979,10 +979,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:38:58.020726+00:00",
+        "timestamp": "2026-07-18T10:44:21.628935+00:00",
         "symbol": "ETHUSD",
-        "price": 3120.3274486029363,
-        "dip_pct": -2.8544,
+        "price": 2985.111286007923,
+        "dip_pct": -7.0885,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -990,10 +990,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:00.067391+00:00",
+        "timestamp": "2026-07-18T10:44:23.666436+00:00",
         "symbol": "BTCUSD",
-        "price": 62579.950138308704,
-        "dip_pct": -2.5396,
+        "price": 58580.862855265616,
+        "dip_pct": -8.3534,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1001,10 +1001,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:00.112868+00:00",
+        "timestamp": "2026-07-18T10:44:23.701065+00:00",
         "symbol": "ETHUSD",
-        "price": 3116.3466800846263,
-        "dip_pct": -2.9784,
+        "price": 2964.812529263069,
+        "dip_pct": -7.7203,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1012,10 +1012,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:02.167703+00:00",
+        "timestamp": "2026-07-18T10:44:25.747660+00:00",
         "symbol": "BTCUSD",
-        "price": 62624.42597624958,
-        "dip_pct": -2.4703,
+        "price": 58595.4705527309,
+        "dip_pct": -8.3306,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1023,10 +1023,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:02.208529+00:00",
+        "timestamp": "2026-07-18T10:44:25.782744+00:00",
         "symbol": "ETHUSD",
-        "price": 3117.7720790825806,
-        "dip_pct": -2.934,
+        "price": 2961.8888765546576,
+        "dip_pct": -7.8113,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1034,10 +1034,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:04.251966+00:00",
+        "timestamp": "2026-07-18T10:44:27.819595+00:00",
         "symbol": "BTCUSD",
-        "price": 62198.57987961108,
-        "dip_pct": -3.1335,
+        "price": 58584.32022761644,
+        "dip_pct": -8.348,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1045,10 +1045,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:04.291963+00:00",
+        "timestamp": "2026-07-18T10:44:27.858550+00:00",
         "symbol": "ETHUSD",
-        "price": 3096.571228944819,
-        "dip_pct": -3.594,
+        "price": 2958.424299895683,
+        "dip_pct": -7.9191,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1056,10 +1056,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:06.340215+00:00",
+        "timestamp": "2026-07-18T10:44:29.901911+00:00",
         "symbol": "BTCUSD",
-        "price": 62126.0082342854,
-        "dip_pct": -3.2465,
+        "price": 58518.71376938754,
+        "dip_pct": -8.4507,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1067,10 +1067,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:06.388606+00:00",
+        "timestamp": "2026-07-18T10:44:29.935393+00:00",
         "symbol": "ETHUSD",
-        "price": 3093.749167026561,
-        "dip_pct": -3.6819,
+        "price": 2961.07497256372,
+        "dip_pct": -7.8366,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1078,10 +1078,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:08.445500+00:00",
+        "timestamp": "2026-07-18T10:44:31.981768+00:00",
         "symbol": "BTCUSD",
-        "price": 62211.29033974828,
-        "dip_pct": -3.1137,
+        "price": 58565.35658820832,
+        "dip_pct": -8.3777,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1089,10 +1089,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:08.489953+00:00",
+        "timestamp": "2026-07-18T10:44:32.021128+00:00",
         "symbol": "ETHUSD",
-        "price": 3097.509235265424,
-        "dip_pct": -3.5648,
+        "price": 2961.937623870502,
+        "dip_pct": -7.8097,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1100,10 +1100,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:10.540031+00:00",
+        "timestamp": "2026-07-18T10:44:34.057245+00:00",
         "symbol": "BTCUSD",
-        "price": 62122.95066128856,
-        "dip_pct": -3.2513,
+        "price": 58509.84533294564,
+        "dip_pct": -8.4645,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1111,10 +1111,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:10.586747+00:00",
+        "timestamp": "2026-07-18T10:44:34.094246+00:00",
         "symbol": "ETHUSD",
-        "price": 3097.416240594491,
-        "dip_pct": -3.5677,
+        "price": 2958.5840377078066,
+        "dip_pct": -7.9141,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1122,10 +1122,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:12.636213+00:00",
+        "timestamp": "2026-07-18T10:44:36.133166+00:00",
         "symbol": "BTCUSD",
-        "price": 62183.91587170398,
-        "dip_pct": -3.1564,
+        "price": 58516.75426462241,
+        "dip_pct": -8.4537,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1133,10 +1133,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:12.671480+00:00",
+        "timestamp": "2026-07-18T10:44:36.169901+00:00",
         "symbol": "ETHUSD",
-        "price": 3101.0861941936573,
-        "dip_pct": -3.4535,
+        "price": 2957.9666072461473,
+        "dip_pct": -7.9333,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1144,10 +1144,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:14.711057+00:00",
+        "timestamp": "2026-07-18T10:44:38.216500+00:00",
         "symbol": "BTCUSD",
-        "price": 62231.67250710972,
-        "dip_pct": -3.082,
+        "price": 58438.51064393582,
+        "dip_pct": -8.5761,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1155,10 +1155,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:14.747175+00:00",
+        "timestamp": "2026-07-18T10:44:38.248145+00:00",
         "symbol": "ETHUSD",
-        "price": 3098.2962160472907,
-        "dip_pct": -3.5403,
+        "price": 2956.50795201922,
+        "dip_pct": -7.9787,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1166,10 +1166,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:16.796368+00:00",
+        "timestamp": "2026-07-18T10:44:40.287833+00:00",
         "symbol": "BTCUSD",
-        "price": 62286.56127228256,
-        "dip_pct": -2.9965,
+        "price": 58369.113458896216,
+        "dip_pct": -8.6847,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1177,10 +1177,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:16.834664+00:00",
+        "timestamp": "2026-07-18T10:44:40.325131+00:00",
         "symbol": "ETHUSD",
-        "price": 3098.2011211365693,
-        "dip_pct": -3.5433,
+        "price": 2953.9216367481517,
+        "dip_pct": -8.0592,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1188,10 +1188,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:18.874633+00:00",
+        "timestamp": "2026-07-18T10:44:42.372102+00:00",
         "symbol": "BTCUSD",
-        "price": 62376.348938446215,
-        "dip_pct": -2.8567,
+        "price": 58405.8861781475,
+        "dip_pct": -8.6272,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1199,10 +1199,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:18.915498+00:00",
+        "timestamp": "2026-07-18T10:44:42.413850+00:00",
         "symbol": "ETHUSD",
-        "price": 3100.13362468869,
-        "dip_pct": -3.4831,
+        "price": 2953.1424728614493,
+        "dip_pct": -8.0835,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1210,10 +1210,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:20.958663+00:00",
+        "timestamp": "2026-07-18T10:44:44.452000+00:00",
         "symbol": "BTCUSD",
-        "price": 62379.8754574665,
-        "dip_pct": -2.8512,
+        "price": 58488.06998076238,
+        "dip_pct": -8.4986,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1221,10 +1221,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:21.002943+00:00",
+        "timestamp": "2026-07-18T10:44:44.490247+00:00",
         "symbol": "ETHUSD",
-        "price": 3102.692326604583,
-        "dip_pct": -3.4035,
+        "price": 2951.616356716367,
+        "dip_pct": -8.131,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1232,10 +1232,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:23.056490+00:00",
+        "timestamp": "2026-07-18T10:44:46.538821+00:00",
         "symbol": "BTCUSD",
-        "price": 62422.61976437658,
-        "dip_pct": -2.7846,
+        "price": 58524.71342647918,
+        "dip_pct": -8.4413,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1243,10 +1243,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:23.098157+00:00",
+        "timestamp": "2026-07-18T10:44:46.582651+00:00",
         "symbol": "ETHUSD",
-        "price": 3098.598320671731,
-        "dip_pct": -3.5309,
+        "price": 2955.8836980392384,
+        "dip_pct": -7.9982,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1254,10 +1254,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:25.139228+00:00",
+        "timestamp": "2026-07-18T10:44:48.626799+00:00",
         "symbol": "BTCUSD",
-        "price": 62505.821409550415,
-        "dip_pct": -2.655,
+        "price": 58126.745375179125,
+        "dip_pct": -9.0639,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1265,10 +1265,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:25.173898+00:00",
+        "timestamp": "2026-07-18T10:44:48.665968+00:00",
         "symbol": "ETHUSD",
-        "price": 3099.664798264118,
-        "dip_pct": -3.4977,
+        "price": 2935.7836888925717,
+        "dip_pct": -8.6238,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1276,10 +1276,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:27.206566+00:00",
+        "timestamp": "2026-07-18T10:44:50.716574+00:00",
         "symbol": "BTCUSD",
-        "price": 62455.156942899404,
-        "dip_pct": -2.7339,
+        "price": 58080.511242123,
+        "dip_pct": -9.0723,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1287,10 +1287,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:27.241703+00:00",
+        "timestamp": "2026-07-18T10:44:50.748974+00:00",
         "symbol": "ETHUSD",
-        "price": 3097.413803755417,
-        "dip_pct": -3.5678,
+        "price": 2939.4190724024375,
+        "dip_pct": -8.5106,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1298,10 +1298,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:29.288687+00:00",
+        "timestamp": "2026-07-18T10:44:52.799225+00:00",
         "symbol": "BTCUSD",
-        "price": 62030.46187568769,
-        "dip_pct": -3.3953,
+        "price": 58140.71277140653,
+        "dip_pct": -8.8702,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1309,10 +1309,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:29.319789+00:00",
+        "timestamp": "2026-07-18T10:44:52.838453+00:00",
         "symbol": "ETHUSD",
-        "price": 3076.35138988988,
-        "dip_pct": -4.2235,
+        "price": 2938.1881452899124,
+        "dip_pct": -8.5489,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1320,10 +1320,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:31.367423+00:00",
+        "timestamp": "2026-07-18T10:44:54.882155+00:00",
         "symbol": "BTCUSD",
-        "price": 61967.15651063007,
-        "dip_pct": -3.4939,
+        "price": 58226.7467456555,
+        "dip_pct": -8.7348,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1331,10 +1331,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:31.406461+00:00",
+        "timestamp": "2026-07-18T10:44:54.926048+00:00",
         "symbol": "ETHUSD",
-        "price": 3080.606900532542,
-        "dip_pct": -4.091,
+        "price": 2940.4306276386883,
+        "dip_pct": -8.4791,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1342,10 +1342,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:33.453455+00:00",
+        "timestamp": "2026-07-18T10:44:56.980376+00:00",
         "symbol": "BTCUSD",
-        "price": 61975.461145268244,
-        "dip_pct": -3.481,
+        "price": 58196.15560301444,
+        "dip_pct": -8.7827,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1353,10 +1353,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:33.492987+00:00",
+        "timestamp": "2026-07-18T10:44:57.026815+00:00",
         "symbol": "ETHUSD",
-        "price": 3081.5234543211113,
-        "dip_pct": -4.0625,
+        "price": 2944.412811698269,
+        "dip_pct": -8.3552,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1364,10 +1364,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:35.535964+00:00",
+        "timestamp": "2026-07-18T10:44:59.068989+00:00",
         "symbol": "BTCUSD",
-        "price": 62061.52840957094,
-        "dip_pct": -3.347,
+        "price": 58158.157408831765,
+        "dip_pct": -8.7679,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1375,10 +1375,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:35.580444+00:00",
+        "timestamp": "2026-07-18T10:44:59.108142+00:00",
         "symbol": "ETHUSD",
-        "price": 3081.334383760109,
-        "dip_pct": -4.0684,
+        "price": 2942.502440216092,
+        "dip_pct": -8.4147,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1386,10 +1386,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:37.616458+00:00",
+        "timestamp": "2026-07-18T10:45:01.153888+00:00",
         "symbol": "BTCUSD",
-        "price": 62101.51044311025,
-        "dip_pct": -3.2847,
+        "price": 58075.48795305947,
+        "dip_pct": -8.8976,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1397,10 +1397,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:37.658842+00:00",
+        "timestamp": "2026-07-18T10:45:01.196949+00:00",
         "symbol": "ETHUSD",
-        "price": 3084.3610533849965,
-        "dip_pct": -3.9742,
+        "price": 2938.672150998168,
+        "dip_pct": -8.5339,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1408,10 +1408,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:39.702887+00:00",
+        "timestamp": "2026-07-18T10:45:03.257641+00:00",
         "symbol": "BTCUSD",
-        "price": 62034.07741485016,
-        "dip_pct": -3.3897,
+        "price": 58010.14833158978,
+        "dip_pct": -9.0001,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1419,10 +1419,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:39:39.746515+00:00",
+        "timestamp": "2026-07-18T10:45:03.302943+00:00",
         "symbol": "ETHUSD",
-        "price": 3086.01961808679,
-        "dip_pct": -3.9225,
+        "price": 2942.531955127706,
+        "dip_pct": -8.4137,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1430,10 +1430,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:12.621739+00:00",
+        "timestamp": "2026-07-18T10:45:05.347123+00:00",
         "symbol": "BTCUSD",
-        "price": 63314.022492369746,
-        "dip_pct": -0.9487,
+        "price": 57969.362364728055,
+        "dip_pct": -9.0641,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1441,10 +1441,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:12.667638+00:00",
+        "timestamp": "2026-07-18T10:45:05.386490+00:00",
         "symbol": "ETHUSD",
-        "price": 3188.950414227282,
-        "dip_pct": -0.744,
+        "price": 2941.2873597850726,
+        "dip_pct": -8.4525,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1452,10 +1452,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:14.708954+00:00",
+        "timestamp": "2026-07-18T10:45:07.416981+00:00",
         "symbol": "BTCUSD",
-        "price": 63344.438188507556,
-        "dip_pct": -0.9011,
+        "price": 57911.161921522325,
+        "dip_pct": -9.1554,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1463,10 +1463,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:14.745035+00:00",
+        "timestamp": "2026-07-18T10:45:07.453915+00:00",
         "symbol": "ETHUSD",
-        "price": 3188.2105307804713,
-        "dip_pct": -0.767,
+        "price": 2945.413725952483,
+        "dip_pct": -8.324,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1474,10 +1474,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:16.786809+00:00",
+        "timestamp": "2026-07-18T10:45:09.503526+00:00",
         "symbol": "BTCUSD",
-        "price": 63301.52928008077,
-        "dip_pct": -0.9682,
+        "price": 57955.98771009494,
+        "dip_pct": -9.0851,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1485,10 +1485,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:16.825583+00:00",
+        "timestamp": "2026-07-18T10:45:09.537939+00:00",
         "symbol": "ETHUSD",
-        "price": 3188.2074917411537,
-        "dip_pct": -0.7671,
+        "price": 2944.5940476841815,
+        "dip_pct": -8.2905,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1496,10 +1496,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:18.863247+00:00",
+        "timestamp": "2026-07-18T10:45:11.575012+00:00",
         "symbol": "BTCUSD",
-        "price": 63320.03771294022,
-        "dip_pct": -0.9392,
+        "price": 58032.20620276274,
+        "dip_pct": -8.4494,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1507,10 +1507,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:18.905198+00:00",
+        "timestamp": "2026-07-18T10:45:11.610527+00:00",
         "symbol": "ETHUSD",
-        "price": 3191.901385189395,
-        "dip_pct": -0.6521,
+        "price": 2941.8066918526342,
+        "dip_pct": -7.8443,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1518,10 +1518,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:20.953415+00:00",
+        "timestamp": "2026-07-18T10:45:13.653832+00:00",
         "symbol": "BTCUSD",
-        "price": 63386.81762279667,
-        "dip_pct": -0.8348,
+        "price": 57637.58720058395,
+        "dip_pct": -9.0719,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1529,10 +1529,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:20.992317+00:00",
+        "timestamp": "2026-07-18T10:45:13.693952+00:00",
         "symbol": "ETHUSD",
-        "price": 3189.5666900270508,
-        "dip_pct": -0.7248,
+        "price": 2921.802406348036,
+        "dip_pct": -8.4709,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1540,10 +1540,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:23.031982+00:00",
+        "timestamp": "2026-07-18T10:45:15.736784+00:00",
         "symbol": "BTCUSD",
-        "price": 63373.96897252545,
-        "dip_pct": -0.8549,
+        "price": 57619.97361123823,
+        "dip_pct": -9.0997,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1551,10 +1551,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:23.076887+00:00",
+        "timestamp": "2026-07-18T10:45:15.773581+00:00",
         "symbol": "ETHUSD",
-        "price": 3189.2746610893173,
-        "dip_pct": -0.7339,
+        "price": 2920.0161350707363,
+        "dip_pct": -8.5269,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1562,10 +1562,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:25.127628+00:00",
+        "timestamp": "2026-07-18T10:45:17.826304+00:00",
         "symbol": "BTCUSD",
-        "price": 63368.123906832036,
-        "dip_pct": -0.864,
+        "price": 57638.04689229287,
+        "dip_pct": -9.0712,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1573,10 +1573,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:25.168303+00:00",
+        "timestamp": "2026-07-18T10:45:17.869241+00:00",
         "symbol": "ETHUSD",
-        "price": 3192.2122580374808,
-        "dip_pct": -0.6424,
+        "price": 2915.78752468287,
+        "dip_pct": -8.6593,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1584,10 +1584,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:27.202349+00:00",
+        "timestamp": "2026-07-18T10:45:19.919729+00:00",
         "symbol": "BTCUSD",
-        "price": 63388.11897418646,
-        "dip_pct": -0.8327,
+        "price": 57567.98959594649,
+        "dip_pct": -9.1817,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1595,10 +1595,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:27.242656+00:00",
+        "timestamp": "2026-07-18T10:45:19.966972+00:00",
         "symbol": "ETHUSD",
-        "price": 3190.6316854235247,
-        "dip_pct": -0.6916,
+        "price": 2916.1805070510673,
+        "dip_pct": -8.647,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1606,10 +1606,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:29.291959+00:00",
+        "timestamp": "2026-07-18T10:45:22.013487+00:00",
         "symbol": "BTCUSD",
-        "price": 63337.44888106427,
-        "dip_pct": -0.912,
+        "price": 57566.95268579753,
+        "dip_pct": -9.1834,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1617,10 +1617,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:29.323287+00:00",
+        "timestamp": "2026-07-18T10:45:22.048208+00:00",
         "symbol": "ETHUSD",
-        "price": 3187.353980059242,
-        "dip_pct": -0.7937,
+        "price": 2919.411286247404,
+        "dip_pct": -8.5458,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1628,10 +1628,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:31.369279+00:00",
+        "timestamp": "2026-07-18T10:45:24.099834+00:00",
         "symbol": "BTCUSD",
-        "price": 63276.30656951236,
-        "dip_pct": -1.0077,
+        "price": 57539.18710563229,
+        "dip_pct": -9.2272,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1639,10 +1639,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:31.408028+00:00",
+        "timestamp": "2026-07-18T10:45:24.146606+00:00",
         "symbol": "ETHUSD",
-        "price": 3190.0521575666576,
-        "dip_pct": -0.7097,
+        "price": 2922.713358576332,
+        "dip_pct": -8.4424,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1650,10 +1650,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:33.449424+00:00",
+        "timestamp": "2026-07-18T10:45:26.193242+00:00",
         "symbol": "BTCUSD",
-        "price": 63266.06205811945,
-        "dip_pct": -1.0237,
+        "price": 57550.30187633326,
+        "dip_pct": -9.2096,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1661,10 +1661,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:33.487828+00:00",
+        "timestamp": "2026-07-18T10:45:26.238288+00:00",
         "symbol": "ETHUSD",
-        "price": 3187.923661020818,
-        "dip_pct": -0.7759,
+        "price": 2921.160792155094,
+        "dip_pct": -8.4457,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1672,10 +1672,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:35.528029+00:00",
+        "timestamp": "2026-07-18T10:45:28.286352+00:00",
         "symbol": "BTCUSD",
-        "price": 63201.7406297839,
-        "dip_pct": -1.1243,
+        "price": 57588.29187541008,
+        "dip_pct": -9.077,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1683,10 +1683,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:35.562057+00:00",
+        "timestamp": "2026-07-18T10:45:28.315544+00:00",
         "symbol": "ETHUSD",
-        "price": 3189.2727550345235,
-        "dip_pct": -0.7339,
+        "price": 2923.017265766413,
+        "dip_pct": -8.3709,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1694,10 +1694,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:37.610683+00:00",
+        "timestamp": "2026-07-18T10:45:30.356927+00:00",
         "symbol": "BTCUSD",
-        "price": 62771.968793501364,
-        "dip_pct": -1.7967,
+        "price": 57553.752347615286,
+        "dip_pct": -9.0438,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1705,10 +1705,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:37.639589+00:00",
+        "timestamp": "2026-07-18T10:45:30.390278+00:00",
         "symbol": "ETHUSD",
-        "price": 3167.5857003002884,
-        "dip_pct": -1.4089,
+        "price": 2919.5314381764556,
+        "dip_pct": -8.4801,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1716,10 +1716,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:39.693349+00:00",
+        "timestamp": "2026-07-18T10:45:32.422496+00:00",
         "symbol": "BTCUSD",
-        "price": 62738.67797474079,
-        "dip_pct": -1.8487,
+        "price": 57620.60057729093,
+        "dip_pct": -8.9234,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1727,10 +1727,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:39.731463+00:00",
+        "timestamp": "2026-07-18T10:45:32.458251+00:00",
         "symbol": "ETHUSD",
-        "price": 3170.808590761118,
-        "dip_pct": -1.3086,
+        "price": 2916.7286060953215,
+        "dip_pct": -8.5457,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1738,10 +1738,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:41.781262+00:00",
+        "timestamp": "2026-07-18T10:45:34.500526+00:00",
         "symbol": "BTCUSD",
-        "price": 62675.17939946162,
-        "dip_pct": -1.9481,
+        "price": 57575.285794223404,
+        "dip_pct": -8.9024,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1749,10 +1749,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:41.822850+00:00",
+        "timestamp": "2026-07-18T10:45:34.533629+00:00",
         "symbol": "ETHUSD",
-        "price": 3171.4916247711,
-        "dip_pct": -1.2874,
+        "price": 2915.334460659755,
+        "dip_pct": -8.5894,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1760,10 +1760,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:43.896640+00:00",
+        "timestamp": "2026-07-18T10:45:36.571590+00:00",
         "symbol": "BTCUSD",
-        "price": 62731.04140798285,
-        "dip_pct": -1.8607,
+        "price": 57615.96400039117,
+        "dip_pct": -8.2139,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1771,10 +1771,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:43.940011+00:00",
+        "timestamp": "2026-07-18T10:45:36.617083+00:00",
         "symbol": "ETHUSD",
-        "price": 3173.702523386762,
-        "dip_pct": -1.2186,
+        "price": 2912.4716596019825,
+        "dip_pct": -8.2311,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1782,10 +1782,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:45.992317+00:00",
+        "timestamp": "2026-07-18T10:45:38.659591+00:00",
         "symbol": "BTCUSD",
-        "price": 62645.26278331478,
-        "dip_pct": -1.9949,
+        "price": 57224.175445188506,
+        "dip_pct": -8.7896,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1793,10 +1793,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:46.036760+00:00",
+        "timestamp": "2026-07-18T10:45:38.712506+00:00",
         "symbol": "ETHUSD",
-        "price": 3171.363423414495,
-        "dip_pct": -1.2914,
+        "price": 2892.666852316689,
+        "dip_pct": -8.8551,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1804,10 +1804,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:48.086830+00:00",
+        "timestamp": "2026-07-18T10:45:40.769284+00:00",
         "symbol": "BTCUSD",
-        "price": 62612.5401996501,
-        "dip_pct": -2.0461,
+        "price": 57204.56524276401,
+        "dip_pct": -8.8098,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1815,10 +1815,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:48.127212+00:00",
+        "timestamp": "2026-07-18T10:45:40.811733+00:00",
         "symbol": "ETHUSD",
-        "price": 3171.9140964697644,
-        "dip_pct": -1.2742,
+        "price": 2895.8303511161203,
+        "dip_pct": -8.7555,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1826,10 +1826,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:50.171449+00:00",
+        "timestamp": "2026-07-18T10:45:42.865170+00:00",
         "symbol": "BTCUSD",
-        "price": 62634.45331602336,
-        "dip_pct": -2.0118,
+        "price": 57177.69731050466,
+        "dip_pct": -8.8526,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1837,10 +1837,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:50.209529+00:00",
+        "timestamp": "2026-07-18T10:45:42.913249+00:00",
         "symbol": "ETHUSD",
-        "price": 3172.3581118558036,
-        "dip_pct": -1.2604,
+        "price": 2892.9873331133967,
+        "dip_pct": -8.845,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1848,10 +1848,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:52.266233+00:00",
+        "timestamp": "2026-07-18T10:45:44.951933+00:00",
         "symbol": "BTCUSD",
-        "price": 62675.908332440384,
-        "dip_pct": -1.9469,
+        "price": 57236.66691540362,
+        "dip_pct": -8.6784,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1859,10 +1859,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:52.304895+00:00",
+        "timestamp": "2026-07-18T10:45:45.016889+00:00",
         "symbol": "ETHUSD",
-        "price": 3168.428124296714,
-        "dip_pct": -1.3827,
+        "price": 2895.5488611314536,
+        "dip_pct": -8.7529,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1870,10 +1870,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:54.350461+00:00",
+        "timestamp": "2026-07-18T10:46:16.246617+00:00",
         "symbol": "BTCUSD",
-        "price": 62614.894843759714,
-        "dip_pct": -2.0424,
+        "price": 63704.86673443325,
+        "dip_pct": -0.68,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1881,10 +1881,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:54.390614+00:00",
+        "timestamp": "2026-07-18T10:46:16.277622+00:00",
         "symbol": "ETHUSD",
-        "price": 3166.380477126612,
-        "dip_pct": -1.4465,
+        "price": 3183.040792186919,
+        "dip_pct": -0.6871,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1892,10 +1892,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:56.443881+00:00",
+        "timestamp": "2026-07-18T10:46:18.311333+00:00",
         "symbol": "BTCUSD",
-        "price": 62634.89600358702,
-        "dip_pct": -2.0111,
+        "price": 63682.974212793226,
+        "dip_pct": -0.7141,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1903,10 +1903,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:56.491115+00:00",
+        "timestamp": "2026-07-18T10:46:18.348402+00:00",
         "symbol": "ETHUSD",
-        "price": 3168.880009752399,
-        "dip_pct": -1.3687,
+        "price": 3179.7774577593614,
+        "dip_pct": -0.7889,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1914,10 +1914,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:58.540946+00:00",
+        "timestamp": "2026-07-18T10:46:20.383145+00:00",
         "symbol": "BTCUSD",
-        "price": 62645.010620585555,
-        "dip_pct": -1.9953,
+        "price": 63652.726869635066,
+        "dip_pct": -0.7613,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1925,10 +1925,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:40:58.580254+00:00",
+        "timestamp": "2026-07-18T10:46:20.413752+00:00",
         "symbol": "ETHUSD",
-        "price": 3173.3045688344855,
-        "dip_pct": -1.2309,
+        "price": 3182.158473447764,
+        "dip_pct": -0.7146,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1936,10 +1936,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:00.625966+00:00",
+        "timestamp": "2026-07-18T10:46:22.444975+00:00",
         "symbol": "BTCUSD",
-        "price": 62639.4693400507,
-        "dip_pct": -2.004,
+        "price": 63747.441312796866,
+        "dip_pct": -0.6136,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1947,10 +1947,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:00.670616+00:00",
+        "timestamp": "2026-07-18T10:46:22.481442+00:00",
         "symbol": "ETHUSD",
-        "price": 3171.3665053075338,
-        "dip_pct": -1.2913,
+        "price": 3180.0934614314756,
+        "dip_pct": -0.7791,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1958,10 +1958,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:02.711717+00:00",
-        "symbol": "BTCUSD",
-        "price": 62213.52094853835,
-        "dip_pct": -2.6703,
+        "timestamp": "2026-07-18T10:46:24.547896+00:00",
+        "symbol": "ETHUSD",
+        "price": 3175.925677833399,
+        "dip_pct": -0.9091,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1969,10 +1969,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:02.749680+00:00",
-        "symbol": "ETHUSD",
-        "price": 3149.8012130714424,
-        "dip_pct": -1.9625,
+        "timestamp": "2026-07-18T10:46:26.588561+00:00",
+        "symbol": "BTCUSD",
+        "price": 63785.885535628586,
+        "dip_pct": -0.5537,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1980,10 +1980,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:04.794135+00:00",
-        "symbol": "BTCUSD",
-        "price": 62176.87020049872,
-        "dip_pct": -2.7277,
+        "timestamp": "2026-07-18T10:46:26.629645+00:00",
+        "symbol": "ETHUSD",
+        "price": 3172.2359631359755,
+        "dip_pct": -1.0242,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -1991,10 +1991,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:04.834203+00:00",
-        "symbol": "ETHUSD",
-        "price": 3150.423235360635,
-        "dip_pct": -1.9431,
+        "timestamp": "2026-07-18T10:46:28.677455+00:00",
+        "symbol": "BTCUSD",
+        "price": 63807.69500467501,
+        "dip_pct": -0.5197,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2002,10 +2002,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:06.882184+00:00",
-        "symbol": "BTCUSD",
-        "price": 62217.44882325927,
-        "dip_pct": -2.6642,
+        "timestamp": "2026-07-18T10:46:28.719839+00:00",
+        "symbol": "ETHUSD",
+        "price": 3176.244253701981,
+        "dip_pct": -0.8992,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2013,10 +2013,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:06.916933+00:00",
+        "timestamp": "2026-07-18T10:46:30.792800+00:00",
         "symbol": "ETHUSD",
-        "price": 3145.882938257811,
-        "dip_pct": -2.0844,
+        "price": 3177.7758857507247,
+        "dip_pct": -0.8514,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2024,10 +2024,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:08.966539+00:00",
-        "symbol": "BTCUSD",
-        "price": 62177.369640450604,
-        "dip_pct": -2.7269,
+        "timestamp": "2026-07-18T10:46:32.861050+00:00",
+        "symbol": "ETHUSD",
+        "price": 3180.1369346949423,
+        "dip_pct": -0.7777,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2035,10 +2035,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:09.013630+00:00",
+        "timestamp": "2026-07-18T10:46:34.927605+00:00",
         "symbol": "ETHUSD",
-        "price": 3145.790261397368,
-        "dip_pct": -2.0873,
+        "price": 3183.6488066279935,
+        "dip_pct": -0.6681,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2046,10 +2046,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:11.055642+00:00",
-        "symbol": "BTCUSD",
-        "price": 62111.88965643211,
-        "dip_pct": -2.8293,
+        "timestamp": "2026-07-18T10:46:37.006898+00:00",
+        "symbol": "ETHUSD",
+        "price": 3184.888535303312,
+        "dip_pct": -0.6295,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2057,10 +2057,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:11.090460+00:00",
+        "timestamp": "2026-07-18T10:46:39.083749+00:00",
         "symbol": "ETHUSD",
-        "price": 3141.8211530049116,
-        "dip_pct": -2.2109,
+        "price": 3189.01016939558,
+        "dip_pct": -0.5009,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2068,10 +2068,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:13.129356+00:00",
+        "timestamp": "2026-07-18T10:46:41.127325+00:00",
         "symbol": "BTCUSD",
-        "price": 62020.62690559867,
-        "dip_pct": -2.9721,
+        "price": 63508.082475081326,
+        "dip_pct": -0.9868,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2079,10 +2079,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:13.166983+00:00",
+        "timestamp": "2026-07-18T10:46:41.167448+00:00",
         "symbol": "ETHUSD",
-        "price": 3143.4440797048987,
-        "dip_pct": -2.1604,
+        "price": 3167.3249002436896,
+        "dip_pct": -1.1775,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2090,10 +2090,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:15.204986+00:00",
+        "timestamp": "2026-07-18T10:46:43.212427+00:00",
         "symbol": "BTCUSD",
-        "price": 61976.97769205498,
-        "dip_pct": -3.0404,
+        "price": 63471.265997082475,
+        "dip_pct": -1.0442,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2101,10 +2101,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:15.248101+00:00",
+        "timestamp": "2026-07-18T10:46:43.246527+00:00",
         "symbol": "ETHUSD",
-        "price": 3142.5212096938503,
-        "dip_pct": -2.1891,
+        "price": 3168.876394223376,
+        "dip_pct": -1.1291,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2112,10 +2112,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:17.293131+00:00",
+        "timestamp": "2026-07-18T10:46:45.298661+00:00",
         "symbol": "BTCUSD",
-        "price": 61942.766556213996,
-        "dip_pct": -3.0939,
+        "price": 63560.865773477286,
+        "dip_pct": -0.9045,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2123,10 +2123,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:17.327628+00:00",
+        "timestamp": "2026-07-18T10:46:45.347752+00:00",
         "symbol": "ETHUSD",
-        "price": 3143.298769416618,
-        "dip_pct": -2.1649,
+        "price": 3171.692094664346,
+        "dip_pct": -1.0412,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2134,10 +2134,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:19.378896+00:00",
+        "timestamp": "2026-07-18T10:46:47.387303+00:00",
         "symbol": "BTCUSD",
-        "price": 61907.328845255506,
-        "dip_pct": -3.1493,
+        "price": 63624.410943692106,
+        "dip_pct": -0.8054,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2145,10 +2145,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:19.419982+00:00",
+        "timestamp": "2026-07-18T10:46:47.426949+00:00",
         "symbol": "ETHUSD",
-        "price": 3142.430333238444,
-        "dip_pct": -2.1919,
+        "price": 3169.62843991227,
+        "dip_pct": -1.1056,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2156,10 +2156,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:21.462939+00:00",
+        "timestamp": "2026-07-18T10:46:49.472441+00:00",
         "symbol": "BTCUSD",
-        "price": 61901.38261992009,
-        "dip_pct": -3.1587,
+        "price": 63617.82353507111,
+        "dip_pct": -0.8157,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2167,10 +2167,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:21.508524+00:00",
+        "timestamp": "2026-07-18T10:46:49.516880+00:00",
         "symbol": "ETHUSD",
-        "price": 3139.481167981733,
-        "dip_pct": -2.2837,
+        "price": 3170.4659840839026,
+        "dip_pct": -1.0795,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2178,10 +2178,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:23.548277+00:00",
+        "timestamp": "2026-07-18T10:46:51.559997+00:00",
         "symbol": "BTCUSD",
-        "price": 61981.92483615996,
-        "dip_pct": -3.0326,
+        "price": 63546.869788251184,
+        "dip_pct": -0.9263,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
@@ -2189,10 +2189,10 @@
         "executed": false
     },
     {
-        "timestamp": "2026-07-18T10:41:23.586070+00:00",
+        "timestamp": "2026-07-18T10:46:51.603708+00:00",
         "symbol": "ETHUSD",
-        "price": 3143.323129135838,
-        "dip_pct": -2.1641,
+        "price": 3172.4283216964764,
+        "dip_pct": -1.0182,
         "bias": "NEUTRAL",
         "sentiment_score": 0.0,
         "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",

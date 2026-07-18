@@ -550,6 +550,44 @@ def generate_dashboard():
                 </div>
             </div>
 
+            <!-- Macro Market Context (TradingView) -->
+            <div class="mb-8 rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">📈 Macro Market Context</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Interactive Multi-Timeframe Chart powered by TradingView</p>
+                    </div>
+                </div>
+                <div class="h-[500px] w-full relative rounded-xl overflow-hidden border border-slate-800/50">
+                    <!-- TradingView Widget BEGIN -->
+                    <div class="tradingview-widget-container" style="height:100%;width:100%">
+                      <div id="tradingview_chart" style="height:calc(100% - 32px);width:100%"></div>
+                      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                      <script type="text/javascript">
+                      new TradingView.widget(
+                      {{
+                      "autosize": true,
+                      "symbol": "CRYPTO:BTCUSD",
+                      "interval": "D",
+                      "timezone": "Etc/UTC",
+                      "theme": "dark",
+                      "style": "1",
+                      "locale": "en",
+                      "enable_publishing": false,
+                      "backgroundColor": "rgba(15, 23, 42, 0.4)",
+                      "gridColor": "rgba(30, 41, 59, 0.5)",
+                      "hide_top_toolbar": false,
+                      "hide_legend": false,
+                      "save_image": false,
+                      "container_id": "tradingview_chart"
+                    }}
+                      );
+                      </script>
+                    </div>
+                    <!-- TradingView Widget END -->
+                </div>
+            </div>
+
             <!-- Real-Time WebSocket Activity (Live Price Chart + Trigger Logs) -->
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
                 <!-- Live Price Chart -->
