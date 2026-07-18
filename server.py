@@ -111,10 +111,10 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                     gemini_error = "Gemini key is missing or using default placeholder value."
                 else:
                     try:
-                        import google.generativeai as genai
-                        genai.configure(api_key=gemini_key.strip())
-                        # genai.list_models() is a generator; evaluate the first element to force the API call
-                        next(iter(genai.list_models()), None)
+                        from google import genai
+                        client = genai.Client(api_key=gemini_key.strip())
+                        # list_models() returns an iterator; evaluate the first element to force the API call
+                        next(client.models.list(), None)
                         gemini_status = "connected"
                     except Exception as e:
                         logger.warning(f"Connection check failed for Gemini API: {e}")

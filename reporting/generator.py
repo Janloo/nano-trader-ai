@@ -333,6 +333,8 @@ def generate_dashboard():
             # Badge color logic
             if executed:
                 status_badge = '<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">⚡ EXECUTED</span>'
+            elif trig.get("order_id", "") == "FAILED":
+                status_badge = '<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border bg-rose-500/10 text-rose-400 border-rose-500/20">❌ FAILED</span>'
             elif bias == "COOLDOWN":
                 status_badge = '<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border bg-yellow-500/10 text-yellow-400 border-yellow-500/20">COOLDOWN</span>'
             else:
@@ -353,6 +355,41 @@ def generate_dashboard():
             """)
     else:
         ws_rows.append('<tr><td colspan="7" class="py-6 text-center text-slate-500 text-sm">No real-time WebSocket trigger logs recorded yet.</td></tr>')
+
+    # Fetch Alpaca Live Orders
+    alpaca_orders_rows = []
+    try:
+        from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, APCA_API_BASE_URL
+        if APCA_API_KEY_ID and APCA_API_SECRET_KEY and "your_api" not in APCA_API_KEY_ID.lower():
+            from alpaca.trading.client import TradingClient
+            from alpaca.trading.requests import GetOrdersRequest
+            from alpaca.trading.enums import QueryOrderStatus
+            tc = TradingClient(APCA_API_KEY_ID, APCA_API_SECRET_KEY, paper="paper" in APCA_API_BASE_URL.lower(), url_override=APCA_API_BASE_URL)
+            req = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=10)
+            orders = tc.get_orders(filter=req)
+            for o in orders:
+                status_color = "text-emerald-400" if o.status.value == "filled" else "text-yellow-400" if o.status.value == "accepted" else "text-slate-400"
+                dt_str = o.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                qty = str(o.qty) if o.qty else f"${o.notional}" if o.notional else "-"
+                filled_qty = str(o.filled_qty) if o.filled_qty else "0"
+                avg_price = f"${float(o.filled_avg_price):,.2f}" if getattr(o, "filled_avg_price", None) else "-"
+                
+                alpaca_orders_rows.append(f"""
+                <tr class="hover:bg-slate-900/20 transition-colors border-b border-slate-800/40 last:border-b-0">
+                    <td class="py-3 text-slate-400 font-mono text-xs">{dt_str}</td>
+                    <td class="py-3"><span class="font-bold text-white">{o.symbol}</span></td>
+                    <td class="py-3"><span class="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-800/50 text-slate-300 uppercase font-mono text-xs">{o.side.value}</span></td>
+                    <td class="py-3 text-right font-mono text-slate-300">{qty}</td>
+                    <td class="py-3 text-right font-mono text-slate-300">{filled_qty}</td>
+                    <td class="py-3 text-right font-mono">{avg_price}</td>
+                    <td class="py-3 pl-4 font-semibold {status_color} uppercase tracking-wider text-xs">{o.status.value}</td>
+                </tr>
+                """)
+    except Exception as e:
+        alpaca_orders_rows.append(f'<tr><td colspan="7" class="py-6 text-center text-rose-500 text-sm">Failed to load Alpaca orders: {e}</td></tr>')
+        
+    if not alpaca_orders_rows:
+        alpaca_orders_rows.append('<tr><td colspan="7" class="py-6 text-center text-slate-500 text-sm">No recent Alpaca orders found.</td></tr>')
 
     html_template = f"""<!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950 text-slate-100">
@@ -666,6 +703,29 @@ def generate_dashboard():
                     <div class="h-72 w-full">
                         <canvas id="distributionChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <!-- Alpaca Live Orders Table -->
+            <div id="alpacaOrdersSection" class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden mb-8">
+                <h2 class="text-lg font-bold text-white mb-4"><span class="text-yellow-400">🦙</span> Alpaca Broker Orders (Live API)</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-800/50">
+                        <thead>
+                            <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
+                                <th class="pb-3 pt-2">Created At</th>
+                                <th class="pb-3 pt-2">Asset</th>
+                                <th class="pb-3 pt-2">Side</th>
+                                <th class="pb-3 pt-2 text-right">Qty/Notional</th>
+                                <th class="pb-3 pt-2 text-right">Filled Qty</th>
+                                <th class="pb-3 pt-2 text-right">Avg Price</th>
+                                <th class="pb-3 pt-2 pl-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alpacaOrdersBody" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
+                            {"".join(alpaca_orders_rows)}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1067,7 +1127,7 @@ def generate_dashboard():
             localStorage.setItem("gemini_key", geminiKey);
             localStorage.setItem("trading_env", env);
 
-            fetch("http://127.0.0.1:8000/api/config", {{
+            fetch("/api/config", {{
                 method: "POST",
                 headers: {{
                     "Content-Type": "application/json"
@@ -1121,7 +1181,7 @@ def generate_dashboard():
                 gemini_key: geminiKey
             }});
 
-            fetch(`http://127.0.0.1:8000/api/status?${{queryParams.toString()}}`)
+            fetch(`/api/status?${{queryParams.toString()}}`)
                 .then(res => res.json())
                 .then(data => {{
                     window.alpacaError = data.alpaca_error || "";
@@ -1152,7 +1212,7 @@ def generate_dashboard():
                     setLedState("alpaca", "failed");
                     setLedState("gemini", "failed");
                     
-                    alert("Connection Verification Failure:\\n\\nCould not establish connection to the local Python server (http://127.0.0.1:8000).\\n\\nPlease ensure that the bot server is currently running on your system.");
+                    alert("Connection Verification Failure:\\n\\nCould not establish connection to the local Python server.\\n\\nPlease ensure that the bot server is currently running on your system.");
                 }});
         }}
 
@@ -1193,8 +1253,8 @@ def generate_dashboard():
                         // For Z timestamps, this parses correctly as UTC
                         const lastTick = new Date(lastTickStr).getTime();
                         const now = new Date().getTime();
-                        // 30 seconds threshold for stale data
-                        if (now - lastTick < 30000) {{
+                        // 3 minutes threshold for stale data (bars are 1 minute)
+                        if (now - lastTick < 180000) {{
                             isAlive = true;
                         }}
                     }}
@@ -1232,6 +1292,11 @@ def generate_dashboard():
                             const currentWsTbody = document.getElementById("wsTableBody");
                             const newWsTbody = doc.getElementById("wsTableBody");
                             if (currentWsTbody && newWsTbody) currentWsTbody.innerHTML = newWsTbody.innerHTML;
+                            
+                            // 1b. Update Alpaca Orders table body
+                            const currentAlpacaBody = document.getElementById("alpacaOrdersBody");
+                            const newAlpacaBody = doc.getElementById("alpacaOrdersBody");
+                            if (currentAlpacaBody && newAlpacaBody) currentAlpacaBody.innerHTML = newAlpacaBody.innerHTML;
                             
                             // 2. Update Human Logbook
                             const currentLogbook = document.getElementById("logbookContainer");

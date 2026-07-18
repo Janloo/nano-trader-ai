@@ -27,11 +27,11 @@ from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, logger
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────
-DIP_THRESHOLD_PCT = -0.5      # Minimum % drop to trigger a DIP signal
+DIP_THRESHOLD_PCT = -0.50      # Minimum % drop to trigger a DIP signal
 DIP_WINDOW_SECONDS = 300      # 5-minute rolling window
 ORDER_COOLDOWN_SECONDS = 300  # 5 minutes between orders on same asset
 BIAS_EXPIRY_HOURS = 2         # Bias older than this = NEUTRAL (stale)
-NOTIONAL_USD = 5.00           # Order size per trigger
+NOTIONAL_USD = 10.00          # Order size per trigger
 
 BIAS_FILE = os.path.join("data", "state", "market_bias.json")
 TRADES_FILE_JSONL = os.path.join("data", "archives", "trades.jsonl")
@@ -300,7 +300,7 @@ class RealtimeExecutor:
                     symbol=order_symbol,
                     notional=NOTIONAL_USD,
                     side=OrderSide.BUY,
-                    time_in_force=TimeInForce.DAY
+                    time_in_force=TimeInForce.GTC
                 )
                 order = self._trading_client.submit_order(order_data)
                 order_id = str(order.id)

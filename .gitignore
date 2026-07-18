@@ -19,10 +19,8 @@ __pycache__/
 .DS_Store
 
 # Data and Logs
-data/*.json
-data/*.txt
+data/**/*.json
+data/**/*.jsonl
+data/**/*.txt
 dashboard.html
 *.log
-
-data/state/ws_triggers.json
-data/state/realtime_price_history.json
