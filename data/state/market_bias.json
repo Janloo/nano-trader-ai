@@ -1,0 +1,21 @@
+{
+    "target_assets": [
+        {
+            "symbol": "BTCUSD",
+            "bias": "NEUTRAL",
+            "sentiment_score": 0.0,
+            "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
+            "asset_type": "crypto"
+        },
+        {
+            "symbol": "ETHUSD",
+            "bias": "NEUTRAL",
+            "sentiment_score": 0.0,
+            "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
+            "asset_type": "crypto"
+        }
+    ],
+    "timestamp": "2026-07-18T11:36:52.504316+00:00",
+    "expires_at": "2026-07-18T13:36:52.504316+00:00",
+    "macro_articles_analyzed": 30
+}
