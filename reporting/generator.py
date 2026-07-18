@@ -403,6 +403,14 @@ def generate_dashboard():
                                 <option value="production">Production (Live)</option>
                             </select>
                         </div>
+                        <!-- Live Auto-Refresh toggle -->
+                        <button onclick="toggleAutoRefresh()" id="refreshBtn" class="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors" title="Toggle 5-second auto refresh">
+                            <span class="relative flex h-2 w-2">
+                                <span id="refreshPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 hidden"></span>
+                                <span id="refreshDot" class="relative inline-flex rounded-full h-2 w-2 bg-slate-600"></span>
+                            </span>
+                            Live Update
+                        </button>
                         <!-- Configuration Settings toggle -->
                         <button onclick="toggleSettings()" id="settingsBtn" class="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition-colors">
                             <svg class="h-4.5 w-4.5 text-slate-400 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -463,6 +471,15 @@ def generate_dashboard():
                             <span id="geminiLedColor" class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
                         </span>
                         <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Gemini API Connection</span>
+                    </div>
+                    
+                    <!-- LED 3: Engine -->
+                    <div class="flex items-center gap-2.5 cursor-help" title="Indicates if the Realtime Engine is actively feeding market data.">
+                        <span class="relative flex h-3 w-3">
+                            <span id="engineLedPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                            <span id="engineLedColor" class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                        </span>
+                        <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Engine Heartbeat</span>
                     </div>
                 </div>
                 <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -575,7 +592,7 @@ def generate_dashboard():
                                     <th class="pb-2 pl-4">Reasoning</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-800/40 text-xs font-medium text-slate-300">
+                            <tbody id="wsTableBody" class="divide-y divide-slate-800/40 text-xs font-medium text-slate-300">
                                 {"".join(ws_rows)}
                             </tbody>
                         </table>
@@ -651,7 +668,7 @@ def generate_dashboard():
             <!-- Human Logbook Panel -->
             <div class="mb-8 rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden">
                 <h2 class="text-lg font-bold text-white mb-4">Human Logbook & Warning Diagnostics</h2>
-                <div class="max-h-[300px] overflow-y-auto">
+                <div id="logbookContainer" class="max-h-[300px] overflow-y-auto">
                     {"".join(logbook_rows)}
                 </div>
             </div>
@@ -661,16 +678,27 @@ def generate_dashboard():
     </div>
 
     <!-- Data Injection & Chart Script -->
+    <script id="appData" type="application/json">
+    {{
+        "portfolioData": {json.dumps(history)},
+        "tradesData": {json.dumps(trades)},
+        "priceHistoryData": {json.dumps(price_history)},
+        "wsTriggersData": {json.dumps(ws_triggers)}
+    }}
+    </script>
     <script>
-        const portfolioData = {json.dumps(history)};
-        const tradesData = {json.dumps(trades)};
-        const priceHistoryData = {json.dumps(price_history)};
-        const wsTriggersData = {json.dumps(ws_triggers)};
+        const appDataEl = document.getElementById("appData");
+        const appData = JSON.parse(appDataEl.textContent);
+        
+        let portfolioData = appData.portfolioData;
+        let tradesData = appData.tradesData;
+        let priceHistoryData = appData.priceHistoryData;
+        let wsTriggersData = appData.wsTriggersData;
 
         let wsChartInstance = null;
         let activeWSSymbol = 'BTCUSD';
 
-        function renderWSRealtimeChart(symbol) {{
+        function renderWSRealtimeChart(symbol, isSilentUpdate = false) {{
             const ctx = document.getElementById('wsRealtimeChart').getContext('2d');
             if (!ctx) return;
             
@@ -707,7 +735,16 @@ def generate_dashboard():
             }});
 
             if (wsChartInstance) {{
-                wsChartInstance.destroy();
+                if (isSilentUpdate) {{
+                    wsChartInstance.data.labels = labels.length > 0 ? labels : ['No Data'];
+                    wsChartInstance.data.datasets[0].label = `${{symbol}} Price ($)`;
+                    wsChartInstance.data.datasets[0].data = prices.length > 0 ? prices : [0.0];
+                    wsChartInstance.data.datasets[1].data = triggerPoints;
+                    wsChartInstance.update('none');
+                    return;
+                }} else {{
+                    wsChartInstance.destroy();
+                }}
             }}
 
             wsChartInstance = new Chart(ctx, {{
@@ -1083,6 +1120,7 @@ def generate_dashboard():
             }}
         }}
         function showConnectionError(service) {{
+            if (service === 'engine') return;
             const error = service === 'alpaca' ? window.alpacaError : window.geminiError;
             if (error && error.trim() !== "") {{
                 alert(`${{service.toUpperCase()}} Connection Failure Details:\\n\\n${{error}}`);
@@ -1092,7 +1130,119 @@ def generate_dashboard():
                 alert(`${{service.toUpperCase()}} Status:\\n\\nVerification check pending... Please save configurations first.`);
             }}
         }}
-        window.addEventListener("DOMContentLoaded", loadSavedCredentials);
+
+        function checkEngineHeartbeat() {{
+            let isAlive = false;
+            try {{
+                if (priceHistoryData && priceHistoryData[activeWSSymbol]) {{
+                    const history = priceHistoryData[activeWSSymbol];
+                    if (history.length > 0) {{
+                        const lastTickStr = history[history.length - 1].timestamp;
+                        // For Z timestamps, this parses correctly as UTC
+                        const lastTick = new Date(lastTickStr).getTime();
+                        const now = new Date().getTime();
+                        // 30 seconds threshold for stale data
+                        if (now - lastTick < 30000) {{
+                            isAlive = true;
+                        }}
+                    }}
+                }}
+            }} catch(e) {{}}
+            setLedState("engine", isAlive ? "connected" : "failed");
+        }}
+        setInterval(checkEngineHeartbeat, 5000);
+        setTimeout(checkEngineHeartbeat, 1000);
+
+        let refreshInterval = null;
+        function toggleAutoRefresh() {{
+            const btn = document.getElementById("refreshBtn");
+            const ping = document.getElementById("refreshPing");
+            const dot = document.getElementById("refreshDot");
+            
+            if (refreshInterval) {{
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+                ping.classList.add("hidden");
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-slate-600";
+                btn.classList.remove("border-emerald-500/50", "text-emerald-400");
+                btn.classList.add("border-slate-800", "text-slate-400");
+                localStorage.setItem("auto_refresh", "false");
+                showNotification("Live Auto-Refresh Disabled", "info");
+            }} else {{
+                refreshInterval = setInterval(() => {{
+                    fetch(window.location.href)
+                        .then(res => res.text())
+                        .then(html => {{
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, "text/html");
+                            
+                            // 1. Update WS Triggers table body
+                            const currentWsTbody = document.getElementById("wsTableBody");
+                            const newWsTbody = doc.getElementById("wsTableBody");
+                            if (currentWsTbody && newWsTbody) currentWsTbody.innerHTML = newWsTbody.innerHTML;
+                            
+                            // 2. Update Human Logbook
+                            const currentLogbook = document.getElementById("logbookContainer");
+                            const newLogbook = doc.getElementById("logbookContainer");
+                            if (currentLogbook && newLogbook) currentLogbook.innerHTML = newLogbook.innerHTML;
+                            
+                            // 3. Extract JSON data from script and update chart
+                            const newAppDataEl = doc.getElementById("appData");
+                            if (newAppDataEl) {{
+                                const newAppData = JSON.parse(newAppDataEl.textContent);
+                                priceHistoryData = newAppData.priceHistoryData;
+                                wsTriggersData = newAppData.wsTriggersData;
+                                if (typeof renderWSRealtimeChart === 'function') {{
+                                    renderWSRealtimeChart(activeWSSymbol, true);
+                                }}
+                            }}
+                        }})
+                        .catch(err => console.error("Auto-refresh fetch failed", err));
+                }}, 5000);
+                ping.classList.remove("hidden");
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+                btn.classList.remove("border-slate-800", "text-slate-400");
+                btn.classList.add("border-emerald-500/50", "text-emerald-400");
+                localStorage.setItem("auto_refresh", "true");
+                showNotification("Live Auto-Refresh Enabled (5s)", "info");
+            }}
+        }}
+
+        window.addEventListener("DOMContentLoaded", () => {{
+            loadSavedCredentials();
+            if (localStorage.getItem("auto_refresh") !== "false") {{
+                // Instantly start interval and update visuals without showing the toggle notification again
+                const btn = document.getElementById("refreshBtn");
+                const ping = document.getElementById("refreshPing");
+                const dot = document.getElementById("refreshDot");
+                refreshInterval = setInterval(() => {{
+                    fetch(window.location.href)
+                        .then(res => res.text())
+                        .then(html => {{
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, "text/html");
+                            const currentWsTbody = document.getElementById("wsTableBody");
+                            const newWsTbody = doc.getElementById("wsTableBody");
+                            if (currentWsTbody && newWsTbody) currentWsTbody.innerHTML = newWsTbody.innerHTML;
+                            const currentLogbook = document.getElementById("logbookContainer");
+                            const newLogbook = doc.getElementById("logbookContainer");
+                            if (currentLogbook && newLogbook) currentLogbook.innerHTML = newLogbook.innerHTML;
+                            const newAppDataEl = doc.getElementById("appData");
+                            if (newAppDataEl) {{
+                                const newAppData = JSON.parse(newAppDataEl.textContent);
+                                priceHistoryData = newAppData.priceHistoryData;
+                                wsTriggersData = newAppData.wsTriggersData;
+                                if (typeof renderWSRealtimeChart === 'function') renderWSRealtimeChart(activeWSSymbol, true);
+                            }}
+                        }})
+                        .catch(err => console.error("Auto-refresh fetch failed", err));
+                }}, 5000);
+                ping.classList.remove("hidden");
+                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+                btn.classList.remove("border-slate-800", "text-slate-400");
+                btn.classList.add("border-emerald-500/50", "text-emerald-400");
+            }}
+        }});
     </script>
 </body>
 </html>
@@ -1101,3 +1251,7 @@ def generate_dashboard():
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html_template)
     print(f"Interactive Control Room successfully generated at {html_path}")
+
+if __name__ == "__main__":
+    generate_dashboard()
+

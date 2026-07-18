@@ -20,6 +20,13 @@
             "buying_power": 400000.0,
             "unrealized_pnl": 0.0,
             "average_sentiment": 0.0
+        },
+        {
+            "timestamp": "2026-07-18T10:20:05.796592+00:00",
+            "equity": 99999.95,
+            "buying_power": 399965.87,
+            "unrealized_pnl": -0.04232299999999999,
+            "average_sentiment": 0.075
         }
     ],
     "trades": []
