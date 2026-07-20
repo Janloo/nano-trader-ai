@@ -381,7 +381,9 @@ class RealtimeExecutor:
         if last is None:
             return False
         elapsed = (datetime.now(timezone.utc) - last).total_seconds()
-        return elapsed < ORDER_COOLDOWN_SECONDS
+        is_crypto = symbol.endswith("USD")
+        cooldown_target = 15 if is_crypto else ORDER_COOLDOWN_SECONDS
+        return elapsed < cooldown_target
 
     def _calculate_position_size(self, symbol: str, price: float, sentiment_score: float, atr: float = 0.0, risk_config: Dict = None) -> float:
         """Calculates the position size dynamically based on risk configuration and AI confidence."""
@@ -447,24 +449,30 @@ class RealtimeExecutor:
 
         risk_config = RiskConfigReader.read()
         
+        size_usd = self._calculate_position_size(symbol, price, sentiment_score, atr, risk_config)
+
         # Check max open positions (anti-spam)
         try:
             self._init_trading_client()
-            max_open = risk_config.get("max_open_positions_per_asset", 1)
+            if is_crypto:
+                max_open = risk_config.get("crypto_max_grid_layers", 3)
+            else:
+                max_open = risk_config.get("max_open_positions_per_asset", 1)
             
             check_symbol = symbol.replace("USD", "/USD") if (is_crypto and "USD" in symbol) else symbol
             
             try:
                 open_pos = self._trading_client.get_open_position(check_symbol)
-                if float(open_pos.qty) != 0 and max_open <= 1:
-                    logger.warning(f"[WS] Already have an open position for {check_symbol}. Skipping order.")
-                    return None
+                current_qty = abs(float(open_pos.qty))
+                if current_qty > 0:
+                    current_layers = float(open_pos.market_value) / size_usd if size_usd > 0 else 0
+                    if current_layers >= (max_open - 0.5):
+                        logger.warning(f"[WS] Max grid layers reached for {check_symbol} (Current: ~{current_layers:.1f}, Max: {max_open}). Skipping order.")
+                        return None
             except Exception as e:
                 pass # Usually implies no open position
         except Exception as e:
             logger.warning(f"[WS] Error checking open positions: {e}")
-
-        size_usd = self._calculate_position_size(symbol, price, sentiment_score, atr, risk_config)
 
         if self.dry_run:
             order_id = f"dry-ws-{int(time.time())}"
@@ -482,33 +490,44 @@ class RealtimeExecutor:
                 atr_tp_mult = risk_config.get("atr_take_profit_multiplier", 3.0)
                 atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
 
-                # Determine dynamic TP multiplier from regime if passed
-                regimes = RegimeConfigReader.read()
-                symbol_regime = regimes.get(symbol, {}).get("regime", "UNKNOWN")
-                if symbol_regime == "BULL_TREND" and not is_short:
-                    atr_tp_mult = max(atr_tp_mult, 3.5) # Wider TP in strong uptrend
-                elif symbol_regime == "RANGING":
-                    atr_tp_mult = min(atr_tp_mult, 1.5) # Scalp TP in ranging market
-                    
-                # Dynamic TP/SL using ATR if available, else fallback
-                if atr > 0:
+                if is_crypto:
+                    micro_tp_pct = risk_config.get("crypto_micro_tp_pct", 0.50) / 100.0
                     if is_short:
-                        tp_price = round(price - (atr_tp_mult * atr), 2)
-                        sl_price = round(price + (atr_sl_mult * atr), 2)
+                        tp_price = round(price * (1.0 - micro_tp_pct), 2)
+                        sl_price = round(price * 1.05, 2) # Wide 5% SL for grid
                         side = OrderSide.SELL
                     else:
-                        tp_price = round(price + (atr_tp_mult * atr), 2)
-                        sl_price = round(price - (atr_sl_mult * atr), 2)
+                        tp_price = round(price * (1.0 + micro_tp_pct), 2)
+                        sl_price = round(price * 0.95, 2) # Wide 5% SL for grid
                         side = OrderSide.BUY
                 else:
-                    if is_short:
-                        tp_price = round(price * 0.975, 2)
-                        sl_price = round(price * 1.015, 2)
-                        side = OrderSide.SELL
+                    # Determine dynamic TP multiplier from regime if passed
+                    regimes = RegimeConfigReader.read()
+                    symbol_regime = regimes.get(symbol, {}).get("regime", "UNKNOWN")
+                    if symbol_regime == "BULL_TREND" and not is_short:
+                        atr_tp_mult = max(atr_tp_mult, 3.5) # Wider TP in strong uptrend
+                    elif symbol_regime == "RANGING":
+                        atr_tp_mult = min(atr_tp_mult, 1.5) # Scalp TP in ranging market
+                        
+                    # Dynamic TP/SL using ATR if available, else fallback
+                    if atr > 0:
+                        if is_short:
+                            tp_price = round(price - (atr_tp_mult * atr), 2)
+                            sl_price = round(price + (atr_sl_mult * atr), 2)
+                            side = OrderSide.SELL
+                        else:
+                            tp_price = round(price + (atr_tp_mult * atr), 2)
+                            sl_price = round(price - (atr_sl_mult * atr), 2)
+                            side = OrderSide.BUY
                     else:
-                        tp_price = round(price * 1.025, 2)
-                        sl_price = round(price * 0.985, 2)
-                        side = OrderSide.BUY
+                        if is_short:
+                            tp_price = round(price * 0.975, 2)
+                            sl_price = round(price * 1.015, 2)
+                            side = OrderSide.SELL
+                        else:
+                            tp_price = round(price * 1.025, 2)
+                            sl_price = round(price * 0.985, 2)
+                            side = OrderSide.BUY
 
                 if is_crypto and "USD" in symbol and "/" not in symbol:
                     order_symbol = symbol.replace("USD", "/USD")
@@ -604,17 +623,10 @@ class RealtimeExecutor:
         WSTradeLogger.log_price(symbol, price, bar_time)
 
         # Read Regime and adjust DIP threshold dynamically
-        regimes = RegimeConfigReader.read()
-        regime_data = regimes.get(symbol, {})
-        regime = regime_data.get("regime", "UNKNOWN")
+        risk_config = RiskConfigReader.read()
         
-        dynamic_dip = DIP_THRESHOLD_PCT # default -0.5
-        if regime == "BULL_TREND":
-            dynamic_dip = -0.25 # Catch shallow dips
-        elif regime == "RANGING":
-            dynamic_dip = -0.60 # Wait for deeper dips
-        elif regime == "BEAR_TREND":
-            dynamic_dip = -1.20 # Extreme capitulation only
+        # Override for crypto micro-scalping
+        dynamic_dip = -abs(risk_config.get("crypto_micro_dip_pct", 0.15))
             
         # Update Volatility detector with dynamic threshold
         dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=dynamic_dip)

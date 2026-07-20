@@ -599,6 +599,22 @@ def generate_dashboard():
                         <input type="number" step="0.1" id="atrSlMult" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="2.0">
                     </div>
                 </div>
+
+                <h2 class="text-md font-bold text-white mb-4 mt-2 border-t border-slate-800 pt-4"><span class="text-emerald-400">⚡</span> Crypto Micro-Scalping (Grid Trading)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Micro DIP Trigger (%)</label>
+                        <input type="number" step="0.01" id="cryptoMicroDipPct" class="w-full bg-slate-950 border border-emerald-900/50 rounded-xl px-4 py-2.5 text-emerald-400 font-mono text-sm focus:outline-none focus:border-emerald-500 transition-colors" placeholder="0.15">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Micro Take Profit (%)</label>
+                        <input type="number" step="0.01" id="cryptoMicroTpPct" class="w-full bg-slate-950 border border-emerald-900/50 rounded-xl px-4 py-2.5 text-emerald-400 font-mono text-sm focus:outline-none focus:border-emerald-500 transition-colors" placeholder="0.50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Grid Layers</label>
+                        <input type="number" step="1" id="cryptoMaxGridLayers" class="w-full bg-slate-950 border border-emerald-900/50 rounded-xl px-4 py-2.5 text-emerald-400 font-mono text-sm focus:outline-none focus:border-emerald-500 transition-colors" placeholder="3">
+                    </div>
+                </div>
                 <div class="flex justify-end gap-3">
                     <button onclick="toggleSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors text-sm">Cancel</button>
                     <button onclick="saveSettings()" id="saveBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors text-sm">Save Configs</button>
@@ -1326,6 +1342,9 @@ def generate_dashboard():
                     if(data.max_risk_per_trade_pct) document.getElementById("maxRiskPct").value = data.max_risk_per_trade_pct;
                     if(data.max_open_positions_per_asset) document.getElementById("maxOpenPositions").value = data.max_open_positions_per_asset;
                     if(data.atr_stop_loss_multiplier) document.getElementById("atrSlMult").value = data.atr_stop_loss_multiplier;
+                    if(data.crypto_micro_dip_pct) document.getElementById("cryptoMicroDipPct").value = data.crypto_micro_dip_pct;
+                    if(data.crypto_micro_tp_pct) document.getElementById("cryptoMicroTpPct").value = data.crypto_micro_tp_pct;
+                    if(data.crypto_max_grid_layers) document.getElementById("cryptoMaxGridLayers").value = data.crypto_max_grid_layers;
                 }}
             }} catch(e) {{}}
         }}
@@ -1335,7 +1354,10 @@ def generate_dashboard():
                 max_capital_per_trade_pct: parseFloat(document.getElementById("maxCapitalPct").value) || 0.10,
                 max_risk_per_trade_pct: parseFloat(document.getElementById("maxRiskPct").value) || 0.01,
                 max_open_positions_per_asset: parseInt(document.getElementById("maxOpenPositions").value) || 1,
-                atr_stop_loss_multiplier: parseFloat(document.getElementById("atrSlMult").value) || 2.0
+                atr_stop_loss_multiplier: parseFloat(document.getElementById("atrSlMult").value) || 2.0,
+                crypto_micro_dip_pct: parseFloat(document.getElementById("cryptoMicroDipPct").value) || 0.15,
+                crypto_micro_tp_pct: parseFloat(document.getElementById("cryptoMicroTpPct").value) || 0.50,
+                crypto_max_grid_layers: parseInt(document.getElementById("cryptoMaxGridLayers").value) || 3
             }};
             try {{
                 await fetch("/api/risk-settings", {{

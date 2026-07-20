@@ -2,5 +2,8 @@
     "max_capital_per_trade_pct": 0.2,
     "max_risk_per_trade_pct": 0.03,
     "max_open_positions_per_asset": 1,
-    "atr_stop_loss_multiplier": 2
+    "atr_stop_loss_multiplier": 2,
+    "crypto_micro_dip_pct": 0.15,
+    "crypto_micro_tp_pct": 0.50,
+    "crypto_max_grid_layers": 3
 }
