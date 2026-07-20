@@ -1509,6 +1509,7 @@ def generate_dashboard():
 
         window.addEventListener("DOMContentLoaded", () => {{
             loadSavedCredentials();
+            loadRiskSettings();
             if (localStorage.getItem("auto_refresh") !== "false") {{
                 // Instantly start interval and update visuals without showing the toggle notification again
                 const btn = document.getElementById("refreshBtn");
