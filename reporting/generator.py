@@ -1252,6 +1252,8 @@ def generate_dashboard():
             localStorage.setItem("gemini_key", geminiKey);
             localStorage.setItem("trading_env", env);
 
+            saveRiskSettings(); // Actually save the risk settings to the backend!
+
             fetch("/api/config", {{
                 method: "POST",
                 headers: {{
