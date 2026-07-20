@@ -91,6 +91,22 @@ class BiasReader:
 
 
 # ─────────────────────────────────────────────
+# RiskConfigReader
+# ─────────────────────────────────────────────
+class RiskConfigReader:
+    @staticmethod
+    def read() -> Dict:
+        try:
+            path = os.path.join("config", "risk_settings.json")
+            if not os.path.exists(path):
+                return {}
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"[WS] Error reading risk_settings.json: {e}")
+            return {}
+
+# ─────────────────────────────────────────────
 # VolatilityDetector — Rolling window micro-fluctuation detector
 # ─────────────────────────────────────────────
 class VolatilityDetector:
@@ -347,28 +363,49 @@ class RealtimeExecutor:
         elapsed = (datetime.now(timezone.utc) - last).total_seconds()
         return elapsed < ORDER_COOLDOWN_SECONDS
 
-    def _calculate_position_size(self, symbol: str, price: float, sentiment_score: float) -> float:
-        """Calculates the position size dynamically based on buying power and AI confidence."""
+    def _calculate_position_size(self, symbol: str, price: float, sentiment_score: float, atr: float = 0.0, risk_config: Dict = None) -> float:
+        """Calculates the position size dynamically based on risk configuration and AI confidence."""
         fallback = NOTIONAL_USD
         if self.dry_run:
             return fallback
+
+        if not risk_config:
+            risk_config = {}
 
         try:
             self._init_trading_client()
             account = self._trading_client.get_account()
             bp = float(account.buying_power)
+            total_equity = float(account.equity)
             
-            # Confidence Sizing: scale between 5% and 15% of BP based on score (0.75 to 1.0)
-            base_alloc_pct = 0.05
-            max_alloc_pct = 0.15
+            max_capital_pct = risk_config.get("max_capital_per_trade_pct", 0.05)
+            max_risk_pct = risk_config.get("max_risk_per_trade_pct", 0.01)
+            atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
+            
+            # 1. Calculate the stop loss distance
+            if atr > 0 and price > 0:
+                sl_distance_pct = (atr * atr_sl_mult) / price
+            else:
+                sl_distance_pct = 0.015 # fallback 1.5% stop loss
+                
+            # 2. Risk Amount ($)
+            risk_amount_usd = total_equity * max_risk_pct
+            
+            # 3. Position Size ($) based on risk
+            position_size_usd = risk_amount_usd / sl_distance_pct if sl_distance_pct > 0 else 0
+            
+            # 4. Apply maximum capital cap
+            max_capital_usd = bp * max_capital_pct
+            allocation = min(position_size_usd, max_capital_usd)
+            
+            # 5. Modulate by sentiment score (0.75 -> 50% of allocation, 1.0 -> 100% of allocation)
             score_abs = min(max(abs(sentiment_score), 0.75), 1.0)
+            modulation = 0.5 + 0.5 * ((score_abs - 0.75) / 0.25)
             
-            # Linear interpolation
-            alloc_pct = base_alloc_pct + (max_alloc_pct - base_alloc_pct) * ((score_abs - 0.75) / 0.25)
+            final_allocation = allocation * modulation
             
-            # Cap at max $500, min $5
-            allocation = min(max(bp * alloc_pct, 5.0), 500.0)
-            return allocation
+            logger.info(f"[RISK CALC] Equity: {total_equity}, Risk Amt: {risk_amount_usd}, SL Dist: {sl_distance_pct:.4f}, Calc Pos: {position_size_usd:.2f}, Final Alloc: {final_allocation:.2f}")
+            return max(final_allocation, 5.0)
         except Exception as e:
             logger.warning(f"[WS] Failed to calculate dynamic size: {e}. Using fallback ${fallback}")
             return fallback
@@ -388,7 +425,26 @@ class RealtimeExecutor:
             WSTradeLogger.write_logbook(f"[WS INFO] Salto lo Short su Crypto {symbol} (non supportato).")
             return None
 
-        size_usd = self._calculate_position_size(symbol, price, sentiment_score)
+        risk_config = RiskConfigReader.read()
+        
+        # Check max open positions (anti-spam)
+        try:
+            self._init_trading_client()
+            max_open = risk_config.get("max_open_positions_per_asset", 1)
+            
+            check_symbol = symbol.replace("USD", "/USD") if (is_crypto and "USD" in symbol) else symbol
+            
+            try:
+                open_pos = self._trading_client.get_open_position(check_symbol)
+                if float(open_pos.qty) != 0 and max_open <= 1:
+                    logger.warning(f"[WS] Already have an open position for {check_symbol}. Skipping order.")
+                    return None
+            except Exception as e:
+                pass # Usually implies no open position
+        except Exception as e:
+            logger.warning(f"[WS] Error checking open positions: {e}")
+
+        size_usd = self._calculate_position_size(symbol, price, sentiment_score, atr, risk_config)
 
         if self.dry_run:
             order_id = f"dry-ws-{int(time.time())}"
@@ -402,16 +458,19 @@ class RealtimeExecutor:
                 self._init_trading_client()
                 from alpaca.trading.requests import MarketOrderRequest, TakeProfitRequest, StopLossRequest
                 from alpaca.trading.enums import OrderSide, TimeInForce
+                
+                atr_tp_mult = risk_config.get("atr_take_profit_multiplier", 3.0)
+                atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
 
                 # Dynamic TP/SL using ATR if available, else fallback
                 if atr > 0:
                     if is_short:
-                        tp_price = round(price - (3.0 * atr), 2) # Target lower price
-                        sl_price = round(price + (2.0 * atr), 2) # Stop loss higher price
+                        tp_price = round(price - (atr_tp_mult * atr), 2)
+                        sl_price = round(price + (atr_sl_mult * atr), 2)
                         side = OrderSide.SELL
                     else:
-                        tp_price = round(price + (3.0 * atr), 2) # Target higher price
-                        sl_price = round(price - (2.0 * atr), 2) # Stop loss lower price
+                        tp_price = round(price + (atr_tp_mult * atr), 2)
+                        sl_price = round(price - (atr_sl_mult * atr), 2)
                         side = OrderSide.BUY
                 else:
                     if is_short:
@@ -705,10 +764,6 @@ class RealtimeExecutor:
             else:
                 equity_symbols_ws.append(sym)
 
-        crypto_stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
-        # Using IEX as it's free and sufficient for large cap tracking like QQQ
-        stock_stream = StockDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY, feed=DataFeed.IEX)
-
         async def crypto_handler(bar):
             self.on_bar(bar)
             
@@ -718,31 +773,38 @@ class RealtimeExecutor:
             if bar.symbol in self.target_symbols:
                 self.on_bar(bar)
 
-        if crypto_symbols_ws:
-            crypto_stream.subscribe_bars(crypto_handler, *crypto_symbols_ws)
-            logger.info(f"[WS] Connecting to Alpaca CryptoDataStream for {crypto_symbols_ws}...")
-            
         if "QQQ" not in equity_symbols_ws:
             equity_symbols_ws.append("QQQ")
             
-        stock_stream.subscribe_bars(stock_handler, *equity_symbols_ws)
-        logger.info(f"[WS] Connecting to Alpaca StockDataStream for {equity_symbols_ws}...")
-        
         def run_crypto():
+            if not crypto_symbols_ws:
+                return
             while True:
                 try:
+                    logger.info(f"[WS] Connecting to Alpaca CryptoDataStream for {crypto_symbols_ws}...")
+                    crypto_stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
+                    crypto_stream.subscribe_bars(crypto_handler, *crypto_symbols_ws)
                     crypto_stream.run()
                 except Exception as e:
-                    logger.error(f"[WS] Crypto stream error: {e}. Reconnecting in 5 secondi...")
-                    time.sleep(5)
+                    logger.error(f"[WS] Crypto stream error: {e}")
+                
+                logger.info("[WS] Crypto stream closed. Reconnecting in 5 secondi...")
+                time.sleep(5)
 
         def run_stock():
+            if not equity_symbols_ws:
+                return
             while True:
                 try:
+                    logger.info(f"[WS] Connecting to Alpaca StockDataStream for {equity_symbols_ws}...")
+                    stock_stream = StockDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY, feed=DataFeed.IEX)
+                    stock_stream.subscribe_bars(stock_handler, *equity_symbols_ws)
                     stock_stream.run()
                 except Exception as e:
-                    logger.error(f"[WS] Stock stream error: {e}. Reconnecting in 5 secondi...")
-                    time.sleep(5)
+                    logger.error(f"[WS] Stock stream error: {e}")
+                
+                logger.info("[WS] Stock stream closed. Reconnecting in 5 secondi...")
+                time.sleep(5)
 
         t_crypto = threading.Thread(target=run_crypto, daemon=True)
         t_stock = threading.Thread(target=run_stock, daemon=True)

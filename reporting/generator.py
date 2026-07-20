@@ -404,6 +404,35 @@ def generate_dashboard():
     else:
         ws_rows.append('<tr><td colspan="7" class="py-6 text-center text-slate-500 text-sm">No real-time WebSocket trigger logs recorded yet.</td></tr>')
 
+
+    # Fetch Alpaca Open Positions
+    open_positions_rows = []
+    try:
+        from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, APCA_API_BASE_URL
+        if APCA_API_KEY_ID and APCA_API_SECRET_KEY and "your_api" not in APCA_API_KEY_ID.lower():
+            from alpaca.trading.client import TradingClient
+            tc = TradingClient(APCA_API_KEY_ID, APCA_API_SECRET_KEY, paper="paper" in APCA_API_BASE_URL.lower(), url_override=APCA_API_BASE_URL)
+            positions = tc.get_all_positions()
+            for p in positions:
+                pnl_color = "text-emerald-400" if float(p.unrealized_pl) >= 0 else "text-rose-400"
+                open_positions_rows.append(f'''
+                <tr class="hover:bg-slate-900/20 transition-colors border-b border-slate-800/40 last:border-b-0">
+                    <td class="py-3"><span class="font-bold text-white">{p.symbol}</span></td>
+                    <td class="py-3 text-right font-mono text-slate-300">{p.qty}</td>
+                    <td class="py-3 text-right font-mono text-slate-300">${float(p.avg_entry_price):,.2f}</td>
+                    <td class="py-3 text-right font-mono text-slate-300">${float(p.current_price):,.2f}</td>
+                    <td class="py-3 text-right font-mono {pnl_color}">${float(p.unrealized_pl):,.2f}</td>
+                    <td class="py-3 text-right pl-4">
+                        <button onclick="closePosition('{p.symbol}')" class="px-3 py-1 bg-rose-600/80 hover:bg-rose-500 text-white rounded text-xs font-bold transition">Close</button>
+                    </td>
+                </tr>
+                ''')
+    except Exception as e:
+        open_positions_rows.append(f'<tr><td colspan="6" class="py-6 text-center text-rose-500 text-sm">Failed to load open positions: {e}</td></tr>')
+        
+    if not open_positions_rows:
+        open_positions_rows.append('<tr><td colspan="6" class="py-6 text-center text-slate-500 text-sm">No open positions found.</td></tr>')
+
     # Fetch Alpaca Live Orders
     alpaca_orders_rows = []
     try:
@@ -546,6 +575,26 @@ def generate_dashboard():
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Gemini API Key</label>
                         <input type="password" id="geminiApiKey" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="your_gemini_api_key_here">
+                    </div>
+                </div>
+
+                <h2 class="text-lg font-bold text-white mb-4 mt-6">Risk Settings</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Capital Per Trade (%)</label>
+                        <input type="number" step="0.01" id="maxCapitalPct" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="0.10">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Risk Per Trade (%)</label>
+                        <input type="number" step="0.01" id="maxRiskPct" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="0.01">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Open Positions Per Asset</label>
+                        <input type="number" step="1" id="maxOpenPositions" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="1">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">ATR Stop Loss Multiplier</label>
+                        <input type="number" step="0.1" id="atrSlMult" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="2.0">
                     </div>
                 </div>
                 <div class="flex justify-end gap-3">
@@ -1138,6 +1187,7 @@ def generate_dashboard():
             document.getElementById("alpacaBaseUrl").value = localStorage.getItem("alpaca_base_url") || (env === "production" ? "https://api.alpaca.markets" : "https://paper-api.alpaca.markets");
             document.getElementById("geminiApiKey").value = localStorage.getItem("gemini_key") || "";
             
+            loadRiskSettings();
             triggerConnectionCheck();
         }}
 
@@ -1238,6 +1288,58 @@ def generate_dashboard():
                     showNotification("Saved in browser storage, but sync failed.", "error");
                 }}
             }});
+        }}
+
+
+        async function loadRiskSettings() {{
+            try {{
+                const res = await fetch("/api/risk-settings");
+                if(res.ok) {{
+                    const data = await res.json();
+                    if(data.max_capital_per_trade_pct) document.getElementById("maxCapitalPct").value = data.max_capital_per_trade_pct;
+                    if(data.max_risk_per_trade_pct) document.getElementById("maxRiskPct").value = data.max_risk_per_trade_pct;
+                    if(data.max_open_positions_per_asset) document.getElementById("maxOpenPositions").value = data.max_open_positions_per_asset;
+                    if(data.atr_stop_loss_multiplier) document.getElementById("atrSlMult").value = data.atr_stop_loss_multiplier;
+                }}
+            }} catch(e) {{}}
+        }}
+        
+        async function saveRiskSettings() {{
+            const riskData = {{
+                max_capital_per_trade_pct: parseFloat(document.getElementById("maxCapitalPct").value) || 0.10,
+                max_risk_per_trade_pct: parseFloat(document.getElementById("maxRiskPct").value) || 0.01,
+                max_open_positions_per_asset: parseInt(document.getElementById("maxOpenPositions").value) || 1,
+                atr_stop_loss_multiplier: parseFloat(document.getElementById("atrSlMult").value) || 2.0
+            }};
+            try {{
+                await fetch("/api/risk-settings", {{
+                    method: "POST",
+                    headers: {{"Content-Type": "application/json"}},
+                    body: JSON.stringify(riskData)
+                }});
+            }} catch(e) {{}}
+        }}
+
+        async function closePosition(symbol) {{
+            if(!confirm(`Are you sure you want to market close ${{symbol}}?`)) return;
+            const keyId = localStorage.getItem("alpaca_key_id");
+            const secretKey = localStorage.getItem("alpaca_secret_key");
+            const baseUrl = localStorage.getItem("alpaca_base_url");
+            try {{
+                const res = await fetch("/api/close-position", {{
+                    method: "POST",
+                    headers: {{"Content-Type": "application/json"}},
+                    body: JSON.stringify({{ symbol: symbol, api_key: keyId, secret_key: secretKey, base_url: baseUrl }})
+                }});
+                if(res.ok) {{
+                    showNotification(`Position ${{symbol}} closed successfully.`, "info");
+                }} else {{
+                    const err = await res.json();
+                    showNotification(`Error closing ${{symbol}}: ${{err.error}}`, "error");
+                }}
+            }} catch(e) {{
+                showNotification(`Request failed: ${{e}}`, "error");
+            }}
         }}
 
         function triggerConnectionCheck() {{
@@ -1372,6 +1474,11 @@ def generate_dashboard():
                             const currentAlpacaBody = document.getElementById("alpacaOrdersBody");
                             const newAlpacaBody = doc.getElementById("alpacaOrdersBody");
                             if (currentAlpacaBody && newAlpacaBody) currentAlpacaBody.innerHTML = newAlpacaBody.innerHTML;
+                            
+                            const currentPosBody = document.getElementById("openPositionsBody");
+                            const newPosBody = doc.getElementById("openPositionsBody");
+                            if (currentPosBody && newPosBody) currentPosBody.innerHTML = newPosBody.innerHTML;
+
                             
                             // 2. Update Human Logbook
                             const currentLogbook = document.getElementById("logbookContainer");

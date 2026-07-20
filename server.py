@@ -163,6 +163,20 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             }).encode("utf-8"))
             return
 
+        if clean_path == "/api/risk-settings":
+            filepath = os.path.join("config", "risk_settings.json")
+            if not os.path.exists(filepath):
+                content = b'{}'
+            else:
+                with open(filepath, "rb") as f:
+                    content = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self.wfile.write(content)
+            return
+
         self.send_error(404, "Not Found")
 
     def do_POST(self):
@@ -186,6 +200,66 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
             except Exception as e:
                 logger.error(f"Error saving local synced config: {e}")
+                self.send_response(500)
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        if self.path == "/api/risk-settings":
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+                risk_data = json.loads(post_data.decode('utf-8'))
+                
+                config_path = os.path.join("config", "risk_settings.json")
+                os.makedirs(os.path.dirname(config_path), exist_ok=True)
+                with open(config_path, "w", encoding="utf-8") as f:
+                    json.dump(risk_data, f, indent=4)
+                    
+                logger.info("Risk settings updated from dashboard.")
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+            except Exception as e:
+                logger.error(f"Error saving risk settings: {e}")
+                self.send_response(500)
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        if self.path == "/api/close-position":
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+                req_data = json.loads(post_data.decode('utf-8'))
+                
+                symbol = req_data.get("symbol")
+                api_key = req_data.get("api_key")
+                secret_key = req_data.get("secret_key")
+                base_url = req_data.get("base_url")
+                
+                if not all([symbol, api_key, secret_key]):
+                    raise ValueError("Missing symbol or credentials")
+
+                from alpaca.trading.client import TradingClient
+                is_paper = "paper" in base_url.lower() if base_url else True
+                tc = TradingClient(api_key=api_key.strip(), secret_key=secret_key.strip(), paper=is_paper, url_override=base_url.strip() if base_url else None)
+                
+                tc.close_position(symbol_or_asset_id=symbol)
+                logger.info(f"Dashboard manually closed position for {symbol}")
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+            except Exception as e:
+                logger.error(f"Error closing position {req_data.get('symbol', 'unknown')}: {e}")
                 self.send_response(500)
                 self.send_cors_headers()
                 self.end_headers()
