@@ -11,6 +11,7 @@ from config.settings import (
 )
 from client.alpaca_client import AlpacaClientWrapper
 from strategy.ai_selector import GeminiAssetSelector, load_universe
+from strategy.regime_analyzer import MarketRegimeAnalyzer
 from execution.trader import AITrader
 from news_collector import fetch_macro_news
 from alpaca.data.timeframe import TimeFrame
@@ -240,6 +241,27 @@ def run_iteration(
             notify_das_selection(selected_assets, len(macro_articles))
         except Exception as e:
             logger.warning(f"Telegram selection notification failed: {e}")
+
+    # ─────────────────────────────────────────────
+    # Phase 2.5: Calculate Market Regimes for Selected Assets
+    # ─────────────────────────────────────────────
+    logger.info("[DAS Phase 2.5] Calculating Technical Market Regimes...")
+    regime_analyzer = MarketRegimeAnalyzer()
+    regimes = {}
+    for asset in selected_assets:
+        symbol = asset["symbol"]
+        is_crypto = (asset.get("type") == "crypto")
+        regime_data = regime_analyzer.analyze_asset(symbol, is_crypto)
+        regimes[symbol] = regime_data
+        # Attach regime to the asset dict so it goes into daily_selection
+        asset["regime"] = regime_data.get("regime", "UNKNOWN")
+        asset["adx"] = regime_data.get("adx", 0.0)
+    
+    if regimes:
+        regime_analyzer.save_regimes(regimes)
+    
+    # Update daily selection with the new regime attached
+    _save_daily_selection(selected_assets, len(macro_articles))
 
     # ─────────────────────────────────────────────
     # Phase 3: Write market_bias.json for WebSocket executor

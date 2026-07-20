@@ -111,6 +111,18 @@ class RiskConfigReader:
             logger.error(f"[WS] Error reading risk_settings.json: {e}")
             return {}
 
+class RegimeConfigReader:
+    @staticmethod
+    def read() -> Dict:
+        try:
+            path = os.path.join("data", "state", "market_regime.json")
+            if not os.path.exists(path):
+                return {}
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            return {}
+
 # ─────────────────────────────────────────────
 # VolatilityDetector — Rolling window micro-fluctuation detector
 # ─────────────────────────────────────────────
@@ -126,12 +138,15 @@ class VolatilityDetector:
         # {symbol: deque of (timestamp_utc, price)}
         self._prices: Dict[str, deque] = {}
 
-    def update(self, symbol: str, price: float, timestamp: datetime):
+    def update(self, symbol: str, price: float, timestamp: datetime,
+               dynamic_dip_pct: float = None, dynamic_spike_pct: float = None):
         """
         Records a new price point. Returns (dip_pct, spike_pct).
         dip_pct is the % change from window high if <= dip_threshold_pct.
         spike_pct is the % change from window low if >= spike_threshold_pct.
         """
+        active_dip_threshold = dynamic_dip_pct if dynamic_dip_pct is not None else self.dip_threshold_pct
+        active_spike_threshold = dynamic_spike_pct if dynamic_spike_pct is not None else self.spike_threshold_pct
         if symbol not in self._prices:
             self._prices[symbol] = deque()
 
@@ -151,7 +166,7 @@ class VolatilityDetector:
         dip_pct = None
         if window_high > 0:
             pct_change_high = ((price - window_high) / window_high) * 100.0
-            if pct_change_high <= self.dip_threshold_pct:
+            if pct_change_high <= active_dip_threshold:
                 dip_pct = pct_change_high
 
         # Calculate % change from window low (SPIKE)
@@ -159,7 +174,7 @@ class VolatilityDetector:
         spike_pct = None
         if window_low > 0:
             pct_change_low = ((price - window_low) / window_low) * 100.0
-            if pct_change_low >= self.spike_threshold_pct:
+            if pct_change_low >= active_spike_threshold:
                 spike_pct = pct_change_low
 
         return dip_pct, spike_pct
@@ -467,6 +482,14 @@ class RealtimeExecutor:
                 atr_tp_mult = risk_config.get("atr_take_profit_multiplier", 3.0)
                 atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
 
+                # Determine dynamic TP multiplier from regime if passed
+                regimes = RegimeConfigReader.read()
+                symbol_regime = regimes.get(symbol, {}).get("regime", "UNKNOWN")
+                if symbol_regime == "BULL_TREND" and not is_short:
+                    atr_tp_mult = max(atr_tp_mult, 3.5) # Wider TP in strong uptrend
+                elif symbol_regime == "RANGING":
+                    atr_tp_mult = min(atr_tp_mult, 1.5) # Scalp TP in ranging market
+                    
                 # Dynamic TP/SL using ATR if available, else fallback
                 if atr > 0:
                     if is_short:
@@ -580,8 +603,21 @@ class RealtimeExecutor:
         # Log streaming price for the real-time dashboard chart
         WSTradeLogger.log_price(symbol, price, bar_time)
 
-        # Update Volatility detector
-        dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time)
+        # Read Regime and adjust DIP threshold dynamically
+        regimes = RegimeConfigReader.read()
+        regime_data = regimes.get(symbol, {})
+        regime = regime_data.get("regime", "UNKNOWN")
+        
+        dynamic_dip = DIP_THRESHOLD_PCT # default -0.5
+        if regime == "BULL_TREND":
+            dynamic_dip = -0.25 # Catch shallow dips
+        elif regime == "RANGING":
+            dynamic_dip = -0.60 # Wait for deeper dips
+        elif regime == "BEAR_TREND":
+            dynamic_dip = -1.20 # Extreme capitulation only
+            
+        # Update Volatility detector with dynamic threshold
+        dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=dynamic_dip)
 
         if dip_pct is not None or spike_pct is not None:
             if dip_pct is not None:
