@@ -197,9 +197,11 @@ class GeminiAssetSelector:
 
     def _write_logbook_warning(self, error: str):
         """Writes a warning entry to data/human_logbook.txt."""
+        
+        err_msg = str(error).replace("\n", " ")
         log_msg = (
             f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-            "[API WARNING] DAS: Quota Gemini esaurita nella selezione asset. "
+            f"[API WARNING] DAS: Errore Gemini API nella selezione asset: {err_msg}. "
             "Il bot riprovera' al prossimo ciclo orario."
         )
         log_path = os.path.join("data", "archives", "human_logbook.txt")
