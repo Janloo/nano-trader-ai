@@ -321,6 +321,7 @@ class RealtimeExecutor:
 
     def __init__(self, symbols: List[str], dry_run: bool = False):
         self.symbols = symbols
+        self.target_symbols = []
         self.dry_run = dry_run
         self.vol_detector = VolatilityDetector()
         self.indicator_mgr = IndicatorManager(period=14)
@@ -422,7 +423,10 @@ class RealtimeExecutor:
                         sl_price = round(price * 0.985, 2)
                         side = OrderSide.BUY
 
-                order_symbol = symbol.replace("BTCUSD", "BTC/USD").replace("ETHUSD", "ETH/USD")
+                if is_crypto and "USD" in symbol and "/" not in symbol:
+                    order_symbol = symbol.replace("USD", "/USD")
+                else:
+                    order_symbol = symbol
                 
                 qty = size_usd / price if price > 0 else 0.0
                 qty = round(qty, 4) if is_crypto else round(qty, 2)
@@ -579,35 +583,35 @@ class RealtimeExecutor:
         if spike_pct is not None and spike_pct >= 0.25:
             logger.info(f"[WS LEAD-LAG] {symbol} jumped {spike_pct:.2f}% in {DIP_WINDOW_SECONDS}s. Price: ${price:.2f}")
 
-            # Cross-Asset Check: if QQQ spikes, look for BULLISH cryptos
-            for crypto_sym in self.symbols:
-                if self._is_on_cooldown(crypto_sym):
+            # Cross-Asset Check: if QQQ spikes, look for BULLISH targets
+            for target_sym in self.target_symbols:
+                if self._is_on_cooldown(target_sym):
                     continue
                 
-                # Check warm-up status of the target crypto
-                atr = self.indicator_mgr.get_atr(crypto_sym)
-                rsi = self.indicator_mgr.get_rsi(crypto_sym)
-                crypto_price = self.indicator_mgr.get_last_price(crypto_sym)
+                # Check warm-up status of the target asset
+                atr = self.indicator_mgr.get_atr(target_sym)
+                rsi = self.indicator_mgr.get_rsi(target_sym)
+                target_price = self.indicator_mgr.get_last_price(target_sym)
                 
-                if atr is None or rsi is None or crypto_price is None:
+                if atr is None or rsi is None or target_price is None:
                     continue
 
-                bias_info = BiasReader.get_bias_for_symbol(crypto_sym)
+                bias_info = BiasReader.get_bias_for_symbol(target_sym)
                 bias = bias_info.get("bias", "NEUTRAL")
                 sentiment_score = bias_info.get("sentiment_score", 0.0)
 
                 if bias == "BULLISH" and sentiment_score >= 0.75:
                     if rsi > 70:
-                        logger.info(f"[WS FILTER] {crypto_sym} RSI is {rsi:.2f} (>70). Skipping Lead-Lag BUY.")
+                        logger.info(f"[WS FILTER] {target_sym} RSI is {rsi:.2f} (>70). Skipping Lead-Lag BUY.")
                         continue
                         
-                    logger.info(f"[WS LEAD-LAG TRIGGER] QQQ Spike + BULLISH {crypto_sym} confirmed! Executing anticipatory BUY order...")
+                    logger.info(f"[WS LEAD-LAG TRIGGER] QQQ Spike + BULLISH {target_sym} confirmed! Executing anticipatory BUY order...")
                     
-                    # Execute on the crypto symbol
-                    self._execute_order(crypto_sym, crypto_price, spike_pct, bias_info, is_short=False, atr=atr)
+                    # Execute on the target symbol
+                    self._execute_order(target_sym, target_price, spike_pct, bias_info, is_short=False, atr=atr)
                     
                     # Prevent multiple executions immediately
-                    self._last_order_time[crypto_sym] = datetime.now(timezone.utc)
+                    self._last_order_time[target_sym] = datetime.now(timezone.utc)
 
     def _run_simulation(self):
         """Simulates incoming bars for testing, dry-runs, and credential-free modes."""
@@ -633,7 +637,7 @@ class RealtimeExecutor:
             step = 0
             while True:
                 step += 1
-                for symbol in self.symbols:
+                for symbol in self.target_symbols:
                     current = prices.get(symbol, 100.0)
                     
                     # Every 12 steps (approx 24s), simulate a -0.65% DIP
@@ -666,10 +670,20 @@ class RealtimeExecutor:
 
     def run(self, simulate: bool = False):
         """Starts the WebSocket stream or simulation loop and blocks indefinitely."""
+        
+        bias_data = BiasReader.read()
+        target_assets = bias_data.get("target_assets", [])
+        
+        if not target_assets:
+            logger.warning("[WS] No targets found in AI bias. Falling back to default crypto targets.")
+            self.target_symbols = [s.upper() for s in self.symbols]
+        else:
+            self.target_symbols = [asset["symbol"].upper() for asset in target_assets]
+
         logger.info("=" * 60)
         logger.info("[WS] Starting Real-Time WebSocket Executor")
         logger.info(f"[WS] Mode: {'DRY-RUN' if self.dry_run else 'LIVE'} {'(SIMULATED)' if simulate else ''}")
-        logger.info(f"[WS] Symbols: {self.symbols}")
+        logger.info(f"[WS] Target Symbols: {self.target_symbols}")
         logger.info(f"[WS] DIP Threshold: {DIP_THRESHOLD_PCT}% over {DIP_WINDOW_SECONDS}s")
         logger.info(f"[WS] Order Cooldown: {ORDER_COOLDOWN_SECONDS}s")
         logger.info("=" * 60)
@@ -682,8 +696,14 @@ class RealtimeExecutor:
         from alpaca.data.live.stock import StockDataStream
         from alpaca.data.enums import DataFeed
 
-        # Map symbols to Alpaca format
-        ws_symbols = [s.replace("BTCUSD", "BTC/USD").replace("ETHUSD", "ETH/USD") for s in self.symbols]
+        crypto_symbols_ws = []
+        equity_symbols_ws = []
+        
+        for sym in self.target_symbols:
+            if sym.endswith("USD"):
+                crypto_symbols_ws.append(sym.replace("USD", "/USD"))
+            else:
+                equity_symbols_ws.append(sym)
 
         crypto_stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
         # Using IEX as it's free and sufficient for large cap tracking like QQQ
@@ -693,13 +713,20 @@ class RealtimeExecutor:
             self.on_bar(bar)
             
         async def stock_handler(bar):
-            self.on_stock_bar(bar)
+            if bar.symbol == "QQQ":
+                self.on_stock_bar(bar)
+            if bar.symbol in self.target_symbols:
+                self.on_bar(bar)
 
-        crypto_stream.subscribe_bars(crypto_handler, *ws_symbols)
-        stock_stream.subscribe_bars(stock_handler, "QQQ")
-
-        logger.info(f"[WS] Connecting to Alpaca CryptoDataStream for {ws_symbols}...")
-        logger.info("[WS] Connecting to Alpaca StockDataStream for ['QQQ'] (Lead-Lag)...")
+        if crypto_symbols_ws:
+            crypto_stream.subscribe_bars(crypto_handler, *crypto_symbols_ws)
+            logger.info(f"[WS] Connecting to Alpaca CryptoDataStream for {crypto_symbols_ws}...")
+            
+        if "QQQ" not in equity_symbols_ws:
+            equity_symbols_ws.append("QQQ")
+            
+        stock_stream.subscribe_bars(stock_handler, *equity_symbols_ws)
+        logger.info(f"[WS] Connecting to Alpaca StockDataStream for {equity_symbols_ws}...")
         
         def run_crypto():
             try:
