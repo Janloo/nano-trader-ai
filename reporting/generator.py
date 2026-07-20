@@ -1,7 +1,9 @@
 import json
 import os
-from datetime import datetime
+import sys
+from datetime import datetime, timezone
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def read_jsonl(filepath):
     data = []
@@ -827,6 +829,28 @@ def generate_dashboard():
                     <div class="h-72 w-full">
                         <canvas id="distributionChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <!-- Alpaca Open Positions Table -->
+            <div id="openPositionsSection" class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden mb-8">
+                <h2 class="text-lg font-bold text-white mb-4"><span class="text-emerald-400">💼</span> Alpaca Open Positions</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-800/50">
+                        <thead>
+                            <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
+                                <th class="pb-3 pt-2">Asset</th>
+                                <th class="pb-3 pt-2 text-right">Qty</th>
+                                <th class="pb-3 pt-2 text-right">Avg Entry Price</th>
+                                <th class="pb-3 pt-2 text-right">Current Price</th>
+                                <th class="pb-3 pt-2 text-right">Unrealized PnL</th>
+                                <th class="pb-3 pt-2 pl-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="openPositionsBody" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
+                            {"".join(open_positions_rows)}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
