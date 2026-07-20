@@ -56,7 +56,7 @@ class GeminiAssetSelector:
 
         if not self.is_mocked:
             self.client = genai.Client(api_key=self.api_key)
-            self.model_name = "gemini-3.5-flash"
+            self.model_name = "gemini-1.5-flash"
         else:
             logger.warning("[DAS] No GEMINI_API_KEY found. Running Asset Selector in MOCK mode.")
 

@@ -729,16 +729,20 @@ class RealtimeExecutor:
         logger.info(f"[WS] Connecting to Alpaca StockDataStream for {equity_symbols_ws}...")
         
         def run_crypto():
-            try:
-                crypto_stream.run()
-            except Exception as e:
-                logger.error(f"[WS] Crypto stream error: {e}")
+            while True:
+                try:
+                    crypto_stream.run()
+                except Exception as e:
+                    logger.error(f"[WS] Crypto stream error: {e}. Reconnecting in 5 secondi...")
+                    time.sleep(5)
 
         def run_stock():
-            try:
-                stock_stream.run()
-            except Exception as e:
-                logger.error(f"[WS] Stock stream error: {e}")
+            while True:
+                try:
+                    stock_stream.run()
+                except Exception as e:
+                    logger.error(f"[WS] Stock stream error: {e}. Reconnecting in 5 secondi...")
+                    time.sleep(5)
 
         t_crypto = threading.Thread(target=run_crypto, daemon=True)
         t_stock = threading.Thread(target=run_stock, daemon=True)

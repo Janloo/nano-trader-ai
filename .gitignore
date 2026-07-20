@@ -24,3 +24,5 @@ data/**/*.jsonl
 data/**/*.txt
 dashboard.html
 *.log
+data/logs/
+market_news.json
