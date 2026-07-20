@@ -22,8 +22,13 @@ from collections import deque
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, List
 import threading
+import logging
 
 from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, logger
+
+# Suppress noisy asyncio/websockets tracebacks during reconnections
+logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+logging.getLogger("websockets").setLevel(logging.CRITICAL)
 
 # ─────────────────────────────────────────────
 # Configuration
