@@ -94,7 +94,7 @@ def _write_market_bias(bias_assets: list, macro_article_count: int):
     payload = {
         "target_assets": bias_assets,
         "timestamp": now.isoformat(),
-        "expires_at": (now + timedelta(hours=2)).isoformat(),
+        "expires_at": (now + timedelta(hours=72)).isoformat(),
         "macro_articles_analyzed": macro_article_count
     }
 

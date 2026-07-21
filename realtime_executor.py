@@ -33,10 +33,10 @@ logging.getLogger("websockets").setLevel(logging.CRITICAL)
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────
-DIP_THRESHOLD_PCT = -0.50      # Minimum % drop to trigger a DIP signal
-SPIKE_THRESHOLD_PCT = 0.50     # Minimum % rise to trigger a SPIKE signal
+DIP_THRESHOLD_PCT = -0.20      # Minimum % drop to trigger a DIP signal
+SPIKE_THRESHOLD_PCT = 0.20     # Minimum % rise to trigger a SPIKE signal
 DIP_WINDOW_SECONDS = 300      # 5-minute rolling window
-ORDER_COOLDOWN_SECONDS = 300  # 5 minutes between orders on same asset
+ORDER_COOLDOWN_SECONDS = 60   # 1 minute between orders on same asset
 BIAS_EXPIRY_HOURS = 72        # Temporarily extended for the weekend
 NOTIONAL_USD = 10.00          # Fallback static order size
 
