@@ -615,6 +615,30 @@ def generate_dashboard():
                         <input type="number" step="1" id="cryptoMaxGridLayers" class="w-full bg-slate-950 border border-emerald-900/50 rounded-xl px-4 py-2.5 text-emerald-400 font-mono text-sm focus:outline-none focus:border-emerald-500 transition-colors" placeholder="3">
                     </div>
                 </div>
+
+                <h2 class="text-md font-bold text-white mb-4 mt-2 border-t border-slate-800 pt-4"><span class="text-purple-400">📊</span> Position Sizing (Kelly Criterion)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Use Kelly</label>
+                        <select id="useKellyCriterion" class="w-full bg-slate-950 border border-purple-900/50 rounded-xl px-4 py-2.5 text-purple-400 font-mono text-sm focus:outline-none focus:border-purple-500 transition-colors">
+                            <option value="true">Enabled</option>
+                            <option value="false">Disabled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Kelly Multiplier</label>
+                        <input type="number" step="0.1" id="kellyFractionMultiplier" class="w-full bg-slate-950 border border-purple-900/50 rounded-xl px-4 py-2.5 text-purple-400 font-mono text-sm focus:outline-none focus:border-purple-500 transition-colors" placeholder="0.5">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Historical WR</label>
+                        <input type="number" step="0.01" id="historicalWinRate" class="w-full bg-slate-950 border border-purple-900/50 rounded-xl px-4 py-2.5 text-purple-400 font-mono text-sm focus:outline-none focus:border-purple-500 transition-colors" placeholder="0.55">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Historical R/R</label>
+                        <input type="number" step="0.1" id="historicalRewardRisk" class="w-full bg-slate-950 border border-purple-900/50 rounded-xl px-4 py-2.5 text-purple-400 font-mono text-sm focus:outline-none focus:border-purple-500 transition-colors" placeholder="1.5">
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-3">
                     <button onclick="toggleSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors text-sm">Cancel</button>
                     <button onclick="saveSettings()" id="saveBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors text-sm">Save Configs</button>
@@ -1345,6 +1369,10 @@ def generate_dashboard():
                     if(data.crypto_micro_dip_pct) document.getElementById("cryptoMicroDipPct").value = data.crypto_micro_dip_pct;
                     if(data.crypto_micro_tp_pct) document.getElementById("cryptoMicroTpPct").value = data.crypto_micro_tp_pct;
                     if(data.crypto_max_grid_layers) document.getElementById("cryptoMaxGridLayers").value = data.crypto_max_grid_layers;
+                    if(data.use_kelly_criterion !== undefined) document.getElementById("useKellyCriterion").value = data.use_kelly_criterion ? "true" : "false";
+                    if(data.kelly_fraction_multiplier) document.getElementById("kellyFractionMultiplier").value = data.kelly_fraction_multiplier;
+                    if(data.historical_win_rate) document.getElementById("historicalWinRate").value = data.historical_win_rate;
+                    if(data.historical_reward_risk) document.getElementById("historicalRewardRisk").value = data.historical_reward_risk;
                 }}
             }} catch(e) {{}}
         }}
@@ -1357,7 +1385,11 @@ def generate_dashboard():
                 atr_stop_loss_multiplier: parseFloat(document.getElementById("atrSlMult").value) || 2.0,
                 crypto_micro_dip_pct: parseFloat(document.getElementById("cryptoMicroDipPct").value) || 0.15,
                 crypto_micro_tp_pct: parseFloat(document.getElementById("cryptoMicroTpPct").value) || 0.50,
-                crypto_max_grid_layers: parseInt(document.getElementById("cryptoMaxGridLayers").value) || 3
+                crypto_max_grid_layers: parseInt(document.getElementById("cryptoMaxGridLayers").value) || 3,
+                use_kelly_criterion: document.getElementById("useKellyCriterion").value === "true",
+                kelly_fraction_multiplier: parseFloat(document.getElementById("kellyFractionMultiplier").value) || 0.5,
+                historical_win_rate: parseFloat(document.getElementById("historicalWinRate").value) || 0.55,
+                historical_reward_risk: parseFloat(document.getElementById("historicalRewardRisk").value) || 1.5
             }};
             try {{
                 await fetch("/api/risk-settings", {{

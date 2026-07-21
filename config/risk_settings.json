@@ -4,10 +4,10 @@
     "max_open_positions_per_asset": 1,
     "atr_stop_loss_multiplier": 2,
     "crypto_micro_dip_pct": 0.15,
-    "crypto_micro_tp_pct": 0.50,
+    "crypto_micro_tp_pct": 0.5,
     "crypto_max_grid_layers": 3,
     "use_kelly_criterion": true,
-    "kelly_fraction_multiplier": 0.5,
-    "historical_win_rate": 0.55,
-    "historical_reward_risk": 1.5
+    "kelly_fraction_multiplier": 0.6,
+    "historical_win_rate": 0.56,
+    "historical_reward_risk": 1.6
 }
