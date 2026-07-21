@@ -106,10 +106,10 @@ class GeminiSentimentStrategy(BaseStrategy):
 
             except Exception as e:
                 last_error = str(e)
-                if "429" in last_error or "quota" in last_error.lower():
+                if any(err in last_error for err in ["429", "503", "500", "502"]) or "quota" in last_error.lower():
                     if attempt < max_retries - 1:
                         logger.warning(
-                            f"Gemini API rate limit (429) hit. Retrying in {backoff} seconds "
+                            f"Gemini API rate limit/server error hit. Retrying in {backoff} seconds "
                             f"(Attempt {attempt + 1}/{max_retries})..."
                         )
                         import time

@@ -140,10 +140,10 @@ class GeminiAssetSelector:
 
             except Exception as e:
                 last_error = str(e)
-                if "429" in last_error or "quota" in last_error.lower():
+                if any(err in last_error for err in ["429", "503", "500", "502"]) or "quota" in last_error.lower():
                     if attempt < max_retries - 1:
                         logger.warning(
-                            f"[DAS] Gemini 429 rate limit. Retrying in {backoff}s "
+                            f"[DAS] Gemini rate limit/server error. Retrying in {backoff}s "
                             f"(Attempt {attempt + 1}/{max_retries})..."
                         )
                         time.sleep(backoff)
