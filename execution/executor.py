@@ -8,43 +8,38 @@ from alpaca.trading.models import Position
 
 from client.alpaca_client import AlpacaClientWrapper
 from config.settings import TRADE_AMOUNT_USD, logger
+from data.db import insert_trade, insert_portfolio_snap
 
 class OrderExecutor:
     def __init__(self, client: AlpacaClientWrapper):
         self.client = client
 
-        self.trades_path = os.path.join("data", "archives", "trades.jsonl")
-        self.portfolio_path = os.path.join("data", "archives", "portfolio_history.jsonl")
-
-    def _append_jsonl(self, path: str, record: dict):
-        """Appends a dictionary as a JSON Line to the specified file."""
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        try:
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(record) + "\n")
-        except Exception as e:
-            logger.error(f"Error appending to {path}: {e}")
-
     def log_portfolio_status(self, equity: float, buying_power: float, unrealized_pnl: float):
         """Appends portfolio snapshot status to historical logs."""
-        self._append_jsonl(self.portfolio_path, {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "equity": equity,
-            "buying_power": buying_power,
-            "unrealized_pnl": unrealized_pnl
-        })
+        try:
+            timestamp = datetime.now(timezone.utc).isoformat()
+            insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl)
+        except Exception as e:
+            logger.error(f"Error logging portfolio snapshot: {e}")
 
     def log_trade(self, symbol: str, side: str, qty: float, notional: float, price: float, order_id: str):
         """Appends transaction trade details to historical logs."""
-        self._append_jsonl(self.trades_path, {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "order_id": order_id,
-            "symbol": symbol,
-            "side": side,
-            "qty": qty,
-            "notional": notional,
-            "price": price
-        })
+        try:
+            timestamp = datetime.now(timezone.utc).isoformat()
+            insert_trade(
+                timestamp=timestamp, 
+                symbol=symbol, 
+                action=side, 
+                qty=qty, 
+                price=price, 
+                notional=notional, 
+                sentiment_score=0.0, 
+                reasoning="", 
+                execution_type="cron_macro", 
+                order_id=order_id
+            )
+        except Exception as e:
+            logger.error(f"Error logging trade: {e}")
 
     def get_position_for_symbol(self, symbol: str, positions: List[Position]) -> Optional[Position]:
         """Finds the open position for a given symbol from a list of open positions (slash-insensitive)."""

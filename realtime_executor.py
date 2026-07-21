@@ -278,34 +278,23 @@ class WSTradeLogger:
     @staticmethod
     def log_trade(symbol: str, price: float, qty: float, order_id: str,
                   sentiment_score: float, reasoning: str, dip_pct: float):
-        """Appends a WebSocket-triggered trade to trades.jsonl."""
-        os.makedirs(os.path.dirname(TRADES_FILE_JSONL), exist_ok=True)
+        """Appends a WebSocket-triggered trade to SQLite DB."""
         try:
-            trade_data = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "order_id": order_id,
-                "symbol": symbol,
-                "side": "BUY",
-                "qty": qty,
-                "notional": NOTIONAL_USD,
-                "price": price,
-                "sentiment_score": sentiment_score,
-                "reasoning": reasoning,
-                "execution_type": "hybrid_websocket_trigger",
-                "dip_pct": round(dip_pct, 4),
-                "das_selected": True,
-                "das_reasoning": reasoning
-            }
-
-            with open(TRADES_FILE_JSONL, "a", encoding="utf-8") as f:
-                pass # Ensure directory exists
-                
-            target_file = TRADES_FILE_JSONL
-            if symbol.endswith("USD"):
-                target_file = TRADES_FILE_JSONL.replace("trades.jsonl", "crypto_trades.jsonl")
-
-            with open(target_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(trade_data) + "\n")
+            from data.db import insert_trade
+            from datetime import datetime, timezone
+            timestamp = datetime.now(timezone.utc).isoformat()
+            insert_trade(
+                timestamp=timestamp,
+                symbol=symbol,
+                action="BUY",
+                qty=qty,
+                price=price,
+                notional=NOTIONAL_USD,
+                sentiment_score=sentiment_score,
+                reasoning=f"{reasoning} (DIP: {dip_pct:.4f}%)",
+                execution_type="hybrid_websocket_trigger",
+                order_id=order_id
+            )
         except Exception as e:
             logger.error(f"[WS] Failed to log trade: {e}")
 

@@ -43,67 +43,52 @@ def fetch_price_at_time(client: AlpacaClientWrapper, symbol: str, target_time: d
 
 def update_feedback_loop_metrics(client: Optional[AlpacaClientWrapper]):
     """
-    Scans data/ai_analytics_logs.json and updates metrics for entries older than +1h or +4h.
+    Scans sqlite db and updates metrics for entries older than +1h or +4h.
     """
-    file_path = os.path.join("data", "archives", "ai_analytics_logs.jsonl")
-    if not os.path.exists(file_path) or client is None:
+    if client is None:
         return
 
-    logs = []
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    logs.append(json.loads(line))
-    except Exception as e:
-        logger.error(f"Failed to read ai_analytics_logs.jsonl for feedback update: {e}")
-        return
+    from data.db import get_ai_analytics_pending_feedback, update_ai_analytics_feedback
+    logs = get_ai_analytics_pending_feedback()
 
-    updated = False
     now = datetime.now(timezone.utc)
 
     for entry in logs:
-        timestamp_str = entry.get("timestamp")
-        if not timestamp_str:
-            continue
-
+        analytics_id = entry["id"]
+        timestamp_str = entry["timestamp"]
         try:
             trade_time = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
         except ValueError:
             continue
 
-        symbol = entry.get("asset")
-        exec_price = float(entry.get("price", 0.0))
+        symbol = entry["asset"]
+        exec_price = float(entry["price"]) if entry["price"] else 0.0
         if exec_price <= 0:
             continue
             
-        feedback = entry.setdefault("feedback_loop_metric", {})
+        ret_1h = entry["return_1h"]
+        ret_4h = entry["return_4h"]
+        updated = False
 
         # Calculate +1 Hour close price
-        if feedback.get("price_at_1h") is None:
+        if ret_1h is None:
             target_1h = trade_time + timedelta(hours=1)
             if now >= target_1h:
                 price_1h = fetch_price_at_time(client, symbol, target_1h)
                 if price_1h is not None:
-                    feedback["price_at_1h"] = price_1h
-                    feedback["return_1h"] = ((price_1h - exec_price) / exec_price) * 100.0
+                    ret_1h = ((price_1h - exec_price) / exec_price) * 100.0
                     updated = True
-                    logger.info(f"[Feedback Loop] Updated +1h price for {symbol} to ${price_1h:.2f} (Return: {feedback['return_1h']:.2f}%)")
+                    logger.info(f"[Feedback Loop] Updated +1h price for {symbol} to ${price_1h:.2f} (Return: {ret_1h:.2f}%)")
 
         # Calculate +4 Hour close price
-        if feedback.get("price_at_4h") is None:
+        if ret_4h is None:
             target_4h = trade_time + timedelta(hours=4)
             if now >= target_4h:
                 price_4h = fetch_price_at_time(client, symbol, target_4h)
                 if price_4h is not None:
-                    feedback["price_at_4h"] = price_4h
-                    feedback["return_4h"] = ((price_4h - exec_price) / exec_price) * 100.0
+                    ret_4h = ((price_4h - exec_price) / exec_price) * 100.0
                     updated = True
-                    logger.info(f"[Feedback Loop] Updated +4h price for {symbol} to ${price_4h:.2f} (Return: {feedback['return_4h']:.2f}%)")
+                    logger.info(f"[Feedback Loop] Updated +4h price for {symbol} to ${price_4h:.2f} (Return: {ret_4h:.2f}%)")
 
-    if updated:
-        try:
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(logs, f, indent=4)
-        except Exception as e:
-            logger.error(f"Failed to save feedback update logs: {e}")
+        if updated:
+            update_ai_analytics_feedback(analytics_id, ret_1h, ret_4h)

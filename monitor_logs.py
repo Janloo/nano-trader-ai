@@ -2,9 +2,10 @@ import time
 import os
 import re
 import sys
+import json
 
 log_file = r"c:\sources\nano-trader-ai\data\logs\nano_trader.log"
-trades_file = r"c:\sources\nano-trader-ai\data\archives\trades.jsonl"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def read_new_lines_non_locking(filename, last_pos):
     if not os.path.exists(filename):
@@ -35,14 +36,19 @@ def read_new_lines_non_locking(filename, last_pos):
 def monitor():
     print("Monitoring started (non-locking)...", flush=True)
     
-    # Initialize positions to end of file
+    # Initialize positions
     log_pos = 0
     if os.path.exists(log_file):
         log_pos = os.path.getsize(log_file)
         
-    trades_pos = 0
-    if os.path.exists(trades_file):
-        trades_pos = os.path.getsize(trades_file)
+    last_trade_id = 0
+    try:
+        from data.db import get_trades, get_new_trades
+        trades = get_trades(limit=1)
+        if trades:
+            last_trade_id = trades[0]["id"]
+    except Exception:
+        pass
     
     while True:
         log_pos, log_lines = read_new_lines_non_locking(log_file, log_pos)
@@ -60,9 +66,14 @@ def monitor():
                     except:
                         pass
         
-        trades_pos, trades_lines = read_new_lines_non_locking(trades_file, trades_pos)
-        for t_line in trades_lines:
-            print(f"[ALARM_TRADE] {t_line.strip()}", flush=True)
+        try:
+            from data.db import get_new_trades
+            new_trades = get_new_trades(last_trade_id)
+            for t in new_trades:
+                print(f"[ALARM_TRADE] {json.dumps(t)}", flush=True)
+                last_trade_id = max(last_trade_id, t["id"])
+        except Exception:
+            pass
             
         time.sleep(1)
 

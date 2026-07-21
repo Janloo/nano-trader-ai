@@ -40,12 +40,11 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
 
         # Serve static database file trades.json
         if clean_path == "/data/trades.json":
-            filepath = "data/archives/trades.jsonl"
-            if not os.path.exists(filepath):
-                content = b'{"portfolio_history": [], "trades": []}'
-            else:
-                with open(filepath, "rb") as f:
-                    content = f.read()
+            try:
+                from data.db import get_trades
+                content = json.dumps(get_trades(limit=500)).encode("utf-8")
+            except Exception:
+                content = b'[]'
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_cors_headers()
@@ -55,12 +54,11 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
 
         # Serve static database file ai_analytics_logs.json
         if clean_path == "/data/ai_analytics_logs.json":
-            filepath = "data/archives/ai_analytics_logs.jsonl"
-            if not os.path.exists(filepath):
+            try:
+                from data.db import get_ai_analytics
+                content = json.dumps(get_ai_analytics(limit=500)).encode("utf-8")
+            except Exception:
                 content = b'[]'
-            else:
-                with open(filepath, "rb") as f:
-                    content = f.read()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_cors_headers()

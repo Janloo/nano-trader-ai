@@ -274,8 +274,7 @@ def run_iteration(
     bias_assets = []
     sentiment_threshold = universe_config.get("sentiment_threshold", 0.75)
 
-    analytics_path = os.path.join("data", "archives", "ai_analytics_logs.jsonl")
-    os.makedirs(os.path.dirname(analytics_path), exist_ok=True)
+    from data.db import insert_ai_analytics
 
     for asset in selected_assets:
         symbol = asset["symbol"]
@@ -309,25 +308,25 @@ def run_iteration(
         )
 
         # Write AI Telemetry logs for Dashboard
-        telemetry_record = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "asset": symbol,
-            "price": 0.0, # Fetching live price here would slow down macro execution
-            "raw_news_titles": [n.get("title", "") for n in feed_payload if n.get("source") in (f"Alpaca - {symbol}", "Macro News")][:5],
-            "ai_raw_output": {
-                "action": action,
-                "confidence": int(abs(sentiment_score) * 100),
-                "sentiment_score": sentiment_score
-            },
-            "execution_success": True,
-            "error_details": "",
-            "feedback_loop_metric": {}
-        }
         try:
-            with open(analytics_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(telemetry_record) + "\n")
+            titles = [n.get("title", "") for n in feed_payload if n.get("source") in (f"Alpaca - {symbol}", "Macro News")][:5]
+            reasoning_with_titles = reasoning + " | News: " + " | ".join(titles) if titles else reasoning
+            insert_ai_analytics(
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                asset=symbol,
+                price=0.0,
+                action=action,
+                confidence=int(abs(sentiment_score) * 100),
+                sentiment_score=sentiment_score,
+                prompt_tokens=0,
+                completion_tokens=0,
+                reasoning=reasoning_with_titles,
+                return_1h=None,
+                return_4h=None,
+                analysis_id=""
+            )
         except Exception as e:
-            logger.error(f"Failed to append to ai_analytics_logs.jsonl: {e}")
+            logger.error(f"Failed to append to ai_analytics table: {e}")
 
     # Write market_bias.json atomically (write to .tmp then replace)
     _write_market_bias(bias_assets, len(macro_articles))
@@ -362,6 +361,12 @@ def run_iteration(
         update_feedback_loop_metrics(client)
     except Exception as e:
         logger.error(f"Failed to update feedback loop metrics: {e}")
+
+    try:
+        from risk_management.auto_tuner import AutoTuner
+        AutoTuner.tune_kelly_criterion(min_samples=10)
+    except Exception as e:
+        logger.error(f"Failed to auto-tune Kelly criterion: {e}")
 
     try:
         from reporting.generator import generate_dashboard

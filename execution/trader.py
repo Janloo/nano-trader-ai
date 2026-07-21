@@ -6,50 +6,47 @@ from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 from client.alpaca_client import AlpacaClientWrapper
 from config.settings import logger
+from data.db import insert_trade, insert_ai_analytics, insert_portfolio_snap
 
 class AITrader:
     def __init__(self, client: AlpacaClientWrapper):
         self.client = client
-        self.trades_path = os.path.join("data", "archives", "trades.jsonl")
-        self.portfolio_path = os.path.join("data", "archives", "portfolio_history.jsonl")
-        self.analytics_path = os.path.join("data", "archives", "ai_analytics_logs.jsonl")
-
-    def _append_jsonl(self, path: str, record: dict):
-        """Appends a dictionary as a JSON Line to the specified file."""
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        try:
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(record) + "\n")
-        except Exception as e:
-            logger.error(f"Error appending to {path}: {e}")
 
     def log_portfolio_status(self, equity: float, buying_power: float, unrealized_pnl: float, average_sentiment: float):
         """Saves current portfolio value and the run's average AI sentiment score to history."""
-        self._append_jsonl(self.portfolio_path, {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "equity": equity,
-            "buying_power": buying_power,
-            "unrealized_pnl": unrealized_pnl,
-            "average_sentiment": average_sentiment
-        })
+        try:
+            timestamp = datetime.now(timezone.utc).isoformat()
+            insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl)
+        except Exception as e:
+            logger.error(f"Error logging portfolio snapshot: {e}")
 
     def log_ai_analytics(self, symbol: str, current_price: float, raw_news_titles: List[str], ai_raw_output: dict, execution_success: bool, error_details: str):
-        """Logs detailed AI decision telemetry to data/archives/ai_analytics_logs.jsonl."""
-        self._append_jsonl(self.analytics_path, {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "asset": symbol,
-            "price": current_price,
-            "raw_news_titles": raw_news_titles,
-            "ai_raw_output": ai_raw_output,
-            "execution_success": execution_success,
-            "error_details": error_details,
-            "feedback_loop_metric": {
-                "price_at_1h": None,
-                "price_at_4h": None,
-                "return_1h": None,
-                "return_4h": None
-            }
-        })
+        """Logs detailed AI decision telemetry to sqlite."""
+        try:
+            action = ai_raw_output.get("action", "HOLD").upper()
+            confidence = float(ai_raw_output.get("confidence", 0))
+            sentiment_score = float(ai_raw_output.get("sentiment_score", 0.0))
+            reasoning = ai_raw_output.get("reasoning", "")
+            timestamp = datetime.now(timezone.utc).isoformat()
+            
+            reasoning = f"{reasoning} [Execution: {execution_success}] {error_details}".strip()
+            
+            insert_ai_analytics(
+                timestamp=timestamp, 
+                asset=symbol, 
+                price=current_price,
+                action=action, 
+                confidence=confidence, 
+                sentiment_score=sentiment_score, 
+                prompt_tokens=0, 
+                completion_tokens=0, 
+                reasoning=reasoning, 
+                return_1h=None, 
+                return_4h=None, 
+                analysis_id=""
+            )
+        except Exception as e:
+            logger.error(f"Error logging AI analytics: {e}")
 
     def execute_ai_decision(self, symbol: str, ai_decision: dict, current_price: float, positions: List, raw_news_titles: List[str]) -> Optional[str]:
         """
@@ -110,20 +107,20 @@ class AITrader:
                         pass
 
                 # Append transaction item to database
-                self._append_jsonl(self.trades_path, {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "order_id": order_id,
-                    "symbol": symbol,
-                    "side": "BUY",
-                    "qty": qty,
-                    "notional": 5.00,
-                    "price": price,
-                    "sentiment_score": sentiment_score,
-                    "reasoning": reasoning,
-                    "execution_type": ai_decision.get("execution_type", "macro_daily_decision"),
-                    "das_selected": ai_decision.get("das_selected", False),
-                    "das_reasoning": ai_decision.get("das_reasoning", "")
-                })
+                timestamp = datetime.now(timezone.utc).isoformat()
+                exec_type = ai_decision.get("execution_type", "macro_daily_decision")
+                insert_trade(
+                    timestamp=timestamp,
+                    symbol=symbol,
+                    action="BUY",
+                    qty=qty,
+                    price=price,
+                    notional=5.00,
+                    sentiment_score=sentiment_score,
+                    reasoning=reasoning,
+                    execution_type=exec_type,
+                    order_id=order_id
+                )
                 
                 logger.info(f"[{symbol} AI Trader] Order placed and logged. ID: {order_id}")
                 self.log_ai_analytics(symbol, current_price, raw_news_titles, ai_decision, True, "")

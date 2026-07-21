@@ -26,3 +26,5 @@ dashboard.html
 *.log
 data/logs/
 market_news.json
+*.db
+*.sqlite3

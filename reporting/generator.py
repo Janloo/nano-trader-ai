@@ -5,33 +5,15 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def read_jsonl(filepath):
-    data = []
-    if os.path.exists(filepath):
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        data.append(json.loads(line))
-        except Exception as e:
-            print(f"Error reading jsonl {filepath}: {e}")
-    return data
-
 def generate_dashboard():
-    """Reads trades.json and ai_analytics_logs.json to auto-generate an interactive Control Room HTML dashboard."""
-    json_path = os.path.join("data", "archives", "trades.jsonl")
-    analytics_path = os.path.join("data", "archives", "ai_analytics_logs.jsonl")
+    """Reads sqlite DB to auto-generate an interactive Control Room HTML dashboard."""
     html_path = "dashboard.html"
 
-    # Default structures
-    data = {"portfolio_history": [], "trades": []}
-    ai_logs = []
-
-    portfolio_path = os.path.join("data", "archives", "portfolio_history.jsonl")
-    data["trades"] = read_jsonl(json_path)
-    data["portfolio_history"] = read_jsonl(portfolio_path)
-
-    ai_logs = read_jsonl(analytics_path)
+    from data.db import get_trades, get_portfolio_history, get_ai_analytics
+    
+    history = get_portfolio_history(limit=500)
+    trades = get_trades(limit=100)
+    ai_logs = get_ai_analytics(limit=100)
 
     ws_triggers = []
     ws_triggers_path = os.path.join("data", "state", "ws_triggers.json")
@@ -55,9 +37,6 @@ def generate_dashboard():
         except Exception as e:
             print(f"Error loading realtime_price_history.json for reporting: {e}")
 
-    history = data.get("portfolio_history", [])
-    trades = data.get("trades", [])
-
     current_equity = 100000.00
     current_buying_power = 400000.00
     current_unrealized_pnl = 0.00
@@ -79,7 +58,7 @@ def generate_dashboard():
     # Build Trades History HTML Rows
     trades_rows = []
     if trades:
-        for t in reversed(trades):
+        for t in trades:
             # Match feedback loop metrics for display
             feedback_str = "<span class='text-slate-500 font-semibold'>No Trade</span>"
             for log in ai_logs:
@@ -89,9 +68,8 @@ def generate_dashboard():
                     try:
                         t_diff = abs((datetime.fromisoformat(log_time.replace("Z", "+00:00")) - datetime.fromisoformat(trade_time.replace("Z", "+00:00"))).total_seconds())
                         if t_diff < 120:  # matches within 2 minutes
-                            fb = log.get("feedback_loop_metric", {})
-                            ret_1h = fb.get("return_1h")
-                            ret_4h = fb.get("return_4h")
+                            ret_1h = log.get("return_1h")
+                            ret_4h = log.get("return_4h")
                             parts = []
                             if ret_1h is not None:
                                 parts.append(f"+1h: <span class='{'text-emerald-400' if ret_1h >= 0 else 'text-rose-400'} font-mono font-bold'>{ret_1h:+.2f}%</span>")
@@ -143,15 +121,13 @@ def generate_dashboard():
     # Build AI Telemetry logs HTML Rows
     ai_rows = []
     if ai_logs:
-        for log in reversed(ai_logs):
-            output = log.get("ai_raw_output", {})
-            action = output.get("action", "HOLD").upper()
-            confidence = output.get("confidence", 0)
-            score = output.get("sentiment_score", 0.0)
+        for log in ai_logs:
+            action = log.get("action", "HOLD").upper()
+            confidence = log.get("confidence", 0)
+            score = log.get("sentiment_score", 0.0)
             
-            fb = log.get("feedback_loop_metric", {})
-            ret_1h = fb.get("return_1h")
-            ret_4h = fb.get("return_4h")
+            ret_1h = log.get("return_1h")
+            ret_4h = log.get("return_4h")
             parts = []
             if ret_1h is not None:
                 parts.append(f"+1h: <span class='{'text-emerald-400' if ret_1h >= 0 else 'text-rose-400'} font-bold'>{ret_1h:+.2f}%</span>")
@@ -159,9 +135,8 @@ def generate_dashboard():
                 parts.append(f"+4h: <span class='{'text-emerald-400' if ret_4h >= 0 else 'text-rose-400'} font-bold'>{ret_4h:+.2f}%</span>")
             feedback_loop_str = " / ".join(parts) if parts else "Awaiting (+1h)"
             
-            # Format raw news titles as a tooltip list
-            titles = log.get("raw_news_titles", [])
-            titles_str = " | ".join(titles) if titles else "No news articles found."
+            # Use reasoning as title
+            titles_str = log.get("reasoning", "N/A")
             
             ai_rows.append(f"""
             <tr class="hover:bg-slate-900/20 transition-colors">
