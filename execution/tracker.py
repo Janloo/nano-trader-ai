@@ -10,17 +10,20 @@ from client.alpaca_client import AlpacaClientWrapper
 def fetch_price_at_time(client: AlpacaClientWrapper, symbol: str, target_time: datetime) -> Optional[float]:
     """Queries Alpaca historical client for a minute bar close to target_time."""
     try:
+        # Map crypto symbols for historical API (e.g. BTCUSD -> BTC/USD)
+        query_symbol = symbol
+        if symbol.endswith("USD") and symbol != "USD":
+            query_symbol = symbol[:-3] + "/USD"
+            
         # Search window of 10 minutes around the target time
         start = target_time - timedelta(minutes=5)
         end = target_time + timedelta(minutes=5)
         
-        bars_df = client.get_historical_bars([symbol], TimeFrame.Minute, start, end)
+        bars_df = client.get_historical_bars([query_symbol], TimeFrame.Minute, start, end)
         if not bars_df.empty:
             if isinstance(bars_df.index, pd.MultiIndex):
-                # Map symbol name for indexing
-                mapped_symbol = "BTC/USD" if symbol == "BTCUSD" else symbol
-                if mapped_symbol in bars_df.index.levels[0]:
-                    df = bars_df.xs(mapped_symbol, level=0).copy()
+                if query_symbol in bars_df.index.levels[0]:
+                    df = bars_df.xs(query_symbol, level=0).copy()
                 else:
                     df = bars_df.copy()
             else:
@@ -63,8 +66,14 @@ def update_feedback_loop_metrics(client: Optional[AlpacaClientWrapper]):
 
         symbol = entry["asset"]
         exec_price = float(entry["price"]) if entry["price"] else 0.0
+        
+        # If execution price is 0 (e.g. from macro bias analysis without immediate trade),
+        # fetch the historical price at the time of the analysis to serve as the baseline!
         if exec_price <= 0:
-            continue
+            fetched_base_price = fetch_price_at_time(client, symbol, trade_time)
+            if fetched_base_price is None:
+                continue
+            exec_price = fetched_base_price
             
         ret_1h = entry["return_1h"]
         ret_4h = entry["return_4h"]
