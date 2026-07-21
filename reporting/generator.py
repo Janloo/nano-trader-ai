@@ -450,7 +450,8 @@ def generate_dashboard():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nano-Trader-AI Dashboard</title>
+    <meta http-equiv="refresh" content="60">
+    <title>NanoTrader AI - Live Dashboard</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
