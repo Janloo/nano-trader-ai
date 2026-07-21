@@ -1174,7 +1174,7 @@ def generate_dashboard():
         const pnlValues = portfolioData.map(snap => snap.equity - startingEquity);
         const sentimentValues = portfolioData.map(snap => snap.average_sentiment !== undefined ? snap.average_sentiment : 0.0);
 
-        new Chart(correlationCtx, {{
+        window.correlationChart = new Chart(correlationCtx, {{
             type: 'line',
             data: {{
                 labels: labels.length > 0 ? labels : ['No Data'],
@@ -1757,10 +1757,11 @@ def generate_dashboard():
                 setHtml("div-logbook", data.logbook_rows);
                 
                 // Chart
-                if(data.portfolio_times && window.portfolioChart) {{
-                    window.portfolioChart.data.labels = data.portfolio_times.map(t => new Date(t).toLocaleString());
-                    window.portfolioChart.data.datasets[0].data = data.portfolio_values;
-                    window.portfolioChart.update('none'); // Update without animation
+                if(data.portfolio_times && window.correlationChart) {{
+                    window.correlationChart.data.labels = data.portfolio_times.map(t => new Date(t).toLocaleString());
+                    window.correlationChart.data.datasets[0].data = data.portfolio_pnl;
+                    window.correlationChart.data.datasets[1].data = data.portfolio_sentiment;
+                    window.correlationChart.update('none'); // Update without animation
                 }}
             }} catch(e) {{
                 console.error("Error fetching AJAX dashboard data:", e);

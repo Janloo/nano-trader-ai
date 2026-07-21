@@ -182,8 +182,11 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 
                 data = get_dashboard_data()
                 history = get_portfolio_history(limit=500)
+                starting_equity = data.get('starting_equity', 0)
+                
                 data['portfolio_times'] = [h['timestamp'] for h in history]
-                data['portfolio_values'] = [h['equity'] for h in history]
+                data['portfolio_pnl'] = [h['equity'] - starting_equity for h in history]
+                data['portfolio_sentiment'] = [h.get('average_sentiment', 0.0) for h in history]
                 
                 content = json.dumps(data).encode("utf-8")
             except Exception as e:

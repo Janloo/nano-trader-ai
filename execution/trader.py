@@ -16,7 +16,7 @@ class AITrader:
         """Saves current portfolio value and the run's average AI sentiment score to history."""
         try:
             timestamp = datetime.now(timezone.utc).isoformat()
-            insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl)
+            insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl, average_sentiment)
         except Exception as e:
             logger.error(f"Error logging portfolio snapshot: {e}")
 

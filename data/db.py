@@ -55,7 +55,8 @@ def init_db():
                 timestamp TEXT,
                 equity REAL,
                 buying_power REAL,
-                unrealized_pnl REAL
+                unrealized_pnl REAL,
+                average_sentiment REAL DEFAULT 0.0
             )
         ''')
         
@@ -90,13 +91,13 @@ def insert_ai_analytics(timestamp, asset, price, action, confidence, sentiment_s
         conn.commit()
         return cursor.lastrowid
 
-def insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl):
+def insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl, average_sentiment=0.0):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO portfolio_history (timestamp, equity, buying_power, unrealized_pnl)
-            VALUES (?, ?, ?, ?)
-        ''', (timestamp, equity, buying_power, unrealized_pnl))
+            INSERT INTO portfolio_history (timestamp, equity, buying_power, unrealized_pnl, average_sentiment)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (timestamp, equity, buying_power, unrealized_pnl, average_sentiment))
         conn.commit()
 
 def update_ai_analytics_feedback(analytics_id, return_1h, return_4h):
