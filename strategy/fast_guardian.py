@@ -15,7 +15,7 @@ class FastGuardian:
         else:
             logger.warning("[GUARDIAN] GEMINI_API_KEY not found in environment!")
             
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+        self.model = genai.GenerativeModel("gemini-1.5-flash-latest")
         
     def evaluate_headline(self, headline: str) -> str:
         """
