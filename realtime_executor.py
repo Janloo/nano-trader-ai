@@ -370,6 +370,12 @@ class RealtimeExecutor:
         self.indicator_mgr = IndicatorManager(period=14)
         self._last_order_time: Dict[str, datetime] = {}
         self._trading_client = None
+        
+        from risk_management.orderbook_analyzer import OrderBookAnalyzer
+        from risk_management.trailing_tp import TrailingTakeProfitManager
+        self.orderbook_analyzer = OrderBookAnalyzer(imbalance_threshold=3.0)
+        self.trailing_mgr = TrailingTakeProfitManager(activation_pct=0.005, trailing_pct=0.002)
+        self._last_trailing_check = datetime.now(timezone.utc)
 
     def _init_trading_client(self):
         """Lazily initializes the Alpaca trading client."""
@@ -391,6 +397,45 @@ class RealtimeExecutor:
         is_crypto = symbol.endswith("USD")
         cooldown_target = 15 if is_crypto else ORDER_COOLDOWN_SECONDS
         return elapsed < cooldown_target
+    def _manage_trailing_stops(self, current_price: float, symbol: str):
+        """Checks open positions for trailing take profit triggers."""
+        if self.dry_run:
+            return
+            
+        now = datetime.now(timezone.utc)
+        if (now - self._last_trailing_check).total_seconds() < 2.0:
+            return # throttle API calls
+        self._last_trailing_check = now
+        
+        try:
+            self._init_trading_client()
+            check_symbol = symbol.replace("USD", "/USD") if "USD" in symbol else symbol
+            try:
+                pos = self._trading_client.get_open_position(check_symbol)
+                qty = float(pos.qty)
+                avg_entry = float(pos.avg_entry_price)
+                is_short = qty < 0
+                
+                should_close = self.trailing_mgr.update_and_check(symbol, current_price, avg_entry, is_short)
+                if should_close:
+                    logger.info(f"[WS] Trailing TP triggered for {symbol}! Closing position.")
+                    from alpaca.trading.requests import MarketOrderRequest
+                    from alpaca.trading.enums import OrderSide, TimeInForce
+                    
+                    close_side = OrderSide.BUY if is_short else OrderSide.SELL
+                    req = MarketOrderRequest(
+                        symbol=check_symbol,
+                        qty=abs(qty),
+                        side=close_side,
+                        time_in_force=TimeInForce.GTC
+                    )
+                    self._trading_client.submit_order(req)
+                    WSTradeLogger.write_logbook(f"[TRAILING TP] Chiusura in profitto su {symbol} (Trail Hit).")
+            except Exception:
+                pass # No position
+        except Exception as e:
+            logger.error(f"[WS] Error in trailing stop manager: {e}")
+
     def _execute_order(self, symbol: str, price: float, change_pct: float,
                        bias_info: Dict, is_short: bool = False, atr: float = 0.0) -> Optional[str]:
         """Places a Bracket Order with dynamic TP/SL."""
@@ -401,6 +446,17 @@ class RealtimeExecutor:
         # Determine asset class
         is_crypto = symbol.endswith("USD")
         
+        # Level 2 Orderbook Check
+        imbalance = self.orderbook_analyzer.check_imbalance(symbol)
+        if not is_short and imbalance == "BEARISH_WALL":
+            logger.warning(f"[L2 FILTER] {symbol} has a huge BEARISH WALL. Skipping LONG execution.")
+            WSTradeLogger.write_logbook(f"[L2 INFO] Salto il Long su {symbol} causa Muro di Vendita (Bearish Wall).")
+            return None
+        if is_short and imbalance == "BULLISH_WALL":
+            logger.warning(f"[L2 FILTER] {symbol} has a huge BULLISH WALL. Skipping SHORT execution.")
+            WSTradeLogger.write_logbook(f"[L2 INFO] Salto lo Short su {symbol} causa Muro di Acquisto (Bullish Wall).")
+            return None
+
         if is_short and is_crypto:
             logger.warning(f"[WS] Cannot short Crypto {symbol} on Alpaca. Skipping execution.")
             WSTradeLogger.write_logbook(f"[WS INFO] Salto lo Short su Crypto {symbol} (non supportato).")
@@ -458,7 +514,7 @@ class RealtimeExecutor:
         else:
             try:
                 self._init_trading_client()
-                from alpaca.trading.requests import MarketOrderRequest, TakeProfitRequest, StopLossRequest
+                from alpaca.trading.requests import LimitOrderRequest, StopLossRequest
                 from alpaca.trading.enums import OrderSide, TimeInForce
                 
                 atr_tp_mult = risk_config.get("atr_take_profit_multiplier", 3.0)
@@ -511,12 +567,15 @@ class RealtimeExecutor:
                 qty = size_usd / price if price > 0 else 0.0
                 qty = round(qty, 4) if is_crypto else round(qty, 2)
 
-                order_data = MarketOrderRequest(
+                # Maker Limit Price
+                limit_price = round(price * 0.9995, 2) if side == OrderSide.BUY else round(price * 1.0005, 2)
+
+                order_data = LimitOrderRequest(
                     symbol=order_symbol,
                     qty=qty,
                     side=side,
                     time_in_force=TimeInForce.GTC,
-                    take_profit=TakeProfitRequest(limit_price=tp_price),
+                    limit_price=limit_price,
                     stop_loss=StopLossRequest(stop_price=sl_price)
                 )
                 order = self._trading_client.submit_order(order_data)
@@ -595,6 +654,9 @@ class RealtimeExecutor:
 
         # Log streaming price for the real-time dashboard chart
         WSTradeLogger.log_price(symbol, price, bar_time)
+
+        # Update Trailing Stop logic
+        self._manage_trailing_stops(price, symbol)
 
         # Read Regime and adjust DIP threshold dynamically
         risk_config = RiskConfigReader.read()
@@ -815,6 +877,11 @@ class RealtimeExecutor:
                     logger.info(f"[WS] Connecting to Alpaca CryptoDataStream for {crypto_symbols_ws}...")
                     crypto_stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
                     crypto_stream.subscribe_bars(crypto_handler, *crypto_symbols_ws)
+                    
+                    async def orderbook_handler(orderbook):
+                        self.orderbook_analyzer.update(orderbook.symbol, orderbook.bids, orderbook.asks)
+                        
+                    crypto_stream.subscribe_orderbooks(orderbook_handler, *crypto_symbols_ws)
                     crypto_stream.run()
                 except Exception as e:
                     logger.error(f"[WS] Crypto stream error: {e}")
