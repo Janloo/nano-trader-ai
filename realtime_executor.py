@@ -391,54 +391,6 @@ class RealtimeExecutor:
         is_crypto = symbol.endswith("USD")
         cooldown_target = 15 if is_crypto else ORDER_COOLDOWN_SECONDS
         return elapsed < cooldown_target
-
-    def _calculate_position_size(self, symbol: str, price: float, sentiment_score: float, atr: float = 0.0, risk_config: Dict = None) -> float:
-        """Calculates the position size dynamically based on risk configuration and AI confidence."""
-        fallback = NOTIONAL_USD
-        if self.dry_run:
-            return fallback
-
-        if not risk_config:
-            risk_config = {}
-
-        try:
-            self._init_trading_client()
-            account = self._trading_client.get_account()
-            bp = float(account.buying_power)
-            total_equity = float(account.equity)
-            
-            max_capital_pct = risk_config.get("max_capital_per_trade_pct", 0.05)
-            max_risk_pct = risk_config.get("max_risk_per_trade_pct", 0.01)
-            atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
-            
-            # 1. Calculate the stop loss distance
-            if atr > 0 and price > 0:
-                sl_distance_pct = (atr * atr_sl_mult) / price
-            else:
-                sl_distance_pct = 0.015 # fallback 1.5% stop loss
-                
-            # 2. Risk Amount ($)
-            risk_amount_usd = total_equity * max_risk_pct
-            
-            # 3. Position Size ($) based on risk
-            position_size_usd = risk_amount_usd / sl_distance_pct if sl_distance_pct > 0 else 0
-            
-            # 4. Apply maximum capital cap
-            max_capital_usd = bp * max_capital_pct
-            allocation = min(position_size_usd, max_capital_usd)
-            
-            # 5. Modulate by sentiment score (0.75 -> 50% of allocation, 1.0 -> 100% of allocation)
-            score_abs = min(max(abs(sentiment_score), 0.75), 1.0)
-            modulation = 0.5 + 0.5 * ((score_abs - 0.75) / 0.25)
-            
-            final_allocation = allocation * modulation
-            
-            logger.info(f"[RISK CALC] Equity: {total_equity}, Risk Amt: {risk_amount_usd}, SL Dist: {sl_distance_pct:.4f}, Calc Pos: {position_size_usd:.2f}, Final Alloc: {final_allocation:.2f}")
-            return max(final_allocation, 5.0)
-        except Exception as e:
-            logger.warning(f"[WS] Failed to calculate dynamic size: {e}. Using fallback ${fallback}")
-            return fallback
-
     def _execute_order(self, symbol: str, price: float, change_pct: float,
                        bias_info: Dict, is_short: bool = False, atr: float = 0.0) -> Optional[str]:
         """Places a Bracket Order with dynamic TP/SL."""
@@ -456,7 +408,22 @@ class RealtimeExecutor:
 
         risk_config = RiskConfigReader.read()
         
-        size_usd = self._calculate_position_size(symbol, price, sentiment_score, atr, risk_config)
+        # Fetch account data for position sizing
+        try:
+            self._init_trading_client()
+            account = self._trading_client.get_account()
+            total_equity = float(account.equity)
+            buying_power = float(account.buying_power)
+        except Exception as e:
+            logger.warning(f"[WS] Failed to get account info: {e}")
+            total_equity = 10000.0 # fallback
+            buying_power = 10000.0 # fallback
+            
+        from risk_management.position_sizer import PositionSizer
+        size_usd = PositionSizer.calculate_position_size(
+            symbol, price, sentiment_score, atr, risk_config,
+            total_equity, buying_power, NOTIONAL_USD
+        )
 
         # Check max open positions (anti-spam)
         try:
