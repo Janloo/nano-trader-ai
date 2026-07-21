@@ -1,6 +1,7 @@
 import logging
-import google.generativeai as genai
 import os
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger("nano-trader-ai")
 
@@ -11,17 +12,21 @@ class FastGuardian:
     def __init__(self):
         gemini_api_key = os.getenv("GEMINI_API_KEY")
         if gemini_api_key:
-            genai.configure(api_key=gemini_api_key)
+            self.client = genai.Client(api_key=gemini_api_key)
         else:
             logger.warning("[GUARDIAN] GEMINI_API_KEY not found in environment!")
+            self.client = None
             
-        self.model = genai.GenerativeModel("gemini-1.5-flash-latest")
+        self.model_name = "gemini-3.5-flash"
         
     def evaluate_headline(self, headline: str) -> str:
         """
         Evaluates a news headline and returns exactly one of: 
         CATACLYSM, MOONSHOT, or IGNORE.
         """
+        if not self.client:
+            return "IGNORE"
+
         prompt = f"""You are a Guardian AI for a high-frequency algorithmic trading bot.
 Your ONLY job is to categorize this financial news headline into exactly one of these three categories:
 - CATACLYSM: A catastrophic event for the asset or market (e.g., hack, lawsuit, bankruptcy, massive crash, severe regulation).
@@ -33,7 +38,10 @@ Respond ONLY with the single word (CATACLYSM, MOONSHOT, or IGNORE). No explanati
 Headline: {headline}"""
 
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             result = response.text.strip().upper()
             if "CATACLYSM" in result:
                 return "CATACLYSM"
