@@ -11,8 +11,15 @@
     {"symbol": "TSLA",   "type": "equity", "name": "Tesla Inc."},
     {"symbol": "COIN",   "type": "equity", "name": "Coinbase Global Inc."},
     {"symbol": "BTCUSD", "type": "crypto", "name": "Bitcoin / USD"},
-    {"symbol": "ETHUSD", "type": "crypto", "name": "Ethereum / USD"}
+    {"symbol": "ETHUSD", "type": "crypto", "name": "Ethereum / USD"},
+    {"symbol": "SOLUSD", "type": "crypto", "name": "Solana / USD"},
+    {"symbol": "DOGEUSD", "type": "crypto", "name": "Dogecoin / USD"},
+    {"symbol": "LTCUSD", "type": "crypto", "name": "Litecoin / USD"},
+    {"symbol": "BCHUSD", "type": "crypto", "name": "Bitcoin Cash / USD"},
+    {"symbol": "LINKUSD", "type": "crypto", "name": "Chainlink / USD"},
+    {"symbol": "UNIUSD", "type": "crypto", "name": "Uniswap / USD"},
+    {"symbol": "AVAXUSD", "type": "crypto", "name": "Avalanche / USD"}
   ],
-  "max_selections": 2,
-  "sentiment_threshold": 0.75
+  "max_selections": 4,
+  "sentiment_threshold": 0.70
 }
