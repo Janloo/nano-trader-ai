@@ -373,8 +373,11 @@ class RealtimeExecutor:
         
         from risk_management.orderbook_analyzer import OrderBookAnalyzer
         from risk_management.trailing_tp import TrailingTakeProfitManager
+        from strategy.fast_guardian import FastGuardian
         self.orderbook_analyzer = OrderBookAnalyzer(imbalance_threshold=3.0)
         self.trailing_mgr = TrailingTakeProfitManager(activation_pct=0.005, trailing_pct=0.002)
+        self.fast_guardian = FastGuardian()
+        self.alert_states: Dict[str, dict] = {}
         self._last_trailing_check = datetime.now(timezone.utc)
 
     def _init_trading_client(self):
@@ -638,6 +641,31 @@ class RealtimeExecutor:
         # Ensure timezone-aware
         if bar_time.tzinfo is None:
             bar_time = bar_time.replace(tzinfo=timezone.utc)
+
+        # Confirmation Filter for High Alerts
+        alert = self.alert_states.get(symbol)
+        if alert:
+            age = (datetime.now(timezone.utc) - alert["timestamp"]).total_seconds()
+            if age > 300: # 5 minutes expiry
+                logger.info(f"[GUARDIAN] Alert expired for {symbol}.")
+                del self.alert_states[symbol]
+            else:
+                if alert["type"] == "CATACLYSM":
+                    # Instant kill switch on a minor dip
+                    dip, _ = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=-0.15)
+                    if dip is not None:
+                        logger.error(f"[GUARDIAN KILL SWITCH] CATACLYSM CONFIRMED for {symbol}! Liquidating!")
+                        try:
+                            self._init_trading_client()
+                            self._trading_client.close_position(symbol.replace("USD", "/USD") if is_crypto else symbol)
+                            WSTradeLogger.write_logbook(f"[EMERGENCY] Chiusura d'emergenza su {symbol} completata.")
+                        except Exception:
+                            pass
+                        del self.alert_states[symbol]
+                        return
+                    return # Block standard execution while in CATACLYSM alert!
+                elif alert["type"] == "MOONSHOT":
+                    pass
 
         # Update Indicator Manager with OHLC
         high = float(bar.high) if hasattr(bar, "high") else price
@@ -904,15 +932,50 @@ class RealtimeExecutor:
                 logger.info("[WS] Stock stream closed. Reconnecting in 5 secondi...")
                 time.sleep(5)
 
+        def run_news():
+            if not self.target_symbols:
+                return
+            while True:
+                try:
+                    logger.info("[WS] Connecting to Alpaca NewsDataStream...")
+                    from alpaca.data.live.news import NewsDataStream
+                    news_stream = NewsDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
+                    
+                    async def news_handler(news):
+                        # Alpaca sends news.symbols like ['BTCUSD', 'ETHUSD', 'AAPL']
+                        # Match them against our target symbols
+                        symbols_in_news = [s for s in news.symbols if s.replace("/", "") in self.target_symbols or s in self.target_symbols]
+                        if not symbols_in_news:
+                            return
+                            
+                        logger.info(f"[NEWS INCOMING] {news.headline}")
+                        eval_result = self.fast_guardian.evaluate_headline(news.headline)
+                        
+                        if eval_result != "IGNORE":
+                            logger.critical(f"[GUARDIAN ALERT] {eval_result} detected for {symbols_in_news}!")
+                            WSTradeLogger.write_logbook(f"🚨 [GUARDIAN ALERT] {eval_result}: {news.headline} ({symbols_in_news})")
+                            now = datetime.now(timezone.utc)
+                            for sym in symbols_in_news:
+                                self.alert_states[sym] = {"type": eval_result, "timestamp": now}
+                    
+                    # Subscribe to news for all target symbols
+                    news_stream.subscribe_news(news_handler, *[s.replace("USD", "") for s in self.target_symbols] + self.target_symbols)
+                    news_stream.run()
+                except Exception as e:
+                    logger.error(f"[WS] News stream error: {e}")
+                time.sleep(5)
+
         t_crypto = threading.Thread(target=run_crypto, daemon=True)
         t_stock = threading.Thread(target=run_stock, daemon=True)
+        t_news = threading.Thread(target=run_news, daemon=True)
 
         try:
             t_crypto.start()
             t_stock.start()
+            t_news.start()
             
             # Keep main thread alive while streams run in background
-            while t_crypto.is_alive() or t_stock.is_alive():
+            while t_crypto.is_alive() or t_stock.is_alive() or t_news.is_alive():
                 time.sleep(1)
                 
         except KeyboardInterrupt:
