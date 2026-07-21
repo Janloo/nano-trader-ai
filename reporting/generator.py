@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def generate_dashboard():
-    """Reads sqlite DB to auto-generate an interactive Control Room HTML dashboard."""
+def get_dashboard_data():
+    """Returns a dictionary of all dynamic data fragments for the AJAX dashboard."""
     html_path = "dashboard.html"
 
     from data.db import get_trades, get_portfolio_history, get_ai_analytics
@@ -445,13 +445,75 @@ def generate_dashboard():
     if not alpaca_orders_rows:
         alpaca_orders_rows.append('<tr><td colspan="7" class="py-6 text-center text-slate-500 text-sm">No recent Alpaca orders found.</td></tr>')
 
+    return {
+        'current_equity': current_equity,
+        'current_buying_power': current_buying_power,
+        'cumulative_pnl': cumulative_pnl,
+        'pnl_pct': pnl_pct,
+        'current_unrealized_pnl': current_unrealized_pnl,
+        'total_trades': len(trades),
+        'trades_rows': ''.join(trades_rows),
+        'ai_rows': ''.join(ai_rows),
+        'logbook_rows': ''.join(logbook_rows),
+        'das_cards_html': das_cards_html,
+        'news_feed_html': news_feed_html,
+        'das_ts_str': das_ts_str,
+        'das_articles_count': das_articles_count,
+        'das_health_badge': das_health_badge,
+        'ws_rows': ''.join(ws_rows),
+        'open_positions_rows': ''.join(open_positions_rows),
+        'alpaca_orders_rows': ''.join(alpaca_orders_rows),
+        'starting_equity': starting_equity,
+        'history_raw': history,
+        'trades_raw': trades,
+        'price_history_raw': price_history,
+        'ws_triggers_raw': ws_triggers
+    }
+
+def generate_dashboard():
+    """Reads sqlite DB to auto-generate an interactive Control Room HTML dashboard."""
+    html_path = 'dashboard.html'
+    data = get_dashboard_data()
+    
+    current_equity = data['current_equity']
+    current_buying_power = data['current_buying_power']
+    cumulative_pnl = data['cumulative_pnl']
+    pnl_pct = data['pnl_pct']
+    current_unrealized_pnl = data['current_unrealized_pnl']
+    starting_equity = data['starting_equity']
+    total_trades = data['total_trades']
+    trades_rows = data['trades_rows']
+    ai_rows = data['ai_rows']
+    logbook_rows = data['logbook_rows']
+    das_cards_html = data['das_cards_html']
+    news_feed_html = data['news_feed_html']
+    das_ts_str = data['das_ts_str']
+    das_articles_count = data['das_articles_count']
+    das_health_badge = data['das_health_badge']
+    ws_rows = data['ws_rows']
+    open_positions_rows = data['open_positions_rows']
+    alpaca_orders_rows = data['alpaca_orders_rows']
+
+    history = data['history_raw']
+    trades = data['trades_raw']
+    price_history = data['price_history_raw']
+    ws_triggers = data['ws_triggers_raw']
+
+    # Note: For Plotly, we need portfolio_times and portfolio_values. We need to extract them too.
+    from data.db import get_portfolio_history
+    history = get_portfolio_history(limit=500)
+    portfolio_times = []
+    portfolio_values = []
+    for h in history:
+        portfolio_times.append(h['timestamp'])
+        portfolio_values.append(h['equity'])
+
     html_template = f"""<!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950 text-slate-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="60">
-    <title>NanoTrader AI - Live Dashboard</title>
+        <title>NanoTrader AI - Live Dashboard</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -660,7 +722,7 @@ def generate_dashboard():
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-8">
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Total Portfolio Value</dt>
-                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white">${current_equity:,.2f}</dd>
+                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-portfolio">>${current_equity:,.2f}</dd>
                     <div class="mt-2 flex items-center text-xs font-medium text-slate-500">
                         Starting Balance: ${starting_equity:,.2f}
                     </div>
@@ -668,7 +730,7 @@ def generate_dashboard():
 
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Buying Power</dt>
-                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white">${current_buying_power:,.2f}</dd>
+                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-buying-power">>${current_buying_power:,.2f}</dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium font-mono">
                         Active Cash reserves
                     </div>
@@ -696,7 +758,7 @@ def generate_dashboard():
 
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Total Trades Executed</dt>
-                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white">{len(trades)}</dd>
+                    <dd id="val-total-trades" class="mt-2 text-2xl font-bold tracking-tight text-white">{total_trades}</dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium">
                         AI orders triggered
                     </div>
@@ -708,16 +770,16 @@ def generate_dashboard():
                 <div class="flex items-center justify-between mb-5">
                     <div>
                         <h2 class="text-lg font-bold text-white">&#127916; AI Asset Selection of the Day</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">
+                        <p id="val-das-ts" class="text-xs text-slate-500 mt-0.5">
                             {f'Last updated: {das_ts_str} &nbsp;&bull;&nbsp; {das_articles_count} macro articles analyzed' if das_ts_str else 'Awaiting first DAS cycle...'}
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        {das_health_badge}
+                        <span id="val-das-health">{das_health_badge}</span>
                         <span class="px-3 py-1 text-xs font-bold bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-500/20 uppercase tracking-wider">Live AI Selection</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div id="div-ai-selection" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {das_cards_html}
                 </div>
             </div>
@@ -734,10 +796,10 @@ def generate_dashboard():
                             Click to expand and view the real-time intelligence feed consumed by the AI
                         </p>
                     </div>
-                    <div class="px-3 py-1 text-xs font-bold bg-slate-800 text-slate-300 rounded-full border border-slate-700">{len(market_news)} Articles</div>
+                    <div class="px-3 py-1 text-xs font-bold bg-slate-800 text-slate-300 rounded-full border border-slate-700"><span id="val-news-count">0</span> Articles</div>
                 </summary>
                 <div class="px-6 pb-6 pt-2 border-t border-slate-800/40">
-                    <div class="overflow-y-auto pr-2" style="max-height: 400px;">
+                    <div id="div-market-news" class="overflow-y-auto pr-2" style="max-height: 400px;">
                         {news_feed_html}
                     </div>
                 </div>
@@ -1658,7 +1720,56 @@ def generate_dashboard():
         setInterval(updateMarketClock, 1000);
         updateMarketClock();
     </script>
+
+    <script>
+        async function refreshDashboardData() {{
+            try {{
+                const res = await fetch('/api/dashboard_fragments');
+                const data = await res.json();
+                
+                // Texts
+                const setHtml = (id, html) => {{ const el = document.getElementById(id); if(el) el.innerHTML = html; }};
+                
+                setHtml("val-portfolio", "$" + Number(data.current_equity).toLocaleString('en-US', {{minimumFractionDigits: 2, maximumFractionDigits: 2}}));
+                setHtml("val-buying-power", "$" + Number(data.current_buying_power).toLocaleString('en-US', {{minimumFractionDigits: 2, maximumFractionDigits: 2}}));
+                
+                const pnl = Number(data.cumulative_pnl);
+                setHtml("val-cumulative-pnl", (pnl >= 0 ? "+" : "") + "$" + Math.abs(pnl).toLocaleString('en-US', {{minimumFractionDigits: 2, maximumFractionDigits: 2}}));
+                const pnlPct = Number(data.pnl_pct);
+                setHtml("val-pnl-pct", (pnlPct >= 0 ? "+" : "") + pnlPct.toFixed(2) + "%");
+                
+                const upnl = Number(data.current_unrealized_pnl);
+                setHtml("val-unrealized-pnl", (upnl >= 0 ? "+" : "") + "$" + Math.abs(upnl).toLocaleString('en-US', {{minimumFractionDigits: 2, maximumFractionDigits: 2}}));
+                
+                setHtml("val-total-trades", data.total_trades);
+                
+                setHtml("val-das-ts", data.das_ts_str ? `Last updated: ${{data.das_ts_str}} &nbsp;&bull;&nbsp; ${{data.das_articles_count}} macro articles analyzed` : "Awaiting first DAS cycle...");
+                setHtml("val-das-health", data.das_health_badge);
+                
+                // Blocks
+                setHtml("div-ai-selection", data.das_cards_html);
+                setHtml("div-market-news", data.news_feed_html);
+                setHtml("tbody-trades-history", data.trades_rows);
+                setHtml("tbody-ai-analytics", data.ai_rows);
+                setHtml("tbody-ws-triggers", data.ws_rows);
+                setHtml("tbody-open-positions", data.open_positions_rows);
+                setHtml("tbody-alpaca-orders", data.alpaca_orders_rows);
+                setHtml("div-logbook", data.logbook_rows);
+                
+                // Chart
+                if(data.portfolio_times && window.portfolioChart) {{
+                    window.portfolioChart.data.labels = data.portfolio_times.map(t => new Date(t).toLocaleString());
+                    window.portfolioChart.data.datasets[0].data = data.portfolio_values;
+                    window.portfolioChart.update('none'); // Update without animation
+                }}
+            }} catch(e) {{
+                console.error("Error fetching AJAX dashboard data:", e);
+            }}
+        }}
+        setInterval(refreshDashboardData, 60000);
+    </script>
 </body>
+
 </html>
 """
 

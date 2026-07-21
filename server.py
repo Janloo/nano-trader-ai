@@ -175,6 +175,27 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.wfile.write(content)
             return
 
+        if clean_path == "/api/dashboard_fragments":
+            try:
+                from reporting.generator import get_dashboard_data
+                from data.db import get_portfolio_history
+                
+                data = get_dashboard_data()
+                history = get_portfolio_history(limit=500)
+                data['portfolio_times'] = [h['timestamp'] for h in history]
+                data['portfolio_values'] = [h['equity'] for h in history]
+                
+                content = json.dumps(data).encode("utf-8")
+            except Exception as e:
+                logger.error(f"Error building dashboard fragments: {e}")
+                content = b'{}'
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self.wfile.write(content)
+            return
+
         self.send_error(404, "Not Found")
 
     def do_POST(self):
