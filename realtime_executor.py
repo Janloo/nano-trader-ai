@@ -298,6 +298,13 @@ class WSTradeLogger:
             }
 
             with open(TRADES_FILE_JSONL, "a", encoding="utf-8") as f:
+                pass # Ensure directory exists
+                
+            target_file = TRADES_FILE_JSONL
+            if symbol.endswith("USD"):
+                target_file = TRADES_FILE_JSONL.replace("trades.jsonl", "crypto_trades.jsonl")
+
+            with open(target_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(trade_data) + "\n")
         except Exception as e:
             logger.error(f"[WS] Failed to log trade: {e}")
@@ -651,12 +658,16 @@ class RealtimeExecutor:
 
             logger.info(f"[WS] {symbol} bias check: {bias} (score: {sentiment_score:.2f})")
 
-            # Logic 1: DIP + BULLISH = BUY
-            if dip_pct is not None and bias == "BULLISH" and sentiment_score >= 0.75:
+            # Logic 1: DIP + BULLISH = BUY (or just DIP for Crypto Scalping)
+            is_crypto = symbol.endswith("USD")
+            crypto_buy_condition = is_crypto and dip_pct is not None
+            stock_buy_condition = not is_crypto and dip_pct is not None and bias == "BULLISH" and sentiment_score >= 0.75
+            
+            if crypto_buy_condition or stock_buy_condition:
                 if rsi > 70:
                     logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping BUY to avoid overbought entry.")
                     return
-                logger.info(f"[WS TRIGGER] DIP + BULLISH confirmed for {symbol}! Executing BUY order...")
+                logger.info(f"[WS TRIGGER] DIP confirmed for {symbol}! Executing BUY order...")
                 self._execute_order(symbol, price, dip_pct, bias_info, is_short=False, atr=atr)
             
             # Logic 2: SPIKE + BEARISH = SHORT
