@@ -1040,7 +1040,7 @@ def generate_dashboard():
                                 <th class="pb-3 pt-2 pl-4">AI Reasoning</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
+                        <tbody id="tradesTableBody" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
                             {"".join(trades_rows)}
                         </tbody>
                     </table>
@@ -1063,7 +1063,7 @@ def generate_dashboard():
                                 <th class="pb-3 pt-2 pl-4">Raw News Titles Analyzed</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
+                        <tbody id="aiTableBody" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
                             {"".join(ai_rows)}
                         </tbody>
                     </table>
@@ -1860,11 +1860,11 @@ def generate_dashboard():
                 // Blocks
                 setHtml("div-ai-selection", data.das_cards_html);
                 setHtml("div-market-news", data.news_feed_html);
-                setHtml("tbody-trades-history", data.trades_rows);
-                setHtml("tbody-ai-analytics", data.ai_rows);
-                setHtml("tbody-ws-triggers", data.ws_rows);
-                setHtml("tbody-open-positions", data.open_positions_rows);
-                setHtml("tbody-alpaca-orders", data.alpaca_orders_rows);
+                setHtml("tradesTableBody", data.trades_rows);
+                setHtml("aiTableBody", data.ai_rows);
+                setHtml("wsTableBody", data.ws_rows);
+                setHtml("openPositionsBody", data.open_positions_rows);
+                setHtml("alpacaOrdersBody", data.alpaca_orders_rows);
                 setHtml("logbookContainer", data.logbook_rows);
                 
                 // Chart

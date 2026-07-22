@@ -98,13 +98,32 @@
                 document.getElementById('shadowPnl').innerText = data.shadow.final_pnl.toFixed(2) + '%';
                 document.getElementById('shadowWinRate').innerText = data.shadow.win_rate.toFixed(1) + '%';
                 
-                const realLabels = data.real.curve.map(p => p.x.substring(11, 16));
-                const shadowLabels = data.shadow.curve.map(p => p.x.substring(11, 16));
+                // Collect all unique timestamps, sorted
+                let timeMap = {};
+                data.real.curve.forEach(p => timeMap[p.x] = {real: p.y});
+                data.shadow.curve.forEach(p => {
+                    if(!timeMap[p.x]) timeMap[p.x] = {};
+                    timeMap[p.x].shadow = p.y;
+                });
                 
-                const labels = realLabels.length > shadowLabels.length ? realLabels : shadowLabels;
+                let sortedTimes = Object.keys(timeMap).sort();
                 
-                const realData = data.real.curve.map(p => p.y);
-                const shadowData = data.shadow.curve.map(p => p.y);
+                let labels = [];
+                let realData = [];
+                let shadowData = [];
+                
+                let lastReal = 0;
+                let lastShadow = 0;
+                
+                for(let t of sortedTimes) {
+                    labels.push(t.substring(11, 16));
+                    
+                    if(timeMap[t].real !== undefined) lastReal = timeMap[t].real;
+                    if(timeMap[t].shadow !== undefined) lastShadow = timeMap[t].shadow;
+                    
+                    realData.push(lastReal);
+                    shadowData.push(lastShadow);
+                }
                 
                 const ctx = document.getElementById('performanceChart').getContext('2d');
                 

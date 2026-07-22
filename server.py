@@ -387,7 +387,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 is_paper = "paper" in base_url.lower() if base_url else True
                 tc = TradingClient(api_key=api_key.strip(), secret_key=secret_key.strip(), paper=is_paper, url_override=base_url.strip() if base_url else None)
                 
-                tc.close_position(symbol_or_asset_id=symbol)
+                tc.close_position(symbol_or_asset_id=symbol, cancel_orders=True)
                 logger.info(f"Dashboard manually closed position for {symbol}")
                 
                 self.send_response(200)
