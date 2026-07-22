@@ -1550,8 +1550,9 @@ def generate_dashboard():
                     body: JSON.stringify({{ symbol: symbol, api_key: keyId, secret_key: secretKey, base_url: baseUrl }})
                 }});
                 if(res.ok) {{
-                    showNotification(`Position ${{symbol}} closed successfully.`, "info");
+                    showNotification(`Position ${{symbol}} close order submitted. Refreshing...`, "info");
                     refreshDashboardData(); // Instantly refresh UI
+                    setTimeout(refreshDashboardData, 2000); // Refresh again after 2s for market execution
                 }} else {{
                     const err = await res.json();
                     showNotification(`Error closing ${{symbol}}: ${{err.error}}`, "error");
