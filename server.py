@@ -387,7 +387,17 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 is_paper = "paper" in base_url.lower() if base_url else True
                 tc = TradingClient(api_key=api_key.strip(), secret_key=secret_key.strip(), paper=is_paper, url_override=base_url.strip() if base_url else None)
                 
-                tc.close_position(symbol_or_asset_id=symbol, cancel_orders=True)
+                from alpaca.trading.requests import GetOrdersRequest
+                from alpaca.trading.enums import QueryOrderStatus
+                
+                # First cancel any open orders for this symbol
+                req = GetOrdersRequest(status=QueryOrderStatus.OPEN, symbols=[symbol])
+                open_orders = tc.get_orders(filter=req)
+                for order in open_orders:
+                    tc.cancel_order_by_id(order.id)
+                    logger.info(f"Dashboard cancelled open order {order.id} for {symbol}")
+                
+                tc.close_position(symbol_or_asset_id=symbol)
                 logger.info(f"Dashboard manually closed position for {symbol}")
                 
                 self.send_response(200)
