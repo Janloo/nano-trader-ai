@@ -169,8 +169,8 @@ def get_dashboard_data():
             with open(logbook_path, "r", encoding="utf-8") as f:
                 logbook_entries = f.readlines()
             
-            # Show latest 15 logs first
-            for log in reversed(logbook_entries[-15:]):
+            # Show latest 50 logs first
+            for log in reversed(logbook_entries[-50:]):
                 log = log.strip()
                 if not log:
                     continue
@@ -1782,7 +1782,7 @@ def generate_dashboard():
                 setHtml("tbody-ws-triggers", data.ws_rows);
                 setHtml("tbody-open-positions", data.open_positions_rows);
                 setHtml("tbody-alpaca-orders", data.alpaca_orders_rows);
-                setHtml("div-logbook", data.logbook_rows);
+                setHtml("logbookContainer", data.logbook_rows);
                 
                 // Chart
                 if(data.portfolio_times && window.correlationChart) {{
