@@ -384,6 +384,7 @@ def get_dashboard_data():
 
     # Fetch Alpaca Open Positions
     open_positions_rows = []
+    total_invested = 0.0
     try:
         from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, APCA_API_BASE_URL
         if APCA_API_KEY_ID and APCA_API_SECRET_KEY and "your_api" not in APCA_API_KEY_ID.lower():
@@ -391,6 +392,8 @@ def get_dashboard_data():
             tc = TradingClient(APCA_API_KEY_ID, APCA_API_SECRET_KEY, paper="paper" in APCA_API_BASE_URL.lower(), url_override=APCA_API_BASE_URL)
             positions = tc.get_all_positions()
             for p in positions:
+                notional = float(p.market_value)
+                total_invested += notional
                 pnl_color = "text-emerald-400" if float(p.unrealized_pl) >= 0 else "text-rose-400"
                 open_positions_rows.append(f'''
                 <tr class="hover:bg-slate-900/20 transition-colors border-b border-slate-800/40 last:border-b-0">
@@ -398,6 +401,7 @@ def get_dashboard_data():
                     <td class="py-3 text-right font-mono text-slate-300">{p.qty}</td>
                     <td class="py-3 text-right font-mono text-slate-300">${float(p.avg_entry_price):,.2f}</td>
                     <td class="py-3 text-right font-mono text-slate-300">${float(p.current_price):,.2f}</td>
+                    <td class="py-3 text-right font-mono text-indigo-300 font-bold">${notional:,.2f}</td>
                     <td class="py-3 text-right font-mono {pnl_color}">${float(p.unrealized_pl):,.2f}</td>
                     <td class="py-3 text-right pl-4">
                         <button onclick="closePosition('{p.symbol}')" class="px-3 py-1 bg-rose-600/80 hover:bg-rose-500 text-white rounded text-xs font-bold transition">Close</button>
@@ -405,10 +409,10 @@ def get_dashboard_data():
                 </tr>
                 ''')
     except Exception as e:
-        open_positions_rows.append(f'<tr><td colspan="6" class="py-6 text-center text-rose-500 text-sm">Failed to load open positions: {e}</td></tr>')
+        open_positions_rows.append(f'<tr><td colspan="7" class="py-6 text-center text-rose-500 text-sm">Failed to load open positions: {e}</td></tr>')
         
     if not open_positions_rows:
-        open_positions_rows.append('<tr><td colspan="6" class="py-6 text-center text-slate-500 text-sm">No open positions found.</td></tr>')
+        open_positions_rows.append('<tr><td colspan="7" class="py-6 text-center text-slate-500 text-sm">No open positions found.</td></tr>')
 
     # Fetch Alpaca Live Orders
     alpaca_orders_rows = []
@@ -462,6 +466,7 @@ def get_dashboard_data():
         'das_health_badge': das_health_badge,
         'ws_rows': ''.join(ws_rows),
         'open_positions_rows': ''.join(open_positions_rows),
+        'total_invested': total_invested,
         'alpaca_orders_rows': ''.join(alpaca_orders_rows),
         'starting_equity': starting_equity,
         'history_raw': history,
@@ -492,6 +497,7 @@ def generate_dashboard():
     das_health_badge = data['das_health_badge']
     ws_rows = data['ws_rows']
     open_positions_rows = data['open_positions_rows']
+    total_invested = data.get('total_invested', 0.0)
     alpaca_orders_rows = data['alpaca_orders_rows']
 
     history = data['history_raw']
@@ -748,11 +754,21 @@ def generate_dashboard():
 
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Open Positions PnL</dt>
-                    <dd class="mt-2 text-2xl font-bold tracking-tight {'text-emerald-400' if current_unrealized_pnl >= 0 else 'text-rose-400'}">
+                    <dd id="val-unrealized-pnl" class="mt-2 text-2xl font-bold tracking-tight {'text-emerald-400' if current_unrealized_pnl >= 0 else 'text-rose-400'}">
                         {'+' if current_unrealized_pnl >= 0 else ''}${current_unrealized_pnl:,.2f}
                     </dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium">
                         Unrealized open assets
+                    </div>
+                </div>
+
+                <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
+                    <dt class="text-sm font-semibold text-slate-400">Total Invested Amount</dt>
+                    <dd id="val-total-invested" class="mt-2 text-2xl font-bold tracking-tight text-indigo-400">
+                        ${total_invested:,.2f}
+                    </dd>
+                    <div class="mt-2 flex items-center text-xs text-slate-500 font-medium">
+                        Active capital deployed
                     </div>
                 </div>
 
@@ -921,6 +937,7 @@ def generate_dashboard():
                                 <th class="pb-3 pt-2 text-right">Qty</th>
                                 <th class="pb-3 pt-2 text-right">Avg Entry Price</th>
                                 <th class="pb-3 pt-2 text-right">Current Price</th>
+                                <th class="pb-3 pt-2 text-right">Notional Value</th>
                                 <th class="pb-3 pt-2 text-right">Unrealized PnL</th>
                                 <th class="pb-3 pt-2 pl-4 text-right">Action</th>
                             </tr>
@@ -1739,7 +1756,17 @@ def generate_dashboard():
                 setHtml("val-pnl-pct", (pnlPct >= 0 ? "+" : "") + pnlPct.toFixed(2) + "%");
                 
                 const upnl = Number(data.current_unrealized_pnl);
-                setHtml("val-unrealized-pnl", (upnl >= 0 ? "+" : "") + "$" + Math.abs(upnl).toLocaleString('en-US', {{minimumFractionDigits: 2, maximumFractionDigits: 2}}));
+                const elemUnrealized = document.getElementById("val-unrealized-pnl");
+                if (elemUnrealized) {{
+                    elemUnrealized.innerHTML = (upnl >= 0 ? "+" : "") + "$" + Math.abs(upnl).toLocaleString('en-US', {{minimumFractionDigits: 2, maximumFractionDigits: 2}});
+                    elemUnrealized.className = "mt-2 text-2xl font-bold tracking-tight " + (upnl >= 0 ? "text-emerald-400" : "text-rose-400");
+                }}
+                
+                const totInv = Number(data.total_invested || 0);
+                const elemInvested = document.getElementById("val-total-invested");
+                if (elemInvested) {{
+                    elemInvested.innerHTML = "$" + totInv.toLocaleString('en-US', {{minimumFractionDigits: 2, maximumFractionDigits: 2}});
+                }}
                 
                 setHtml("val-total-trades", data.total_trades);
                 
