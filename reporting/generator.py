@@ -1468,6 +1468,7 @@ def generate_dashboard():
                 }});
                 if(res.ok) {{
                     showNotification(`Position ${{symbol}} closed successfully.`, "info");
+                    refreshDashboardData(); // Instantly refresh UI
                 }} else {{
                     const err = await res.json();
                     showNotification(`Error closing ${{symbol}}: ${{err.error}}`, "error");
