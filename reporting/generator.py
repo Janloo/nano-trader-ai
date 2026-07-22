@@ -700,6 +700,23 @@ def generate_dashboard():
                     </div>
                 </div>
 
+                
+                <h2 class="text-md font-bold text-white mb-4 mt-6 border-t border-slate-800 pt-4"><span class="text-purple-400">🧪</span> Alpha Strategies (Lab)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-4">
+                    <div class="flex items-center gap-3 bg-slate-900/50 p-4 rounded-xl border border-purple-900/30">
+                        <input type="checkbox" id="alphaSmartTrailing" class="w-4 h-4 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500 focus:ring-2">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Smart Trailing Entry</label>
+                    </div>
+                    <div class="flex items-center gap-3 bg-slate-900/50 p-4 rounded-xl border border-purple-900/30">
+                        <input type="checkbox" id="alphaInverseHedge" class="w-4 h-4 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500 focus:ring-2">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Inverse ETF Hedging</label>
+                    </div>
+                    <div class="flex items-center gap-3 bg-slate-900/50 p-4 rounded-xl border border-purple-900/30">
+                        <input type="checkbox" id="alphaDynamicDip" class="w-4 h-4 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500 focus:ring-2">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Dynamic ATR DIP Scaling</label>
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-3">
                     <button onclick="toggleSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors text-sm">Cancel</button>
                     <button onclick="saveSettings()" id="saveBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors text-sm">Save Configs</button>
@@ -946,7 +963,7 @@ def generate_dashboard():
             <!-- Alpaca Open Positions Table -->
             <div id="openPositionsSection" class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden mb-8">
                 <h2 class="text-lg font-bold text-white mb-4"><span class="text-emerald-400">💼</span> Alpaca Open Positions</h2>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
                     <table class="min-w-full divide-y divide-slate-800/50">
                         <thead>
                             <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
@@ -969,7 +986,7 @@ def generate_dashboard():
             <!-- Alpaca Live Orders Table -->
             <div id="alpacaOrdersSection" class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden mb-8">
                 <h2 class="text-lg font-bold text-white mb-4"><span class="text-yellow-400">🦙</span> Alpaca Broker Orders (Live API)</h2>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
                     <table class="min-w-full divide-y divide-slate-800/50">
                         <thead>
                             <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
@@ -992,7 +1009,7 @@ def generate_dashboard():
             <!-- Trade History Table -->
             <div class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden mb-8">
                 <h2 class="text-lg font-bold text-white mb-4">Trades Execution logs</h2>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
                     <table class="min-w-full divide-y divide-slate-800/50">
                         <thead>
                             <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
@@ -1017,7 +1034,7 @@ def generate_dashboard():
             <!-- AI Telemetry logs Table -->
             <div class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden">
                 <h2 class="text-lg font-bold text-white mb-4">AI Decision & Telemetry Logs</h2>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
                     <table class="min-w-full divide-y divide-slate-800/50">
                         <thead>
                             <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
@@ -1441,6 +1458,14 @@ def generate_dashboard():
                     if(data.global_max_stocks_pct) document.getElementById("globalMaxStocksPct").value = data.global_max_stocks_pct;
                     if(data.global_max_crypto_pct) document.getElementById("globalMaxCryptoPct").value = data.global_max_crypto_pct;
                     if(data.global_min_cash_pct) document.getElementById("globalMinCashPct").value = data.global_min_cash_pct;
+                    if(data.alpha_smart_trailing !== undefined) document.getElementById("alphaSmartTrailing").checked = data.alpha_smart_trailing;
+                    if(data.alpha_inverse_hedge !== undefined) document.getElementById("alphaInverseHedge").checked = data.alpha_inverse_hedge;
+                    if(data.alpha_dynamic_dip !== undefined) document.getElementById("alphaDynamicDip").checked = data.alpha_dynamic_dip;
+
+                    if(data.alpha_smart_trailing !== undefined) document.getElementById("alphaSmartTrailing").checked = data.alpha_smart_trailing;
+                    if(data.alpha_inverse_hedge !== undefined) document.getElementById("alphaInverseHedge").checked = data.alpha_inverse_hedge;
+                    if(data.alpha_dynamic_dip !== undefined) document.getElementById("alphaDynamicDip").checked = data.alpha_dynamic_dip;
+
 
                     if(data.crypto_micro_dip_pct) document.getElementById("cryptoMicroDipPct").value = data.crypto_micro_dip_pct;
                     if(data.crypto_micro_tp_pct) document.getElementById("cryptoMicroTpPct").value = data.crypto_micro_tp_pct;
@@ -1462,6 +1487,12 @@ def generate_dashboard():
                 global_max_stocks_pct: parseFloat(document.getElementById("globalMaxStocksPct").value) || 0.50,
                 global_max_crypto_pct: parseFloat(document.getElementById("globalMaxCryptoPct").value) || 0.50,
                 global_min_cash_pct: parseFloat(document.getElementById("globalMinCashPct").value) || 0.10,
+                alpha_smart_trailing: document.getElementById("alphaSmartTrailing").checked,
+                alpha_inverse_hedge: document.getElementById("alphaInverseHedge").checked,
+                alpha_dynamic_dip: document.getElementById("alphaDynamicDip").checked,
+                alpha_smart_trailing: document.getElementById("alphaSmartTrailing").checked,
+                alpha_inverse_hedge: document.getElementById("alphaInverseHedge").checked,
+                alpha_dynamic_dip: document.getElementById("alphaDynamicDip").checked,
                 crypto_micro_dip_pct: parseFloat(document.getElementById("cryptoMicroDipPct").value) || 0.15,
                 crypto_micro_tp_pct: parseFloat(document.getElementById("cryptoMicroTpPct").value) || 0.50,
                 crypto_max_grid_layers: parseInt(document.getElementById("cryptoMaxGridLayers").value) || 3,

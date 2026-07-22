@@ -10,9 +10,12 @@
     "kelly_fraction_multiplier": 1.0,
     "historical_win_rate": 0.56,
     "historical_reward_risk": 1.6,
-    "win_rate_estimate": 0.6032,
-    "reward_risk_ratio_estimate": 1.7132,
+    "win_rate_estimate": 0.5316,
+    "reward_risk_ratio_estimate": 1.3821,
     "global_max_stocks_pct": 0.5,
     "global_max_crypto_pct": 0.5,
-    "global_min_cash_pct": 0.1
+    "global_min_cash_pct": 0.1,
+    "alpha_smart_trailing": false,
+    "alpha_inverse_hedge": false,
+    "alpha_dynamic_dip": false
 }

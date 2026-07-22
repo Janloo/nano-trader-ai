@@ -171,8 +171,13 @@ class VolatilityDetector:
         window_high = max(p for _, p in window)
         dip_pct = None
         
+        immediate_dip_pct = None
         if window_high > 0:
             pct_change_high = ((price - window_high) / window_high) * 100.0
+            
+            # Immediate trigger
+            if pct_change_high <= active_dip_threshold:
+                immediate_dip_pct = pct_change_high
             
             # 1. Activate trailing if we hit threshold
             if pct_change_high <= active_dip_threshold:
@@ -210,7 +215,7 @@ class VolatilityDetector:
             if pct_change_low >= active_spike_threshold:
                 spike_pct = pct_change_low
 
-        return dip_pct, spike_pct
+        return immediate_dip_pct, dip_pct, spike_pct
 
 # ─────────────────────────────────────────────
 # IndicatorManager — ATR & RSI Calculation
@@ -489,6 +494,23 @@ class RealtimeExecutor:
 
         if is_short and is_crypto:
             if "BTC" in symbol:
+                alpha_inverse_hedge = risk_config.get("alpha_inverse_hedge", False)
+                if not alpha_inverse_hedge:
+                    logger.warning(f"[WS SHADOW] Shadow Hedge logged for {symbol} (Alpha feature disabled).")
+                    from data.db import insert_ai_analytics
+                    insert_ai_analytics(
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        asset="BITI",
+                        price=0.0, # ETF price unknown locally
+                        action="SHADOW_HEDGE",
+                        confidence=0.9,
+                        sentiment_score=sentiment_score,
+                        prompt_tokens=0, completion_tokens=0,
+                        reasoning=f"Shadow Hedge triggered from Bearish {symbol}",
+                        return_1h=None, return_4h=None
+                    )
+                    return None
+                    
                 logger.warning(f"[WS HEDGE] Converting Crypto SHORT on {symbol} to LONG on ETF BITI")
                 WSTradeLogger.write_logbook(f"[HEDGE] Sostituito Short {symbol} con Acquisto ETF Inverso (BITI).")
                 symbol = "BITI"
@@ -812,7 +834,7 @@ class RealtimeExecutor:
             else:
                 if alert["type"] == "CATACLYSM":
                     # Instant kill switch on a minor dip
-                    dip, _ = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=-0.15)
+                    imm_dip, dip, _ = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=-0.15)
                     if dip is not None:
                         logger.error(f"[GUARDIAN KILL SWITCH] CATACLYSM CONFIRMED for {symbol}! Liquidating!")
                         try:
@@ -857,7 +879,32 @@ class RealtimeExecutor:
         else:
             dynamic_dip = -base_dip
         # Update Volatility detector with dynamic threshold
-        dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=dynamic_dip)
+        alpha_dynamic_dip = risk_config.get("alpha_dynamic_dip", False)
+        if not alpha_dynamic_dip:
+            dynamic_dip = -abs(risk_config.get("crypto_micro_dip_pct", 0.15))
+            
+        immediate_dip, trailing_dip, spike_pct = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=dynamic_dip)
+        
+        alpha_smart_trailing = risk_config.get("alpha_smart_trailing", False)
+        
+        # Shadow logging for trailing buy
+        if not alpha_smart_trailing and trailing_dip is not None:
+            from data.db import insert_ai_analytics
+            # Log the shadow trade for the trailing buy
+            insert_ai_analytics(
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                asset=symbol,
+                price=price,
+                action="SHADOW_BUY",
+                confidence=0.9,
+                sentiment_score=0.0,
+                prompt_tokens=0,
+                completion_tokens=0,
+                reasoning=f"Shadow Trailing Buy hit at {trailing_dip:.2f}%",
+                return_1h=None, return_4h=None
+            )
+            
+        dip_pct = trailing_dip if alpha_smart_trailing else immediate_dip
 
         if dip_pct is not None or spike_pct is not None:
             if dip_pct is not None:
