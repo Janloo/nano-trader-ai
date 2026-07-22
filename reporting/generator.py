@@ -644,6 +644,23 @@ def generate_dashboard():
                     </div>
                 </div>
 
+                
+                <h2 class="text-md font-bold text-white mb-4 mt-6 border-t border-slate-800 pt-4"><span class="text-blue-400">🌎</span> Global Allocation Limits</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Stocks Allocation (%)</label>
+                        <input type="number" step="0.01" id="globalMaxStocksPct" class="w-full bg-slate-950 border border-blue-900/50 rounded-xl px-4 py-2.5 text-blue-400 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="0.50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Crypto Allocation (%)</label>
+                        <input type="number" step="0.01" id="globalMaxCryptoPct" class="w-full bg-slate-950 border border-blue-900/50 rounded-xl px-4 py-2.5 text-blue-400 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="0.50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Min Cash Reserve (%)</label>
+                        <input type="number" step="0.01" id="globalMinCashPct" class="w-full bg-slate-950 border border-blue-900/50 rounded-xl px-4 py-2.5 text-blue-400 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="0.10">
+                    </div>
+                </div>
+
                 <h2 class="text-md font-bold text-white mb-4 mt-2 border-t border-slate-800 pt-4"><span class="text-emerald-400">⚡</span> Crypto Micro-Scalping (Grid Trading)</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-4">
                     <div>
@@ -1421,6 +1438,10 @@ def generate_dashboard():
                     if(data.max_risk_per_trade_pct) document.getElementById("maxRiskPct").value = data.max_risk_per_trade_pct;
                     if(data.max_open_positions_per_asset) document.getElementById("maxOpenPositions").value = data.max_open_positions_per_asset;
                     if(data.atr_stop_loss_multiplier) document.getElementById("atrSlMult").value = data.atr_stop_loss_multiplier;
+                    if(data.global_max_stocks_pct) document.getElementById("globalMaxStocksPct").value = data.global_max_stocks_pct;
+                    if(data.global_max_crypto_pct) document.getElementById("globalMaxCryptoPct").value = data.global_max_crypto_pct;
+                    if(data.global_min_cash_pct) document.getElementById("globalMinCashPct").value = data.global_min_cash_pct;
+
                     if(data.crypto_micro_dip_pct) document.getElementById("cryptoMicroDipPct").value = data.crypto_micro_dip_pct;
                     if(data.crypto_micro_tp_pct) document.getElementById("cryptoMicroTpPct").value = data.crypto_micro_tp_pct;
                     if(data.crypto_max_grid_layers) document.getElementById("cryptoMaxGridLayers").value = data.crypto_max_grid_layers;
@@ -1438,6 +1459,9 @@ def generate_dashboard():
                 max_risk_per_trade_pct: parseFloat(document.getElementById("maxRiskPct").value) || 0.01,
                 max_open_positions_per_asset: parseInt(document.getElementById("maxOpenPositions").value) || 1,
                 atr_stop_loss_multiplier: parseFloat(document.getElementById("atrSlMult").value) || 2.0,
+                global_max_stocks_pct: parseFloat(document.getElementById("globalMaxStocksPct").value) || 0.50,
+                global_max_crypto_pct: parseFloat(document.getElementById("globalMaxCryptoPct").value) || 0.50,
+                global_min_cash_pct: parseFloat(document.getElementById("globalMinCashPct").value) || 0.10,
                 crypto_micro_dip_pct: parseFloat(document.getElementById("cryptoMicroDipPct").value) || 0.15,
                 crypto_micro_tp_pct: parseFloat(document.getElementById("cryptoMicroTpPct").value) || 0.50,
                 crypto_max_grid_layers: parseInt(document.getElementById("cryptoMaxGridLayers").value) || 3,

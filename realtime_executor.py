@@ -478,15 +478,73 @@ class RealtimeExecutor:
             total_equity, buying_power, NOTIONAL_USD
         )
 
+        # --- NEW: Global Allocation & Cash Reserve Checks ---
+        try:
+            self._init_trading_client()
+            
+            global_min_cash_pct = risk_config.get("global_min_cash_pct", 0.10)
+            global_max_crypto_pct = risk_config.get("global_max_crypto_pct", 0.50)
+            global_max_stocks_pct = risk_config.get("global_max_stocks_pct", 0.50)
+            
+            min_cash_usd = total_equity * global_min_cash_pct
+            max_crypto_usd = total_equity * global_max_crypto_pct
+            max_stocks_usd = total_equity * global_max_stocks_pct
+            
+            open_positions = self._trading_client.get_all_positions()
+            current_crypto_value = 0.0
+            current_stocks_value = 0.0
+            
+            for p in open_positions:
+                val = float(p.market_value)
+                if p.asset_class == 'crypto':
+                    current_crypto_value += val
+                else:
+                    current_stocks_value += val
+                    
+            if not is_short:
+                # 1. Cash Reserve Check
+                available_cash_for_trading = buying_power - min_cash_usd
+                if available_cash_for_trading <= 0:
+                    logger.warning(f"[WS] Cash Reserve limit reached (Available: ${buying_power:.2f}, Min Req: ${min_cash_usd:.2f})")
+                    self._global_buy_cooldown_until = time.time() + 1800
+                    WSTradeLogger.write_logbook("[API WARNING] Riserva Cash Intoccabile raggiunta! Acquisti in pausa.")
+                    return None
+                    
+                if size_usd > available_cash_for_trading:
+                    size_usd = available_cash_for_trading
+                    
+                # 2. Asset Class Allocation Check
+                if is_crypto:
+                    available_crypto = max_crypto_usd - current_crypto_value
+                    if available_crypto <= 0:
+                        logger.warning(f"[WS] Global Crypto limit reached (Current: ${current_crypto_value:.2f}, Max: ${max_crypto_usd:.2f})")
+                        self._global_buy_cooldown_until = time.time() + 1800
+                        WSTradeLogger.write_logbook("[API WARNING] Tetto massimo Crypto raggiunto! Acquisti in pausa.")
+                        return None
+                    if size_usd > available_crypto:
+                        size_usd = available_crypto
+                else:
+                    available_stocks = max_stocks_usd - current_stocks_value
+                    if available_stocks <= 0:
+                        logger.warning(f"[WS] Global Stocks limit reached (Current: ${current_stocks_value:.2f}, Max: ${max_stocks_usd:.2f})")
+                        self._global_buy_cooldown_until = time.time() + 1800
+                        WSTradeLogger.write_logbook("[API WARNING] Tetto massimo Azioni raggiunto! Acquisti in pausa.")
+                        return None
+                    if size_usd > available_stocks:
+                        size_usd = available_stocks
+
+        except Exception as e:
+            logger.error(f"[WS] Error checking global allocations: {e}")
+
         # Pre-flight Balance Check
         if not is_short:
             if size_usd > buying_power:
                 size_usd = buying_power * 0.95  # Leave 5% buffer
-                if size_usd < 10.0:
-                    logger.warning(f"[WS] Insufficient balance for {symbol} (Requires > $10, Available: ${buying_power:.2f})")
-                    self._global_buy_cooldown_until = time.time() + 3600
-                    WSTradeLogger.write_logbook("[API WARNING] Liquidità esaurita! Acquisti in pausa per 1 ora.")
-                    return None
+            if size_usd < 10.0:
+                logger.warning(f"[WS] Insufficient balance for {symbol} (Requires > $10, Available: ${buying_power:.2f})")
+                self._global_buy_cooldown_until = time.time() + 3600
+                WSTradeLogger.write_logbook("[API WARNING] Liquidità esaurita! Acquisti in pausa per 1 ora.")
+                return None
 
         # Check max open positions (anti-spam)
         try:
