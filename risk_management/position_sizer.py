@@ -83,7 +83,7 @@ class PositionSizer:
             logger.info(f"[RISK CALC] {symbol} | Eq: ${total_equity:.2f} | SL: {sl_distance_pct*100:.2f}% | " 
                         f"Base: ${position_size_usd:.2f} | Final: ${final_allocation:.2f}")
             
-            return max(final_allocation, 5.0) # Alpaca minimum is often around $5
+            return max(final_allocation, 10.50) # Alpaca minimum is $10 for crypto
             
         except Exception as e:
             logger.error(f"[RISK CALC] Error calculating dynamic size: {e}")

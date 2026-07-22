@@ -586,10 +586,46 @@ class RealtimeExecutor:
                     f"Price: ${price:.2f} | Change: {change_pct:.2f}% | Order: {order_id}"
                 )
             except Exception as e:
-                logger.error(f"[WS] Order execution failed for {symbol}: {e}")
-                WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
-                WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, "FAILED", False)
-                return None
+                error_msg = str(e)
+                if "minimal amount of order" in error_msg:
+                    import re
+                    match = re.search(r"minimal amount of order ([\d\.]+)", error_msg)
+                    if match:
+                        min_req = float(match.group(1))
+                        new_size_usd = min_req * 1.05  # Pad by 5%
+                        logger.info(f"[WS] Retrying {symbol} with dynamic minimum allowed size: ${new_size_usd:.2f}")
+                        
+                        new_qty = new_size_usd / price if price > 0 else 0
+                        new_qty = round(new_qty, 4) if is_crypto else round(new_qty, 2)
+                        
+                        order_data = LimitOrderRequest(
+                            symbol=order_symbol,
+                            qty=new_qty,
+                            side=side,
+                            time_in_force=TimeInForce.GTC,
+                            limit_price=limit_price,
+                            stop_loss=StopLossRequest(stop_price=sl_price)
+                        )
+                        try:
+                            order = self._trading_client.submit_order(order_data)
+                            order_id = str(order.id)
+                            logger.info(f"[WS TRIGGER] BUY ${new_size_usd:.2f} of {symbol} EXECUTED ON RETRY! Price: ${price:.2f}")
+                            size_usd = new_size_usd
+                        except Exception as retry_e:
+                            logger.error(f"[WS] Retry failed for {symbol}: {retry_e}")
+                            WSTradeLogger.write_logbook(f"[WS ERROR] Retry fallito su {symbol}: {retry_e}")
+                            WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, "FAILED", False)
+                            return None
+                    else:
+                        logger.error(f"[WS] Order execution failed for {symbol}: {e}")
+                        WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
+                        WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, "FAILED", False)
+                        return None
+                else:
+                    logger.error(f"[WS] Order execution failed for {symbol}: {e}")
+                    WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
+                    WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, "FAILED", False)
+                    return None
 
         # Log the trade
         qty = size_usd / price if price > 0 else 0.0
