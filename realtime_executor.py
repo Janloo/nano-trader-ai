@@ -137,6 +137,8 @@ class VolatilityDetector:
         self.spike_threshold_pct = spike_threshold_pct
         # {symbol: deque of (timestamp_utc, price)}
         self._prices: Dict[str, deque] = {}
+        # {symbol: dict for trailing state}
+        self._trailing_state: Dict[str, dict] = {}
 
     def update(self, symbol: str, price: float, timestamp: datetime,
                dynamic_dip_pct: float = None, dynamic_spike_pct: float = None):
@@ -161,13 +163,44 @@ class VolatilityDetector:
         if len(window) < 2:
             return None, None
 
+        if symbol not in self._trailing_state:
+            self._trailing_state[symbol] = {"active": False, "lowest": float('inf'), "dip_pct": 0.0, "window_high": 0.0}
+        t_state = self._trailing_state[symbol]
+
         # Calculate % change from window high (DIP)
         window_high = max(p for _, p in window)
         dip_pct = None
+        
         if window_high > 0:
             pct_change_high = ((price - window_high) / window_high) * 100.0
+            
+            # 1. Activate trailing if we hit threshold
             if pct_change_high <= active_dip_threshold:
-                dip_pct = pct_change_high
+                if not t_state["active"]:
+                    t_state["active"] = True
+                    t_state["lowest"] = price
+                    t_state["dip_pct"] = pct_change_high
+                    t_state["window_high"] = window_high
+                else:
+                    # Update lowest price if it keeps dropping
+                    if price < t_state["lowest"]:
+                        t_state["lowest"] = price
+                        t_state["dip_pct"] = pct_change_high
+
+            # 2. Check for rebound if active
+            if t_state["active"]:
+                # If price recovered back above the threshold level entirely, abort trailing
+                if pct_change_high > active_dip_threshold and price > (t_state["lowest"] * 1.002):
+                    t_state["active"] = False
+                
+                # Rebound check (e.g. +0.05% from the absolute bottom)
+                rebound_price = t_state["lowest"] * (1.0 + (0.05 / 100.0))
+                if price >= rebound_price and price > t_state["lowest"]:
+                    # Trailing buy confirmed!
+                    dip_pct = t_state["dip_pct"]  # Return the deepest dip recorded
+                    # Reset state
+                    t_state["active"] = False
+                    t_state["lowest"] = float('inf')
 
         # Calculate % change from window low (SPIKE)
         window_low = min(p for _, p in window)
@@ -455,9 +488,17 @@ class RealtimeExecutor:
             return None
 
         if is_short and is_crypto:
-            logger.warning(f"[WS] Cannot short Crypto {symbol} on Alpaca. Skipping execution.")
-            WSTradeLogger.write_logbook(f"[WS INFO] Salto lo Short su Crypto {symbol} (non supportato).")
-            return None
+            if "BTC" in symbol:
+                logger.warning(f"[WS HEDGE] Converting Crypto SHORT on {symbol} to LONG on ETF BITI")
+                WSTradeLogger.write_logbook(f"[HEDGE] Sostituito Short {symbol} con Acquisto ETF Inverso (BITI).")
+                symbol = "BITI"
+                is_short = False
+                is_crypto = False
+                price = 0.0  # Unknown price, will trigger a simple Market Order without Bracket
+            else:
+                logger.warning(f"[WS] Cannot short Crypto {symbol} on Alpaca. Skipping execution.")
+                WSTradeLogger.write_logbook(f"[WS INFO] Salto lo Short su Crypto {symbol} (non supportato).")
+                return None
 
         risk_config = RiskConfigReader.read()
         
@@ -579,13 +620,24 @@ class RealtimeExecutor:
         else:
             try:
                 self._init_trading_client()
-                from alpaca.trading.requests import LimitOrderRequest, StopLossRequest
+                from alpaca.trading.requests import LimitOrderRequest, StopLossRequest, MarketOrderRequest
                 from alpaca.trading.enums import OrderSide, TimeInForce
                 
-                atr_tp_mult = risk_config.get("atr_take_profit_multiplier", 3.0)
-                atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
+                # If price is 0.0 (e.g. ETF Hedge), we place a simple market order without brackets
+                if price <= 0:
+                    req = MarketOrderRequest(
+                        symbol=symbol,
+                        notional=round(size_usd, 2),
+                        side=OrderSide.BUY,
+                        time_in_force=TimeInForce.GTC
+                    )
+                    res = self._trading_client.submit_order(req)
+                    order_id = str(res.id)
+                    logger.info(f"[WS] Executed HEDGE Market Order for {symbol}, Notional: ${size_usd:.2f}")
+                else:
+                    atr_tp_mult = risk_config.get("atr_take_profit_multiplier", 3.0)
+                    atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
 
-                if is_crypto:
                     micro_tp_pct = risk_config.get("crypto_micro_tp_pct", 0.50) / 100.0
                     if is_short:
                         tp_price = round(price * (1.0 - micro_tp_pct), 2)
@@ -797,9 +849,13 @@ class RealtimeExecutor:
         # Read Regime and adjust DIP threshold dynamically
         risk_config = RiskConfigReader.read()
         
-        # Override for crypto micro-scalping
-        dynamic_dip = -abs(risk_config.get("crypto_micro_dip_pct", 0.15))
-            
+        # Override for crypto micro-scalping (with ATR scaling)
+        base_dip = abs(risk_config.get("crypto_micro_dip_pct", 0.15))
+        if atr is not None and atr > 0 and price > 0:
+            atr_pct = (atr / price) * 100.0
+            dynamic_dip = -abs(max(base_dip, atr_pct * 0.2))
+        else:
+            dynamic_dip = -base_dip
         # Update Volatility detector with dynamic threshold
         dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=dynamic_dip)
 
