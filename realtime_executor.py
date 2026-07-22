@@ -368,6 +368,7 @@ class RealtimeExecutor:
         self.fast_guardian = FastGuardian()
         self.alert_states: Dict[str, dict] = {}
         self._last_trailing_check = datetime.now(timezone.utc)
+        self._global_buy_cooldown_until = 0.0
 
     def _init_trading_client(self):
         """Lazily initializes the Alpaca trading client."""
@@ -431,6 +432,10 @@ class RealtimeExecutor:
     def _execute_order(self, symbol: str, price: float, change_pct: float,
                        bias_info: Dict, is_short: bool = False, atr: float = 0.0) -> Optional[str]:
         """Places a Bracket Order with dynamic TP/SL."""
+        if not is_short and time.time() < self._global_buy_cooldown_until:
+            logger.info(f"[WS] Skipping BUY for {symbol} due to global cooldown.")
+            return None
+
         sentiment_score = bias_info.get("sentiment_score", 0.0)
         reasoning = bias_info.get("reasoning", "")
         bias_type = "BEARISH" if is_short else "BULLISH"
@@ -472,6 +477,16 @@ class RealtimeExecutor:
             symbol, price, sentiment_score, atr, risk_config,
             total_equity, buying_power, NOTIONAL_USD
         )
+
+        # Pre-flight Balance Check
+        if not is_short:
+            if size_usd > buying_power:
+                size_usd = buying_power * 0.95  # Leave 5% buffer
+                if size_usd < 10.0:
+                    logger.warning(f"[WS] Insufficient balance for {symbol} (Requires > $10, Available: ${buying_power:.2f})")
+                    self._global_buy_cooldown_until = time.time() + 3600
+                    WSTradeLogger.write_logbook("[API WARNING] Liquidità esaurita! Acquisti in pausa per 1 ora.")
+                    return None
 
         # Check max open positions (anti-spam)
         try:
@@ -617,13 +632,23 @@ class RealtimeExecutor:
                             WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, "FAILED", False)
                             return None
                     else:
-                        logger.error(f"[WS] Order execution failed for {symbol}: {e}")
-                        WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
+                        if "insufficient balance" in str(e).lower():
+                            logger.error(f"[WS] Insufficient balance error caught for {symbol}.")
+                            self._global_buy_cooldown_until = time.time() + 3600
+                            WSTradeLogger.write_logbook("[API WARNING] Liquidità esaurita (da API)! Acquisti in pausa per 1 ora.")
+                        else:
+                            logger.error(f"[WS] Order execution failed for {symbol}: {e}")
+                            WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
                         WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, "FAILED", False)
                         return None
                 else:
-                    logger.error(f"[WS] Order execution failed for {symbol}: {e}")
-                    WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
+                    if "insufficient balance" in str(e).lower():
+                        logger.error(f"[WS] Insufficient balance error caught for {symbol}.")
+                        self._global_buy_cooldown_until = time.time() + 3600
+                        WSTradeLogger.write_logbook("[API WARNING] Liquidità esaurita (da API)! Acquisti in pausa per 1 ora.")
+                    else:
+                        logger.error(f"[WS] Order execution failed for {symbol}: {e}")
+                        WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
                     WSTradeLogger.log_trigger(symbol, price, change_pct, bias_type, sentiment_score, reasoning, "FAILED", False)
                     return None
 
