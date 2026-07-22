@@ -23,6 +23,24 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         clean_path = self.path.split("?")[0]
         
+        # Serve analytics
+        if clean_path == "/analytics":
+            filepath = "analytics.html"
+            if not os.path.exists(filepath):
+                self.send_error(404, "analytics.html not found")
+                return
+            try:
+                with open(filepath, "rb") as f:
+                    file_content = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(file_content)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
+            return
+
         # Serve dashboard
         if clean_path in ["/", "/dashboard.html"]:
             filepath = "dashboard.html"
@@ -173,6 +191,103 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_cors_headers()
             self.end_headers()
             self.wfile.write(content)
+            return
+
+        
+        # Serve paginated HTML rows for lazy loading
+        
+        # Serve Performance Comparison Data
+        if self.path.startswith("/api/performance_comparison"):
+            parsed_url = urllib.parse.urlparse(self.path)
+            params = urllib.parse.parse_qs(parsed_url.query)
+            asset = params.get("asset", ["ALL"])[0]
+            
+            from data.db import get_db
+            with get_db() as conn:
+                cursor = conn.cursor()
+                
+                # Fetch Real Logs
+                if asset == "ALL":
+                    cursor.execute("SELECT timestamp, return_1h, return_4h FROM ai_analytics WHERE action NOT LIKE 'SHADOW_%' AND return_1h IS NOT NULL ORDER BY timestamp ASC")
+                else:
+                    cursor.execute("SELECT timestamp, return_1h, return_4h FROM ai_analytics WHERE action NOT LIKE 'SHADOW_%' AND return_1h IS NOT NULL AND asset = ? ORDER BY timestamp ASC", (asset,))
+                real_logs = [dict(row) for row in cursor.fetchall()]
+                
+                # Fetch Shadow Logs
+                if asset == "ALL":
+                    cursor.execute("SELECT timestamp, return_1h, return_4h FROM ai_analytics WHERE action LIKE 'SHADOW_%' AND return_1h IS NOT NULL ORDER BY timestamp ASC")
+                else:
+                    cursor.execute("SELECT timestamp, return_1h, return_4h FROM ai_analytics WHERE action LIKE 'SHADOW_%' AND return_1h IS NOT NULL AND asset = ? ORDER BY timestamp ASC", (asset,))
+                shadow_logs = [dict(row) for row in cursor.fetchall()]
+                
+            # Process Real Logs
+            real_pnl = 0.0
+            real_curve = []
+            real_wins = 0
+            for log in real_logs:
+                ret = log['return_1h']
+                real_pnl += ret
+                real_curve.append({'x': log['timestamp'], 'y': round(real_pnl, 2)})
+                if ret > 0: real_wins += 1
+                
+            real_win_rate = (real_wins / len(real_logs) * 100) if len(real_logs) > 0 else 0
+            
+            # Process Shadow Logs
+            shadow_pnl = 0.0
+            shadow_curve = []
+            shadow_wins = 0
+            for log in shadow_logs:
+                ret = log['return_1h']
+                shadow_pnl += ret
+                shadow_curve.append({'x': log['timestamp'], 'y': round(shadow_pnl, 2)})
+                if ret > 0: shadow_wins += 1
+                
+            shadow_win_rate = (shadow_wins / len(shadow_logs) * 100) if len(shadow_logs) > 0 else 0
+            
+            result = {
+                "real": {
+                    "curve": real_curve,
+                    "win_rate": round(real_win_rate, 2),
+                    "total_trades": len(real_logs),
+                    "final_pnl": round(real_pnl, 2)
+                },
+                "shadow": {
+                    "curve": shadow_curve,
+                    "win_rate": round(shadow_win_rate, 2),
+                    "total_trades": len(shadow_logs),
+                    "final_pnl": round(shadow_pnl, 2)
+                }
+            }
+            
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode("utf-8"))
+            return
+
+        if self.path.startswith("/api/logs_html?"):
+            parsed_url = urllib.parse.urlparse(self.path)
+            params = urllib.parse.parse_qs(parsed_url.query)
+            log_type = params.get("type", [""])[0]
+            offset = int(params.get("offset", ["0"])[0])
+            limit = int(params.get("limit", ["20"])[0])
+            
+            from reporting.generator import get_trades_rows_html, get_ai_rows_html, get_shadow_rows_html
+            
+            html_output = ""
+            if log_type == "trades":
+                html_output = get_trades_rows_html(offset, limit)
+            elif log_type == "ai":
+                html_output = get_ai_rows_html(offset, limit)
+            elif log_type == "shadow":
+                html_output = get_shadow_rows_html(offset, limit)
+                
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.send_cors_headers()
+            self.end_headers()
+            self.wfile.write(html_output.encode("utf-8"))
             return
 
         if clean_path == "/api/dashboard_fragments":

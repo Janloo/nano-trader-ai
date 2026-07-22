@@ -564,6 +564,12 @@ def generate_dashboard():
                             <span class="text-lg font-bold bg-gradient-to-r from-blue-400 to-indigo-200 bg-clip-text text-transparent">Nano-Trader-AI</span>
                             <span class="ml-1.5 text-xs font-semibold px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">Control Room</span>
                         </div>
+                        
+                        <!-- Tab Links -->
+                        <div class="hidden md:flex items-center gap-2 ml-10">
+                            <a href="/" class="text-sm font-bold text-white px-4 py-1.5 bg-slate-800/80 rounded-lg border border-slate-700 shadow-sm">Dashboard</a>
+                            <a href="/analytics" class="text-sm font-bold text-slate-400 hover:text-white px-4 py-1.5 transition-colors rounded-lg hover:bg-slate-800/50">Analytics</a>
+                        </div>
                     </div>
                     <div class="flex items-center gap-4">
                         <!-- Market Clock -->
@@ -646,18 +652,27 @@ def generate_dashboard():
 
                 
                 <h2 class="text-md font-bold text-white mb-4 mt-6 border-t border-slate-800 pt-4"><span class="text-blue-400">🌎</span> Global Allocation Limits</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-4">
+                <div class="grid grid-cols-1 gap-6 mb-4 bg-slate-900/50 p-6 rounded-xl border border-blue-900/30">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Stocks Allocation (%)</label>
-                        <input type="number" step="0.01" id="globalMaxStocksPct" class="w-full bg-slate-950 border border-blue-900/50 rounded-xl px-4 py-2.5 text-blue-400 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="0.50">
+                        <label class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                            <span>Max Stocks Allocation</span>
+                            <span id="stocksVal" class="text-blue-400 font-bold bg-blue-900/30 px-2 py-1 rounded">50%</span>
+                        </label>
+                        <input type="range" min="0" max="100" step="1" id="globalMaxStocksPct" class="w-full accent-blue-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" oninput="syncSliders('globalMaxStocksPct', 'globalMinCashPct', 'globalMaxCryptoPct')">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max Crypto Allocation (%)</label>
-                        <input type="number" step="0.01" id="globalMaxCryptoPct" class="w-full bg-slate-950 border border-blue-900/50 rounded-xl px-4 py-2.5 text-blue-400 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="0.50">
+                        <label class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                            <span>Max Crypto Allocation</span>
+                            <span id="cryptoVal" class="text-blue-400 font-bold bg-blue-900/30 px-2 py-1 rounded">50%</span>
+                        </label>
+                        <input type="range" min="0" max="100" step="1" id="globalMaxCryptoPct" class="w-full accent-blue-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" oninput="syncSliders('globalMaxCryptoPct', 'globalMinCashPct', 'globalMaxStocksPct')">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Min Cash Reserve (%)</label>
-                        <input type="number" step="0.01" id="globalMinCashPct" class="w-full bg-slate-950 border border-blue-900/50 rounded-xl px-4 py-2.5 text-blue-400 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="0.10">
+                        <label class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                            <span>Min Cash Reserve</span>
+                            <span id="cashVal" class="text-emerald-400 font-bold bg-emerald-900/30 px-2 py-1 rounded">10%</span>
+                        </label>
+                        <input type="range" min="0" max="100" step="1" id="globalMinCashPct" class="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" oninput="syncSliders('globalMinCashPct', 'globalMaxStocksPct', 'globalMaxCryptoPct')">
                     </div>
                 </div>
 
@@ -963,7 +978,7 @@ def generate_dashboard():
             <!-- Alpaca Open Positions Table -->
             <div id="openPositionsSection" class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden mb-8">
                 <h2 class="text-lg font-bold text-white mb-4"><span class="text-emerald-400">💼</span> Alpaca Open Positions</h2>
-                <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div id="shadowContainer" class="overflow-x-auto overflow-y-auto max-h-[500px]">
                     <table class="min-w-full divide-y divide-slate-800/50">
                         <thead>
                             <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
@@ -986,7 +1001,7 @@ def generate_dashboard():
             <!-- Alpaca Live Orders Table -->
             <div id="alpacaOrdersSection" class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden mb-8">
                 <h2 class="text-lg font-bold text-white mb-4"><span class="text-yellow-400">🦙</span> Alpaca Broker Orders (Live API)</h2>
-                <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div id="shadowContainer" class="overflow-x-auto overflow-y-auto max-h-[500px]">
                     <table class="min-w-full divide-y divide-slate-800/50">
                         <thead>
                             <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
@@ -1006,10 +1021,11 @@ def generate_dashboard():
                 </div>
             </div>
 
+            
             <!-- Trade History Table -->
             <div class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden mb-8">
                 <h2 class="text-lg font-bold text-white mb-4">Trades Execution logs</h2>
-                <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div id="shadowContainer" class="overflow-x-auto overflow-y-auto max-h-[500px]">
                     <table class="min-w-full divide-y divide-slate-800/50">
                         <thead>
                             <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
@@ -1034,7 +1050,7 @@ def generate_dashboard():
             <!-- AI Telemetry logs Table -->
             <div class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden">
                 <h2 class="text-lg font-bold text-white mb-4">AI Decision & Telemetry Logs</h2>
-                <div class="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <div id="shadowContainer" class="overflow-x-auto overflow-y-auto max-h-[500px]">
                     <table class="min-w-full divide-y divide-slate-800/50">
                         <thead>
                             <tr class="text-xs font-semibold text-slate-400 text-left uppercase tracking-wider">
@@ -1455,9 +1471,21 @@ def generate_dashboard():
                     if(data.max_risk_per_trade_pct) document.getElementById("maxRiskPct").value = data.max_risk_per_trade_pct;
                     if(data.max_open_positions_per_asset) document.getElementById("maxOpenPositions").value = data.max_open_positions_per_asset;
                     if(data.atr_stop_loss_multiplier) document.getElementById("atrSlMult").value = data.atr_stop_loss_multiplier;
-                    if(data.global_max_stocks_pct) document.getElementById("globalMaxStocksPct").value = data.global_max_stocks_pct;
-                    if(data.global_max_crypto_pct) document.getElementById("globalMaxCryptoPct").value = data.global_max_crypto_pct;
-                    if(data.global_min_cash_pct) document.getElementById("globalMinCashPct").value = data.global_min_cash_pct;
+                    if(data.global_max_stocks_pct !== undefined) {{
+                        let val = Math.round(data.global_max_stocks_pct * 100);
+                        document.getElementById("globalMaxStocksPct").value = val;
+                        document.getElementById("stocksVal").innerText = val + "%";
+                    }}
+                    if(data.global_max_crypto_pct !== undefined) {{
+                        let val = Math.round(data.global_max_crypto_pct * 100);
+                        document.getElementById("globalMaxCryptoPct").value = val;
+                        document.getElementById("cryptoVal").innerText = val + "%";
+                    }}
+                    if(data.global_min_cash_pct !== undefined) {{
+                        let val = Math.round(data.global_min_cash_pct * 100);
+                        document.getElementById("globalMinCashPct").value = val;
+                        document.getElementById("cashVal").innerText = val + "%";
+                    }}
                     if(data.alpha_smart_trailing !== undefined) document.getElementById("alphaSmartTrailing").checked = data.alpha_smart_trailing;
                     if(data.alpha_inverse_hedge !== undefined) document.getElementById("alphaInverseHedge").checked = data.alpha_inverse_hedge;
                     if(data.alpha_dynamic_dip !== undefined) document.getElementById("alphaDynamicDip").checked = data.alpha_dynamic_dip;
@@ -1484,9 +1512,9 @@ def generate_dashboard():
                 max_risk_per_trade_pct: parseFloat(document.getElementById("maxRiskPct").value) || 0.01,
                 max_open_positions_per_asset: parseInt(document.getElementById("maxOpenPositions").value) || 1,
                 atr_stop_loss_multiplier: parseFloat(document.getElementById("atrSlMult").value) || 2.0,
-                global_max_stocks_pct: parseFloat(document.getElementById("globalMaxStocksPct").value) || 0.50,
-                global_max_crypto_pct: parseFloat(document.getElementById("globalMaxCryptoPct").value) || 0.50,
-                global_min_cash_pct: parseFloat(document.getElementById("globalMinCashPct").value) || 0.10,
+                global_max_stocks_pct: parseFloat(document.getElementById("globalMaxStocksPct").value) / 100.0,
+                global_max_crypto_pct: parseFloat(document.getElementById("globalMaxCryptoPct").value) / 100.0,
+                global_min_cash_pct: parseFloat(document.getElementById("globalMinCashPct").value) / 100.0,
                 alpha_smart_trailing: document.getElementById("alphaSmartTrailing").checked,
                 alpha_inverse_hedge: document.getElementById("alphaInverseHedge").checked,
                 alpha_dynamic_dip: document.getElementById("alphaDynamicDip").checked,
@@ -1851,7 +1879,116 @@ def generate_dashboard():
             }}
         }}
         setInterval(refreshDashboardData, 60000);
-    </script>
+    
+
+        // --- Linked Sliders Logic ---
+        let isSyncing = false;
+        
+        function getLabelId(sliderId) {{
+            if(sliderId === 'globalMaxStocksPct') return 'stocksVal';
+            if(sliderId === 'globalMaxCryptoPct') return 'cryptoVal';
+            if(sliderId === 'globalMinCashPct') return 'cashVal';
+            return '';
+        }}
+
+        function updateSliderLabel(sliderId) {{
+            let el = document.getElementById(sliderId);
+            let lbl = document.getElementById(getLabelId(sliderId));
+            if(el && lbl) {{
+                lbl.innerText = el.value + '%';
+            }}
+        }}
+
+        function syncSliders(source, target1, target2) {{
+            if (isSyncing) return;
+            isSyncing = true;
+            
+            let elSrc = document.getElementById(source);
+            let elT1 = document.getElementById(target1);
+            let elT2 = document.getElementById(target2);
+            
+            let vSrc = parseInt(elSrc.value) || 0;
+            let vT1 = parseInt(elT1.value) || 0;
+            let vT2 = parseInt(elT2.value) || 0;
+            
+            let requiredSum = 100 - vSrc;
+            let currentSum = vT1 + vT2;
+            let delta = requiredSum - currentSum;
+            
+            let newT1 = vT1 + delta;
+            
+            if (newT1 < 0) {{
+                elT1.value = 0;
+                elT2.value = vT2 + newT1;
+            }} else if (newT1 > 100) {{
+                elT1.value = 100;
+                elT2.value = vT2 + (newT1 - 100);
+            }} else {{
+                elT1.value = newT1;
+            }}
+            
+            updateSliderLabel(source);
+            updateSliderLabel(target1);
+            updateSliderLabel(target2);
+            
+            isSyncing = false;
+        }}
+
+        
+        // --- Lazy Loading Logic ---
+        let offsets = {{ trades: 0, ai: 0, shadow: 0 }};
+        const loadLimit = 20;
+        let isFetching = {{ trades: false, ai: false, shadow: false }};
+        let hasMore = {{ trades: true, ai: true, shadow: true }};
+
+        async function fetchLogsHTML(type, tbodyId) {{
+            if (isFetching[type] || !hasMore[type]) return;
+            isFetching[type] = true;
+            
+            try {{
+                const res = await fetch(`/api/logs_html?type=${{type}}&offset=${{offsets[type]}}&limit=${{loadLimit}}`);
+                const html = await res.text();
+                if (html.trim() === "") {{
+                    hasMore[type] = false;
+                }} else {{
+                    document.getElementById(tbodyId).insertAdjacentHTML('beforeend', html);
+                    offsets[type] += loadLimit;
+                }}
+            }} catch(e) {{
+                console.error("Error fetching logs:", e);
+            }}
+            isFetching[type] = false;
+        }}
+
+        function setupScrollListener(divId, type, tbodyId) {{
+            const container = document.getElementById(divId);
+            if(container) {{
+                container.addEventListener("scroll", function() {{
+                    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 50) {{
+                        fetchLogsHTML(type, tbodyId);
+                    }}
+                }});
+            }}
+        }}
+
+        // Only setup if the elements exist (to avoid errors if they are conditionally rendered)
+        if(document.getElementById("tradesTableBody")) {{
+            document.getElementById("tradesTableBody").innerHTML = "";
+            fetchLogsHTML('trades', 'tradesTableBody');
+            setupScrollListener('tradesContainer', 'trades', 'tradesTableBody');
+        }}
+        if(document.getElementById("aiTableBody")) {{
+            document.getElementById("aiTableBody").innerHTML = "";
+            fetchLogsHTML('ai', 'aiTableBody');
+            setupScrollListener('aiContainer', 'ai', 'aiTableBody');
+        }}
+        if(document.getElementById("shadowTableBody")) {{
+            document.getElementById("shadowTableBody").innerHTML = "";
+            fetchLogsHTML('shadow', 'shadowTableBody');
+            setupScrollListener('shadowContainer', 'shadow', 'shadowTableBody');
+        }}
+
+</script>
 </body>
 
 </html>
@@ -1859,8 +1996,139 @@ def generate_dashboard():
 
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html_template)
+
+    from reporting.analytics_template import generate_analytics_page
+    generate_analytics_page()
     print(f"Interactive Control Room successfully generated at {html_path}")
 
 if __name__ == "__main__":
     generate_dashboard()
 
+
+
+def get_trades_rows_html(offset=0, limit=20):
+    from data.db import get_db, get_ai_analytics
+    from datetime import datetime
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM trades ORDER BY timestamp DESC LIMIT ? OFFSET ?", (limit, offset))
+        trades = [dict(row) for row in cursor.fetchall()]
+        
+    ai_logs = get_ai_analytics(limit=100) # Fetch recent for feedback mapping
+    
+    trades_rows = []
+    for t in trades:
+        feedback_str = "<span class='text-slate-500 font-semibold'>No Trade</span>"
+        for log in ai_logs:
+            log_time = log.get("timestamp", "")
+            trade_time = t.get("timestamp", "")
+            if log.get("asset") == t["symbol"] and log_time and trade_time:
+                try:
+                    t_diff = abs((datetime.fromisoformat(log_time.replace("Z", "+00:00")) - datetime.fromisoformat(trade_time.replace("Z", "+00:00"))).total_seconds())
+                    if t_diff < 120:
+                        ret_1h = log.get("return_1h")
+                        ret_4h = log.get("return_4h")
+                        parts = []
+                        if ret_1h is not None:
+                            parts.append(f"+1h: <span class='{'text-emerald-400' if ret_1h >= 0 else 'text-rose-400'} font-mono font-bold'>{ret_1h:+.2f}%</span>")
+                        if ret_4h is not None:
+                            parts.append(f"+4h: <span class='{'text-emerald-400' if ret_4h >= 0 else 'text-rose-400'} font-mono font-bold'>{ret_4h:+.2f}%</span>")
+                        if parts:
+                            feedback_str = " / ".join(parts)
+                        else:
+                            feedback_str = "<span class='text-yellow-500 font-semibold'>Awaiting (+1h)</span>"
+                        break
+                except Exception:
+                    pass
+
+        exec_type = t.get("execution_type", "cron_macro")
+        if exec_type == "hybrid_websocket_trigger":
+            type_badge = '<span class="ml-2 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">⚡ WS Trigger</span>'
+        else:
+            type_badge = '<span class="ml-2 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Cron Macro</span>'
+
+        trades_rows.append(f'''
+        <tr class="hover:bg-slate-900/20 transition-colors">
+            <td class="py-3.5 text-slate-400 font-mono text-xs">{t["timestamp"]}</td>
+            <td class="py-3.5"><span class="font-bold text-white">{t["symbol"]}</span></td>
+            <td class="py-3.5">
+                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">BUY</span>
+                {type_badge}
+            </td>
+            <td class="py-3.5 text-slate-300 font-mono">${t["price"]:.2f}</td>
+            <td class="py-3.5 font-mono text-slate-400">{(t.get("notional") or 0.0):.2f}</td>
+            <td class="py-3.5 text-slate-400 max-w-md truncate text-xs" title="{t['reasoning']}">{t['reasoning'][:100]}...</td>
+            <td class="py-3.5 text-right">{feedback_str}</td>
+        </tr>
+        ''')
+    return "\n".join(trades_rows)
+
+def get_ai_rows_html(offset=0, limit=20):
+    from data.db import get_db
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM ai_analytics WHERE action NOT LIKE 'SHADOW_%' ORDER BY timestamp DESC LIMIT ? OFFSET ?", (limit, offset))
+        ai_logs = [dict(row) for row in cursor.fetchall()]
+        
+    ai_rows = []
+    for log in ai_logs:
+        ret_1h = log.get('return_1h')
+        ret_4h = log.get('return_4h')
+        pnl_text = ""
+        if ret_1h is not None:
+            color = "text-emerald-400" if ret_1h > 0 else "text-rose-400"
+            pnl_text += f"<span class='{color} mr-2'>1h: {ret_1h:.2f}%</span>"
+        if ret_4h is not None:
+            color = "text-emerald-400" if ret_4h > 0 else "text-rose-400"
+            pnl_text += f"<span class='{color}'>4h: {ret_4h:.2f}%</span>"
+        if not pnl_text:
+            pnl_text = "<span class='text-slate-500'>Waiting...</span>"
+            
+        action = log['action']
+        action_class = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" if action == "BUY" else "bg-slate-500/10 text-slate-400 border-slate-500/20"
+        
+        ai_rows.append(f'''
+        <tr class="hover:bg-slate-800/30 transition-colors group">
+            <td class="px-6 py-4 text-slate-300">{log['timestamp']}</td>
+            <td class="px-6 py-4 font-bold text-white">{log['asset']}</td>
+            <td class="px-6 py-4">
+                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold border {action_class}">{action}</span>
+            </td>
+            <td class="px-6 py-4 text-slate-300 font-mono">${log['price']:.2f}</td>
+            <td class="px-6 py-4 text-right font-mono text-sm">{pnl_text}</td>
+        </tr>
+        ''')
+    return "\n".join(ai_rows)
+
+def get_shadow_rows_html(offset=0, limit=20):
+    from data.db import get_db
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM ai_analytics WHERE action LIKE 'SHADOW_%' ORDER BY timestamp DESC LIMIT ? OFFSET ?", (limit, offset))
+        shadow_logs = [dict(row) for row in cursor.fetchall()]
+        
+    shadow_rows = []
+    for log in shadow_logs:
+        ret_1h = log.get('return_1h')
+        ret_4h = log.get('return_4h')
+        pnl_text = ""
+        if ret_1h is not None:
+            color = "text-emerald-400" if ret_1h > 0 else "text-rose-400"
+            pnl_text += f"<span class='{color} mr-2'>1h: {ret_1h:.2f}%</span>"
+        if ret_4h is not None:
+            color = "text-emerald-400" if ret_4h > 0 else "text-rose-400"
+            pnl_text += f"<span class='{color}'>4h: {ret_4h:.2f}%</span>"
+        if not pnl_text:
+            pnl_text = "<span class='text-slate-500'>Waiting...</span>"
+            
+        shadow_rows.append(f'''
+        <tr class="hover:bg-slate-800/30 transition-colors group">
+            <td class="px-6 py-4 text-slate-300">{log['timestamp']}</td>
+            <td class="px-6 py-4 font-bold text-white">{log['asset']}</td>
+            <td class="px-6 py-4"><span class="bg-purple-900/50 text-purple-400 px-3 py-1 rounded-lg text-xs font-bold">{log['action']}</span></td>
+            <td class="px-6 py-4 text-slate-300 font-mono">${log['price']:.2f}</td>
+            <td class="px-6 py-4 text-right font-mono">{pnl_text}</td>
+        </tr>
+        ''')
+    return "\n".join(shadow_rows)

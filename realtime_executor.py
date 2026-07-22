@@ -660,43 +660,44 @@ class RealtimeExecutor:
                     atr_tp_mult = risk_config.get("atr_take_profit_multiplier", 3.0)
                     atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
 
-                    micro_tp_pct = risk_config.get("crypto_micro_tp_pct", 0.50) / 100.0
-                    if is_short:
-                        tp_price = round(price * (1.0 - micro_tp_pct), 2)
-                        sl_price = round(price * 1.05, 2) # Wide 5% SL for grid
-                        side = OrderSide.SELL
+                    if is_crypto:
+                        micro_tp_pct = risk_config.get("crypto_micro_tp_pct", 0.50) / 100.0
+                        if is_short:
+                            tp_price = round(price * (1.0 - micro_tp_pct), 2)
+                            sl_price = round(price * 1.05, 2) # Wide 5% SL for grid
+                            side = OrderSide.SELL
+                        else:
+                            tp_price = round(price * (1.0 + micro_tp_pct), 2)
+                            sl_price = round(price * 0.95, 2) # Wide 5% SL for grid
+                            side = OrderSide.BUY
                     else:
-                        tp_price = round(price * (1.0 + micro_tp_pct), 2)
-                        sl_price = round(price * 0.95, 2) # Wide 5% SL for grid
-                        side = OrderSide.BUY
-                else:
-                    # Determine dynamic TP multiplier from regime if passed
-                    regimes = RegimeConfigReader.read()
-                    symbol_regime = regimes.get(symbol, {}).get("regime", "UNKNOWN")
-                    if symbol_regime == "BULL_TREND" and not is_short:
-                        atr_tp_mult = max(atr_tp_mult, 3.5) # Wider TP in strong uptrend
-                    elif symbol_regime == "RANGING":
-                        atr_tp_mult = min(atr_tp_mult, 1.5) # Scalp TP in ranging market
+                        # Determine dynamic TP multiplier from regime if passed
+                        regimes = RegimeConfigReader.read()
+                        symbol_regime = regimes.get(symbol, {}).get("regime", "UNKNOWN")
+                        if symbol_regime == "BULL_TREND" and not is_short:
+                            atr_tp_mult = max(atr_tp_mult, 3.5) # Wider TP in strong uptrend
+                        elif symbol_regime == "RANGING":
+                            atr_tp_mult = min(atr_tp_mult, 1.5) # Scalp TP in ranging market
                         
-                    # Dynamic TP/SL using ATR if available, else fallback
-                    if atr > 0:
-                        if is_short:
-                            tp_price = round(price - (atr_tp_mult * atr), 2)
-                            sl_price = round(price + (atr_sl_mult * atr), 2)
-                            side = OrderSide.SELL
+                        # Dynamic TP/SL using ATR if available, else fallback
+                        if atr > 0:
+                            if is_short:
+                                tp_price = round(price - (atr_tp_mult * atr), 2)
+                                sl_price = round(price + (atr_sl_mult * atr), 2)
+                                side = OrderSide.SELL
+                            else:
+                                tp_price = round(price + (atr_tp_mult * atr), 2)
+                                sl_price = round(price - (atr_sl_mult * atr), 2)
+                                side = OrderSide.BUY
                         else:
-                            tp_price = round(price + (atr_tp_mult * atr), 2)
-                            sl_price = round(price - (atr_sl_mult * atr), 2)
-                            side = OrderSide.BUY
-                    else:
-                        if is_short:
-                            tp_price = round(price * 0.975, 2)
-                            sl_price = round(price * 1.015, 2)
-                            side = OrderSide.SELL
-                        else:
-                            tp_price = round(price * 1.025, 2)
-                            sl_price = round(price * 0.985, 2)
-                            side = OrderSide.BUY
+                            if is_short:
+                                tp_price = round(price * 0.975, 2)
+                                sl_price = round(price * 1.015, 2)
+                                side = OrderSide.SELL
+                            else:
+                                tp_price = round(price * 1.025, 2)
+                                sl_price = round(price * 0.985, 2)
+                                side = OrderSide.BUY
 
                 if is_crypto and "USD" in symbol and "/" not in symbol:
                     order_symbol = symbol.replace("USD", "/USD")
