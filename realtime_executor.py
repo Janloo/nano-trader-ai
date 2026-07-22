@@ -289,7 +289,7 @@ class WSTradeLogger:
                 action="BUY",
                 qty=qty,
                 price=price,
-                notional=NOTIONAL_USD,
+                notional=qty * price,
                 sentiment_score=sentiment_score,
                 reasoning=f"{reasoning} (DIP: {dip_pct:.4f}%)",
                 execution_type="hybrid_websocket_trigger",
