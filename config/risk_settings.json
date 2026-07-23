@@ -6,16 +6,14 @@
     "global_max_stocks_pct": 0.3,
     "global_max_crypto_pct": 0.43,
     "global_min_cash_pct": 0.27,
-    "alpha_smart_trailing": false,
-    "alpha_inverse_hedge": false,
-    "alpha_dynamic_dip": false,
+    "alpha_smart_trailing": true,
+    "alpha_inverse_hedge": true,
+    "alpha_dynamic_dip": true,
     "crypto_micro_dip_pct": 0.15,
     "crypto_micro_tp_pct": 0.3,
     "crypto_max_grid_layers": 5,
     "use_kelly_criterion": true,
     "kelly_fraction_multiplier": 1,
     "historical_win_rate": 0.56,
-    "historical_reward_risk": 1.6,
-    "win_rate_estimate": 0.5849,
-    "reward_risk_ratio_estimate": 1.595
+    "historical_reward_risk": 1.6
 }

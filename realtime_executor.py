@@ -161,7 +161,7 @@ class VolatilityDetector:
             window.popleft()
 
         if len(window) < 2:
-            return None, None
+            return None, None, None
 
         if symbol not in self._trailing_state:
             self._trailing_state[symbol] = {"active": False, "lowest": float('inf'), "dip_pct": 0.0, "window_high": 0.0}
