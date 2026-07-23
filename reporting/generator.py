@@ -777,7 +777,7 @@ def generate_dashboard():
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-8">
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Total Portfolio Value</dt>
-                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-portfolio">>$0.00</dd>
+                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-portfolio"><span class="animate-pulse bg-slate-700/50 h-6 w-24 inline-block rounded"></span></dd>
                     <div class="mt-2 flex items-center text-xs font-medium text-slate-500">
                         Starting Balance: ${starting_equity:,.2f}
                     </div>
@@ -785,7 +785,7 @@ def generate_dashboard():
 
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Buying Power</dt>
-                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-buying-power">>$0.00</dd>
+                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-buying-power"><span class="animate-pulse bg-slate-700/50 h-6 w-24 inline-block rounded"></span></dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium font-mono">
                         Active Cash reserves
                     </div>
@@ -803,9 +803,7 @@ def generate_dashboard():
 
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Open Positions PnL</dt>
-                    <dd id="val-unrealized-pnl" class="mt-2 text-2xl font-bold tracking-tight {'text-emerald-400' if current_unrealized_pnl >= 0 else 'text-rose-400'}">
-                        {'+' if current_unrealized_pnl >= 0 else ''}$0.00
-                    </dd>
+                    <dd id="val-unrealized-pnl" class="mt-2 text-2xl font-bold tracking-tight text-white"><span class="animate-pulse bg-slate-700/50 h-6 w-24 inline-block rounded"></span></dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium">
                         Unrealized open assets
                     </div>

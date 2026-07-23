@@ -407,6 +407,7 @@ class RealtimeExecutor:
         self.alert_states: Dict[str, dict] = {}
         self._last_trailing_check = datetime.now(timezone.utc)
         self._global_buy_cooldown_until = 0.0
+        self._shadow_last_order_time: Dict[str, datetime] = {}
 
     def _init_trading_client(self):
         """Lazily initializes the Alpaca trading client."""
@@ -903,36 +904,41 @@ class RealtimeExecutor:
         alpha_smart_trailing = risk_config.get("alpha_smart_trailing", False)
         
         # Shadow logging for trailing buy
-        if not alpha_smart_trailing and trailing_dip is not None:
-            from data.db import insert_ai_analytics
-            # Log the shadow trade for the trailing buy
-            insert_ai_analytics(
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                asset=symbol,
-                price=price,
-                action="SHADOW_BUY",
-                confidence=0.9,
-                sentiment_score=0.0,
-                prompt_tokens=0,
-                completion_tokens=0,
-                reasoning=f"Shadow Trailing Buy hit at {trailing_dip:.2f}%",
-                return_1h=None, return_4h=None
-            )
-        elif alpha_smart_trailing and immediate_dip is not None:
-            from data.db import insert_ai_analytics
-            # Log the old classic method as shadow trade!
-            insert_ai_analytics(
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                asset=symbol,
-                price=price,
-                action="SHADOW_BUY",
-                confidence=0.9,
-                sentiment_score=0.0,
-                prompt_tokens=0,
-                completion_tokens=0,
-                reasoning=f"Shadow Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
-                return_1h=None, return_4h=None
-            )
+        shadow_cooldown = 1800
+        last_shadow = self._shadow_last_order_time.get(symbol)
+        can_shadow = last_shadow is None or (datetime.now(timezone.utc) - last_shadow).total_seconds() >= shadow_cooldown
+        
+        if can_shadow:
+            if not alpha_smart_trailing and trailing_dip is not None:
+                from data.db import insert_ai_analytics
+                insert_ai_analytics(
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    asset=symbol,
+                    price=price,
+                    action="SHADOW_BUY",
+                    confidence=0.9,
+                    sentiment_score=0.0,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    reasoning=f"Shadow Trailing Buy hit at {trailing_dip:.2f}%",
+                    return_1h=None, return_4h=None
+                )
+                self._shadow_last_order_time[symbol] = datetime.now(timezone.utc)
+            elif alpha_smart_trailing and immediate_dip is not None:
+                from data.db import insert_ai_analytics
+                insert_ai_analytics(
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    asset=symbol,
+                    price=price,
+                    action="SHADOW_BUY",
+                    confidence=0.9,
+                    sentiment_score=0.0,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    reasoning=f"Shadow Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
+                    return_1h=None, return_4h=None
+                )
+                self._shadow_last_order_time[symbol] = datetime.now(timezone.utc)
             
         dip_pct = trailing_dip if alpha_smart_trailing else immediate_dip
 
