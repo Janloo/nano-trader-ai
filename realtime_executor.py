@@ -357,7 +357,12 @@ class WSTradeLogger:
                 with open(history_file, "r", encoding="utf-8") as f:
                     content = f.read().strip()
                     if content:
-                        history = json.loads(content)
+                        try:
+                            decoder = json.JSONDecoder()
+                            history, _ = decoder.raw_decode(content)
+                        except json.JSONDecodeError:
+                            logger.warning("[WS] realtime_price_history.json was corrupted. Resetting.")
+                            history = {}
             
             if symbol not in history:
                 history[symbol] = []
