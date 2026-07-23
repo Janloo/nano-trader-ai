@@ -671,7 +671,7 @@ class RealtimeExecutor:
                         symbol=symbol,
                         notional=round(size_usd, 2),
                         side=OrderSide.BUY,
-                        time_in_force=TimeInForce.GTC
+                        time_in_force=TimeInForce.DAY
                     )
                     res = self._trading_client.submit_order(req)
                     order_id = str(res.id)
@@ -730,11 +730,14 @@ class RealtimeExecutor:
                 # Maker Limit Price
                 limit_price = round(price * 0.9995, 2) if side == OrderSide.BUY else round(price * 1.0005, 2)
 
+                # Fractional stock orders require DAY; crypto supports GTC
+                tif = TimeInForce.GTC if is_crypto else TimeInForce.DAY
+
                 order_data = LimitOrderRequest(
                     symbol=order_symbol,
                     qty=qty,
                     side=side,
-                    time_in_force=TimeInForce.GTC,
+                    time_in_force=tif,
                     limit_price=limit_price,
                     stop_loss=StopLossRequest(stop_price=sl_price)
                 )
@@ -770,7 +773,7 @@ class RealtimeExecutor:
                             symbol=order_symbol,
                             qty=new_qty,
                             side=side,
-                            time_in_force=TimeInForce.GTC,
+                            time_in_force=tif,
                             limit_price=limit_price,
                             stop_loss=StopLossRequest(stop_price=sl_price)
                         )
