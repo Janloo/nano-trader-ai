@@ -186,10 +186,12 @@ def get_dashboard_data():
                     text_class = "text-slate-300"
                     badge = '<span class="px-2 py-0.5 text-[10px] font-bold bg-slate-500/10 text-slate-400 rounded border border-slate-500/20 uppercase tracking-wider">Info</span>'
                 
+                import html as _html
+                safe_log = _html.escape(log)
                 logbook_rows.append(f"""
                 <div class="py-3 flex items-start gap-3 border-b border-slate-800/40 last:border-b-0">
                     <div class="flex-shrink-0 mt-0.5">{badge}</div>
-                    <div class="{text_class} text-sm font-medium">{log}</div>
+                    <div class="{text_class} text-sm font-medium">{safe_log}</div>
                 </div>
                 """)
         except Exception as e:
@@ -1681,44 +1683,7 @@ def generate_dashboard():
                 showNotification("Live Auto-Refresh Disabled", "info");
             }} else {{
                 refreshInterval = setInterval(() => {{
-                    fetch(window.location.href)
-                        .then(res => res.text())
-                        .then(html => {{
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(html, "text/html");
-                            
-                            // 1. Update WS Triggers table body
-                            const currentWsTbody = document.getElementById("wsTableBody");
-                            const newWsTbody = doc.getElementById("wsTableBody");
-                            if (currentWsTbody && newWsTbody) currentWsTbody.innerHTML = newWsTbody.innerHTML;
-                            
-                            // 1b. Update Alpaca Orders table body
-                            const currentAlpacaBody = document.getElementById("alpacaOrdersBody");
-                            const newAlpacaBody = doc.getElementById("alpacaOrdersBody");
-                            if (currentAlpacaBody && newAlpacaBody) currentAlpacaBody.innerHTML = newAlpacaBody.innerHTML;
-                            
-                            const currentPosBody = document.getElementById("openPositionsBody");
-                            const newPosBody = doc.getElementById("openPositionsBody");
-                            if (currentPosBody && newPosBody) currentPosBody.innerHTML = newPosBody.innerHTML;
-
-                            
-                            // 2. Update Human Logbook
-                            const currentLogbook = document.getElementById("logbookContainer");
-                            const newLogbook = doc.getElementById("logbookContainer");
-                            if (currentLogbook && newLogbook) currentLogbook.innerHTML = newLogbook.innerHTML;
-                            
-                            // 3. Extract JSON data from script and update chart
-                            const newAppDataEl = doc.getElementById("appData");
-                            if (newAppDataEl) {{
-                                const newAppData = JSON.parse(newAppDataEl.textContent);
-                                priceHistoryData = newAppData.priceHistoryData;
-                                wsTriggersData = newAppData.wsTriggersData;
-                                if (typeof renderWSRealtimeChart === 'function') {{
-                                    renderWSRealtimeChart(activeWSSymbol, true);
-                                }}
-                            }}
-                        }})
-                        .catch(err => console.error("Auto-refresh fetch failed", err));
+                    refreshDashboardData();
                 }}, 5000);
                 ping.classList.remove("hidden");
                 dot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
@@ -1738,26 +1703,7 @@ def generate_dashboard():
                 const ping = document.getElementById("refreshPing");
                 const dot = document.getElementById("refreshDot");
                 refreshInterval = setInterval(() => {{
-                    fetch(window.location.href)
-                        .then(res => res.text())
-                        .then(html => {{
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(html, "text/html");
-                            const currentWsTbody = document.getElementById("wsTableBody");
-                            const newWsTbody = doc.getElementById("wsTableBody");
-                            if (currentWsTbody && newWsTbody) currentWsTbody.innerHTML = newWsTbody.innerHTML;
-                            const currentLogbook = document.getElementById("logbookContainer");
-                            const newLogbook = doc.getElementById("logbookContainer");
-                            if (currentLogbook && newLogbook) currentLogbook.innerHTML = newLogbook.innerHTML;
-                            const newAppDataEl = doc.getElementById("appData");
-                            if (newAppDataEl) {{
-                                const newAppData = JSON.parse(newAppDataEl.textContent);
-                                priceHistoryData = newAppData.priceHistoryData;
-                                wsTriggersData = newAppData.wsTriggersData;
-                                if (typeof renderWSRealtimeChart === 'function') renderWSRealtimeChart(activeWSSymbol, true);
-                            }}
-                        }})
-                        .catch(err => console.error("Auto-refresh fetch failed", err));
+                    refreshDashboardData();
                 }}, 5000);
                 ping.classList.remove("hidden");
                 dot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";

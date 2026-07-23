@@ -3,9 +3,9 @@
     "max_risk_per_trade_pct": 0.1,
     "max_open_positions_per_asset": 1,
     "atr_stop_loss_multiplier": 2,
-    "global_max_stocks_pct": 0.2,
-    "global_max_crypto_pct": 0.52,
-    "global_min_cash_pct": 0.28,
+    "global_max_stocks_pct": 0.37,
+    "global_max_crypto_pct": 0.63,
+    "global_min_cash_pct": 0,
     "alpha_smart_trailing": true,
     "alpha_inverse_hedge": true,
     "alpha_dynamic_dip": true,
@@ -16,6 +16,6 @@
     "kelly_fraction_multiplier": 1,
     "historical_win_rate": 0.56,
     "historical_reward_risk": 1.6,
-    "win_rate_estimate": 0.6255,
-    "reward_risk_ratio_estimate": 1.8371
+    "win_rate_estimate": 0.6018,
+    "reward_risk_ratio_estimate": 1.635
 }
