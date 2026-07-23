@@ -10,6 +10,21 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
         # Suppress default server logs in terminal to keep outputs clean
         pass
 
+    def handle_error(self, request, client_address):
+        """Suppress BrokenPipe/ConnectionReset errors — client simply closed the tab."""
+        import sys
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (BrokenPipeError, ConnectionResetError)):
+            return  # Silently ignore — browser closed before response was complete
+        super().handle_error(request, client_address)
+
+    def _safe_write(self, data: bytes):
+        """Write response bytes, silently ignoring disconnected clients."""
+        try:
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def send_cors_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
@@ -36,7 +51,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "text/html")
                 self.send_cors_headers()
                 self.end_headers()
-                self.wfile.write(file_content)
+                self._safe_write(file_content)
             except Exception as e:
                 self.send_error(500, f"Server error: {e}")
             return
@@ -53,7 +68,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/html")
             self.send_cors_headers()
             self.end_headers()
-            self.wfile.write(content)
+            self._safe_write(content)
             return
 
         # Serve static database file trades.json
@@ -67,7 +82,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_cors_headers()
             self.end_headers()
-            self.wfile.write(content)
+            self._safe_write(content)
             return
 
         # Serve static database file ai_analytics_logs.json
@@ -81,7 +96,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_cors_headers()
             self.end_headers()
-            self.wfile.write(content)
+            self._safe_write(content)
             return
 
         # Connection health checks
@@ -171,7 +186,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_cors_headers()
             self.end_headers()
-            self.wfile.write(json.dumps({
+            self._safe_write(json.dumps({
                 "alpaca": alpaca_status,
                 "alpaca_error": alpaca_error,
                 "gemini": gemini_status,
@@ -190,7 +205,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_cors_headers()
             self.end_headers()
-            self.wfile.write(content)
+            self._safe_write(content)
             return
 
         
@@ -263,7 +278,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_cors_headers()
             self.end_headers()
-            self.wfile.write(json.dumps(result).encode("utf-8"))
+            self._safe_write(json.dumps(result).encode("utf-8"))
             return
 
         if self.path.startswith("/api/logs_html?"):
@@ -287,7 +302,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/html")
             self.send_cors_headers()
             self.end_headers()
-            self.wfile.write(html_output.encode("utf-8"))
+            self._safe_write(html_output.encode("utf-8"))
             return
 
         if clean_path == "/api/dashboard_fragments":
@@ -311,7 +326,7 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_cors_headers()
             self.end_headers()
-            self.wfile.write(content)
+            self._safe_write(content)
             return
 
         self.send_error(404, "Not Found")
@@ -334,13 +349,13 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.send_cors_headers()
                 self.end_headers()
-                self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+                self._safe_write(json.dumps({"status": "success"}).encode("utf-8"))
             except Exception as e:
                 logger.error(f"Error saving local synced config: {e}")
                 self.send_response(500)
                 self.send_cors_headers()
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                self._safe_write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
         if self.path == "/api/risk-settings":
@@ -360,13 +375,13 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.send_cors_headers()
                 self.end_headers()
-                self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+                self._safe_write(json.dumps({"status": "success"}).encode("utf-8"))
             except Exception as e:
                 logger.error(f"Error saving risk settings: {e}")
                 self.send_response(500)
                 self.send_cors_headers()
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                self._safe_write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
         if self.path == "/api/close-position":
@@ -404,13 +419,13 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.send_cors_headers()
                 self.end_headers()
-                self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
+                self._safe_write(json.dumps({"status": "success"}).encode("utf-8"))
             except Exception as e:
                 logger.error(f"Error closing position {req_data.get('symbol', 'unknown')}: {e}")
                 self.send_response(500)
                 self.send_cors_headers()
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                self._safe_write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
         self.send_error(404, "Not Found")
