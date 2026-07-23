@@ -908,42 +908,48 @@ class RealtimeExecutor:
         
         alpha_smart_trailing = risk_config.get("alpha_smart_trailing", False)
         
-        # Shadow logging for trailing buy
-        shadow_cooldown = 1800
-        last_shadow = self._shadow_last_order_time.get(symbol)
-        can_shadow = last_shadow is None or (datetime.now(timezone.utc) - last_shadow).total_seconds() >= shadow_cooldown
+        # Shadow logging for trailing buy — cooldown checked via DB so it survives restarts
+        shadow_cooldown = 1800  # 30 minutes
+        dip_condition = (not alpha_smart_trailing and trailing_dip is not None) or \
+                        (alpha_smart_trailing and immediate_dip is not None)
         
-        if can_shadow:
-            if not alpha_smart_trailing and trailing_dip is not None:
+        if dip_condition:
+            from data.db import get_db
+            with get_db() as _conn:
+                last_shadow_row = _conn.execute(
+                    "SELECT timestamp FROM ai_analytics WHERE action LIKE 'SHADOW_%' AND asset = ? ORDER BY timestamp DESC LIMIT 1",
+                    (symbol,)
+                ).fetchone()
+            can_shadow = True
+            if last_shadow_row:
+                try:
+                    last_ts = datetime.fromisoformat(last_shadow_row[0].replace("Z", "+00:00"))
+                    if last_ts.tzinfo is None:
+                        last_ts = last_ts.replace(tzinfo=timezone.utc)
+                    can_shadow = (datetime.now(timezone.utc) - last_ts).total_seconds() >= shadow_cooldown
+                except Exception:
+                    can_shadow = True
+            
+            if can_shadow:
                 from data.db import insert_ai_analytics
-                insert_ai_analytics(
-                    timestamp=datetime.now(timezone.utc).isoformat(),
-                    asset=symbol,
-                    price=price,
-                    action="SHADOW_BUY",
-                    confidence=0.9,
-                    sentiment_score=0.0,
-                    prompt_tokens=0,
-                    completion_tokens=0,
-                    reasoning=f"Shadow Trailing Buy hit at {trailing_dip:.2f}%",
-                    return_1h=None, return_4h=None
-                )
-                self._shadow_last_order_time[symbol] = datetime.now(timezone.utc)
-            elif alpha_smart_trailing and immediate_dip is not None:
-                from data.db import insert_ai_analytics
-                insert_ai_analytics(
-                    timestamp=datetime.now(timezone.utc).isoformat(),
-                    asset=symbol,
-                    price=price,
-                    action="SHADOW_BUY",
-                    confidence=0.9,
-                    sentiment_score=0.0,
-                    prompt_tokens=0,
-                    completion_tokens=0,
-                    reasoning=f"Shadow Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
-                    return_1h=None, return_4h=None
-                )
-                self._shadow_last_order_time[symbol] = datetime.now(timezone.utc)
+                if not alpha_smart_trailing and trailing_dip is not None:
+                    insert_ai_analytics(
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        asset=symbol, price=price, action="SHADOW_BUY",
+                        confidence=0.9, sentiment_score=0.0,
+                        prompt_tokens=0, completion_tokens=0,
+                        reasoning=f"Shadow Trailing Buy hit at {trailing_dip:.2f}%",
+                        return_1h=None, return_4h=None
+                    )
+                elif alpha_smart_trailing and immediate_dip is not None:
+                    insert_ai_analytics(
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        asset=symbol, price=price, action="SHADOW_BUY",
+                        confidence=0.9, sentiment_score=0.0,
+                        prompt_tokens=0, completion_tokens=0,
+                        reasoning=f"Shadow Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
+                        return_1h=None, return_4h=None
+                    )
             
         dip_pct = trailing_dip if alpha_smart_trailing else immediate_dip
 
