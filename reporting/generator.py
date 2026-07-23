@@ -921,7 +921,11 @@ def generate_dashboard():
                             <button id="wsTabETH" onclick="switchWSSymbol('ETHUSD')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">ETHUSD</button>
                         </div>
                     </div>
-                    <div class="h-80 w-full">
+                    <div class="h-80 w-full relative">
+                        <div id="wsChartLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm rounded-xl z-10">
+                            <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                            <span class="text-slate-400 text-sm font-medium">Loading price data...</span>
+                        </div>
                         <canvas id="wsRealtimeChart"></canvas>
                     </div>
                 </div>
@@ -1872,6 +1876,16 @@ def generate_dashboard():
                     window.correlationChart.data.datasets[0].data = data.portfolio_pnl;
                     window.correlationChart.data.datasets[1].data = data.portfolio_sentiment;
                     window.correlationChart.update('none'); // Update without animation
+                }}
+                // WS Chart — update priceHistoryData and re-render
+                if (data.price_history_raw) {{
+                    priceHistoryData = data.price_history_raw;
+                    const loader = document.getElementById('wsChartLoader');
+                    const hasData = priceHistoryData[activeWSSymbol] && priceHistoryData[activeWSSymbol].length > 0;
+                    if (loader) loader.style.display = hasData ? 'none' : 'flex';
+                    if (typeof renderWSRealtimeChart === 'function') {{
+                        renderWSRealtimeChart(activeWSSymbol, !!wsChartInstance);
+                    }}
                 }}
             }} catch(e) {{
                 console.error("Error fetching AJAX dashboard data:", e);
