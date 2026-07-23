@@ -777,7 +777,7 @@ def generate_dashboard():
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-8">
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Total Portfolio Value</dt>
-                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-portfolio">>${current_equity:,.2f}</dd>
+                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-portfolio">>$0.00</dd>
                     <div class="mt-2 flex items-center text-xs font-medium text-slate-500">
                         Starting Balance: ${starting_equity:,.2f}
                     </div>
@@ -785,7 +785,7 @@ def generate_dashboard():
 
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Buying Power</dt>
-                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-buying-power">>${current_buying_power:,.2f}</dd>
+                    <dd class="mt-2 text-2xl font-bold tracking-tight text-white" id="val-buying-power">>$0.00</dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium font-mono">
                         Active Cash reserves
                     </div>
@@ -794,17 +794,17 @@ def generate_dashboard():
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Cumulative PnL</dt>
                     <dd class="mt-2 text-2xl font-bold tracking-tight {'text-emerald-400' if cumulative_pnl >= 0 else 'text-rose-400'}">
-                        {'+' if cumulative_pnl >= 0 else ''}${cumulative_pnl:,.2f}
+                        {'+' if cumulative_pnl >= 0 else ''}$0.00
                     </dd>
                     <div class="mt-2 flex items-center text-xs font-semibold {'text-emerald-400/80' if pnl_pct >= 0 else 'text-rose-400/80'}">
-                        {'+' if pnl_pct >= 0 else ''}{pnl_pct:.2f}%
+                        {'+' if pnl_pct >= 0 else ''}0.00%
                     </div>
                 </div>
 
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Open Positions PnL</dt>
                     <dd id="val-unrealized-pnl" class="mt-2 text-2xl font-bold tracking-tight {'text-emerald-400' if current_unrealized_pnl >= 0 else 'text-rose-400'}">
-                        {'+' if current_unrealized_pnl >= 0 else ''}${current_unrealized_pnl:,.2f}
+                        {'+' if current_unrealized_pnl >= 0 else ''}$0.00
                     </dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium">
                         Unrealized open assets
@@ -814,7 +814,7 @@ def generate_dashboard():
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Total Invested Amount</dt>
                     <dd id="val-total-invested" class="mt-2 text-2xl font-bold tracking-tight text-indigo-400">
-                        ${total_invested:,.2f}
+                        $0.00
                     </dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium">
                         Active capital deployed
@@ -823,7 +823,7 @@ def generate_dashboard():
 
                 <div class="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6 backdrop-blur-md">
                     <dt class="text-sm font-semibold text-slate-400">Total Trades Executed</dt>
-                    <dd id="val-total-trades" class="mt-2 text-2xl font-bold tracking-tight text-white">{total_trades}</dd>
+                    <dd id="val-total-trades" class="mt-2 text-2xl font-bold tracking-tight text-white">0</dd>
                     <div class="mt-2 flex items-center text-xs text-slate-500 font-medium">
                         AI orders triggered
                     </div>
@@ -836,16 +836,16 @@ def generate_dashboard():
                     <div>
                         <h2 class="text-lg font-bold text-white">&#127916; AI Asset Selection of the Day</h2>
                         <p id="val-das-ts" class="text-xs text-slate-500 mt-0.5">
-                            {f'Last updated: {das_ts_str} &nbsp;&bull;&nbsp; {das_articles_count} macro articles analyzed' if das_ts_str else 'Awaiting first DAS cycle...'}
+                            {f'Last updated:  &nbsp;&bull;&nbsp; 0 macro articles analyzed' if das_ts_str else 'Awaiting first DAS cycle...'}
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span id="val-das-health">{das_health_badge}</span>
+                        <span id="val-das-health"></span>
                         <span class="px-3 py-1 text-xs font-bold bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-500/20 uppercase tracking-wider">Live AI Selection</span>
                     </div>
                 </div>
                 <div id="div-ai-selection" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {das_cards_html}
+                    
                 </div>
             </div>
 
@@ -865,7 +865,7 @@ def generate_dashboard():
                 </summary>
                 <div class="px-6 pb-6 pt-2 border-t border-slate-800/40">
                     <div id="div-market-news" class="overflow-y-auto pr-2" style="max-height: 400px;">
-                        {news_feed_html}
+                        
                     </div>
                 </div>
             </details>
@@ -951,7 +951,7 @@ def generate_dashboard():
                                 </tr>
                             </thead>
                             <tbody id="wsTableBody" class="divide-y divide-slate-800/40 text-xs font-medium text-slate-300">
-                                {"".join(ws_rows)}
+                                
                             </tbody>
                         </table>
                     </div>
@@ -992,7 +992,7 @@ def generate_dashboard():
                             </tr>
                         </thead>
                         <tbody id="openPositionsBody" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
-                            {"".join(open_positions_rows)}
+                            
                         </tbody>
                     </table>
                 </div>
@@ -1015,7 +1015,7 @@ def generate_dashboard():
                             </tr>
                         </thead>
                         <tbody id="alpacaOrdersBody" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
-                            {"".join(alpaca_orders_rows)}
+                            
                         </tbody>
                     </table>
                 </div>
@@ -1041,7 +1041,7 @@ def generate_dashboard():
                             </tr>
                         </thead>
                         <tbody id="tradesTableBody" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
-                            {"".join(trades_rows)}
+                            
                         </tbody>
                     </table>
                 </div>
@@ -1064,7 +1064,7 @@ def generate_dashboard():
                             </tr>
                         </thead>
                         <tbody id="aiTableBody" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
-                            {"".join(ai_rows)}
+                            
                         </tbody>
                     </table>
                 </div>
@@ -1074,7 +1074,7 @@ def generate_dashboard():
             <div class="mb-8 rounded-2xl border border-slate-800/60 bg-slate-900/30 p-6 backdrop-blur-md overflow-hidden">
                 <h2 class="text-lg font-bold text-white mb-4">Human Logbook & Warning Diagnostics</h2>
                 <div id="logbookContainer" class="max-h-[300px] overflow-y-auto">
-                    {"".join(logbook_rows)}
+                    
                 </div>
             </div>
         </main>

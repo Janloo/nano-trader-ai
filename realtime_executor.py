@@ -998,7 +998,7 @@ class RealtimeExecutor:
         low = float(bar.low) if hasattr(bar, "low") else price
         self.indicator_mgr.update(symbol, high, low, price)
 
-        dip_pct, spike_pct = self.vol_detector.update(symbol, price, bar_time)
+        immediate_dip, trailing_dip, spike_pct = self.vol_detector.update(symbol, price, bar_time)
 
         # QQQ Lead-Lag Trigger threshold is +0.25%
         if spike_pct is not None and spike_pct >= 0.25:
