@@ -1877,6 +1877,8 @@ def generate_dashboard():
                 console.error("Error fetching AJAX dashboard data:", e);
             }}
         }}
+        
+        refreshDashboardData();
         setInterval(refreshDashboardData, 60000);
     
 
