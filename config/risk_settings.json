@@ -15,5 +15,7 @@
     "use_kelly_criterion": true,
     "kelly_fraction_multiplier": 1,
     "historical_win_rate": 0.56,
-    "historical_reward_risk": 1.6
+    "historical_reward_risk": 1.6,
+    "win_rate_estimate": 0.6244,
+    "reward_risk_ratio_estimate": 1.9852
 }

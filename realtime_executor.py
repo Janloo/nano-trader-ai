@@ -510,6 +510,20 @@ class RealtimeExecutor:
                         return_1h=None, return_4h=None
                     )
                     return None
+                else:
+                    logger.warning(f"[WS SHADOW] Shadow Classic Short logged for {symbol} (Alpha feature active).")
+                    from data.db import insert_ai_analytics
+                    insert_ai_analytics(
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        asset=symbol,
+                        price=price,
+                        action="SHADOW_SELL",
+                        confidence=0.9,
+                        sentiment_score=sentiment_score,
+                        prompt_tokens=0, completion_tokens=0,
+                        reasoning=f"Shadow Classic Short triggered (Alpha is hedging on BITI)",
+                        return_1h=None, return_4h=None
+                    )
                     
                 logger.warning(f"[WS HEDGE] Converting Crypto SHORT on {symbol} to LONG on ETF BITI")
                 WSTradeLogger.write_logbook(f"[HEDGE] Sostituito Short {symbol} con Acquisto ETF Inverso (BITI).")
@@ -902,6 +916,21 @@ class RealtimeExecutor:
                 prompt_tokens=0,
                 completion_tokens=0,
                 reasoning=f"Shadow Trailing Buy hit at {trailing_dip:.2f}%",
+                return_1h=None, return_4h=None
+            )
+        elif alpha_smart_trailing and immediate_dip is not None:
+            from data.db import insert_ai_analytics
+            # Log the old classic method as shadow trade!
+            insert_ai_analytics(
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                asset=symbol,
+                price=price,
+                action="SHADOW_BUY",
+                confidence=0.9,
+                sentiment_score=0.0,
+                prompt_tokens=0,
+                completion_tokens=0,
+                reasoning=f"Shadow Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
                 return_1h=None, return_4h=None
             )
             
