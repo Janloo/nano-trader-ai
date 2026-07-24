@@ -71,6 +71,21 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self._safe_write(content)
             return
 
+        # Serve checkpoints
+        if clean_path == "/data/checkpoints.json":
+            filepath = "data/archives/daily_checkpoints.json"
+            if not os.path.exists(filepath):
+                content = b'[]'
+            else:
+                with open(filepath, "rb") as f:
+                    content = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self._safe_write(content)
+            return
+
         # Serve static database file trades.json
         if clean_path == "/data/trades.json":
             try:
@@ -236,28 +251,70 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 shadow_logs = [dict(row) for row in cursor.fetchall()]
                 
             # Process Real Logs
-            real_pnl = 0.0
-            real_curve = []
-            real_wins = 0
-            for log in real_logs:
-                ret = log['return_1h']
-                real_pnl += ret
-                real_curve.append({'x': log['timestamp'], 'y': round(real_pnl, 2)})
-                if ret > 0: real_wins += 1
+            def simulate_portfolio(logs, starting_equity=100000.0, max_alloc_pct=0.15):
+                from datetime import datetime, timedelta
+                cash = starting_equity
+                equity = starting_equity
+                active_trades = []
+                curve = []
+                wins = 0
+                executed = 0
                 
-            real_win_rate = (real_wins / len(real_logs) * 100) if len(real_logs) > 0 else 0
-            
-            # Process Shadow Logs
-            shadow_pnl = 0.0
-            shadow_curve = []
-            shadow_wins = 0
-            for log in shadow_logs:
-                ret = log['return_1h']
-                shadow_pnl += ret
-                shadow_curve.append({'x': log['timestamp'], 'y': round(shadow_pnl, 2)})
-                if ret > 0: shadow_wins += 1
+                for log in logs:
+                    ret = log.get('return_1h')
+                    if ret is None:
+                        continue
+                        
+                    current_time = datetime.fromisoformat(log['timestamp'].replace('Z', '+00:00'))
+                    
+                    # Free up cash from exited trades
+                    still_active = []
+                    for trade in active_trades:
+                        if trade['exit_time'] <= current_time:
+                            cash += trade['invested'] + trade['profit']
+                            equity += trade['profit']
+                        else:
+                            still_active.append(trade)
+                    active_trades = still_active
+
+                    # Allocate new trade if cash > 1000
+                    if cash >= 1000:
+                        alloc = min(cash, starting_equity * max_alloc_pct)
+                        cash -= alloc
+                        profit = alloc * (ret / 100.0)
+                        active_trades.append({
+                            'exit_time': current_time + timedelta(hours=1),
+                            'invested': alloc,
+                            'profit': profit
+                        })
+                        executed += 1
+                        if ret > 0: wins += 1
+                        
+                    # Calculate current equity (realized + unrealized)
+                    current_equity = cash + sum(t['invested'] + t['profit'] for t in active_trades)
+                    pnl_pct = ((current_equity - starting_equity) / starting_equity) * 100.0
+                    curve.append({'x': log['timestamp'], 'y': round(pnl_pct, 2)})
+
+                # Close remaining
+                for trade in active_trades:
+                    equity += trade['profit']
                 
-            shadow_win_rate = (shadow_wins / len(shadow_logs) * 100) if len(shadow_logs) > 0 else 0
+                final_pnl = ((equity - starting_equity) / starting_equity) * 100.0
+                win_rate = (wins / executed * 100) if executed > 0 else 0
+                return curve, win_rate, executed, final_pnl
+
+            # Read dynamic allocation from risk config
+            max_alloc_pct = 0.15
+            try:
+                import json
+                with open('data/state/risk_config.json', 'r') as f:
+                    rconfig = json.load(f)
+                    max_alloc_pct = rconfig.get('max_capital_per_trade_pct', 0.15)
+            except:
+                pass
+
+            real_curve, real_win_rate, real_trades, real_pnl = simulate_portfolio(real_logs, max_alloc_pct=max_alloc_pct)
+            shadow_curve, shadow_win_rate, shadow_trades, shadow_pnl = simulate_portfolio(shadow_logs, max_alloc_pct=max_alloc_pct)
             
             result = {
                 "real": {

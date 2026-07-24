@@ -87,6 +87,35 @@ def generate_analytics_page():
                     </div>
                 </div>
             </div>
+            
+            <!-- Daily Checkpoints Section -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-white"><span class="text-blue-400 mr-2">📌</span> Daily Checkpoints</h2>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-lg overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-800/50 border-b border-slate-700/50 text-slate-400 text-xs uppercase tracking-wider">
+                                    <th class="p-4 font-semibold">Date</th>
+                                    <th class="p-4 font-semibold">Total Equity</th>
+                                    <th class="p-4 font-semibold">Available Cash</th>
+                                    <th class="p-4 font-semibold text-emerald-400">Real PnL</th>
+                                    <th class="p-4 font-semibold text-purple-400">Shadow PnL</th>
+                                    <th class="p-4 font-semibold">Real Win Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="checkpointsBody" class="divide-y divide-slate-800/50 text-sm">
+                                <tr>
+                                    <td colspan="6" class="p-4 text-center text-slate-500">Loading checkpoints...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
         </div>
     </main>
 
@@ -191,8 +220,46 @@ def generate_analytics_page():
                 console.error("Error loading chart:", e);
             }
         }
-        
+        async function loadCheckpoints() {
+            try {
+                const response = await fetch('/data/checkpoints.json');
+                const checkpoints = await response.json();
+                
+                const tbody = document.getElementById('checkpointsBody');
+                tbody.innerHTML = '';
+                
+                if(!checkpoints || checkpoints.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">No checkpoints recorded yet.</td></tr>';
+                    return;
+                }
+                
+                // Sort descending by date
+                checkpoints.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                checkpoints.forEach(cp => {
+                    const row = document.createElement('tr');
+                    const realClass = cp.real_pnl_pct >= 0 ? 'text-emerald-400' : 'text-rose-400';
+                    const shadowClass = cp.shadow_pnl_pct >= 0 ? 'text-emerald-400' : 'text-rose-400';
+                    row.className = "hover:bg-slate-800/30 transition-colors";
+                    row.innerHTML = `
+                        <td class="p-4 font-mono text-slate-300">${cp.date}</td>
+                        <td class="p-4 text-white font-semibold">$${cp.equity.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td class="p-4 text-slate-300">$${cp.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td class="p-4 font-bold ${realClass}">${cp.real_pnl_pct > 0 ? '+' : ''}${cp.real_pnl_pct.toFixed(2)}%</td>
+                        <td class="p-4 font-bold ${shadowClass}">${cp.shadow_pnl_pct > 0 ? '+' : ''}${cp.shadow_pnl_pct.toFixed(2)}%</td>
+                        <td class="p-4 text-slate-300">${cp.real_winrate.toFixed(1)}%</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch(e) {
+                console.error("Error loading checkpoints:", e);
+                document.getElementById('checkpointsBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-rose-500">Error loading checkpoints</td></tr>';
+            }
+        }
+
         loadPerformanceChart('ALL');
+        loadCheckpoints();
     </script>
 </body>
 </html>'''

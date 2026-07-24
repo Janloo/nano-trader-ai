@@ -374,6 +374,12 @@ def run_iteration(
     except Exception as e:
         logger.error(f"Failed to auto-generate HTML dashboard: {e}")
 
+    try:
+        import subprocess
+        subprocess.run(["python", "checkpoint_generator.py"], check=False)
+    except Exception as e:
+        logger.error(f"Failed to run checkpoint generator: {e}")
+
     logger.info("DAS Iteration completed.")
 
 
