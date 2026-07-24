@@ -61,8 +61,8 @@ class PositionSizer:
             # 3. Position Size ($) based on Risk and Volatility
             position_size_usd = risk_amount_usd / sl_distance_pct if sl_distance_pct > 0 else 0
             
-            # 4. Apply maximum capital cap
-            max_capital_usd = buying_power * max_capital_pct
+            # 4. Apply maximum capital cap (based on actual equity, not leveraged buying power)
+            max_capital_usd = total_equity * max_capital_pct
             allocation = min(position_size_usd, max_capital_usd)
             
             # 5. Apply Kelly Criterion Modulation (if enabled)

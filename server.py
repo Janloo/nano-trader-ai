@@ -306,7 +306,6 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             # Read dynamic allocation from risk config
             max_alloc_pct = 0.15
             try:
-                import json
                 with open('data/state/risk_config.json', 'r') as f:
                     rconfig = json.load(f)
                     max_alloc_pct = rconfig.get('max_capital_per_trade_pct', 0.15)
@@ -377,7 +376,8 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 
                 content = json.dumps(data).encode("utf-8")
             except Exception as e:
-                logger.error(f"Error building dashboard fragments: {e}")
+                import traceback
+                logger.error(f"Error building dashboard fragments: {e}\n{traceback.format_exc()}")
                 content = b'{}'
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

@@ -372,13 +372,15 @@ def run_iteration(
         from reporting.generator import generate_dashboard
         generate_dashboard()
     except Exception as e:
-        logger.error(f"Failed to auto-generate HTML dashboard: {e}")
-
+        logger.error(f"Error in DAS iteration: {e}")
+        
+    # Run daily checkpoint generator using the same Python interpreter
     try:
+        import sys
         import subprocess
-        subprocess.run(["python", "checkpoint_generator.py"], check=False)
+        subprocess.run([sys.executable, "checkpoint_generator.py"], check=False)
     except Exception as e:
-        logger.error(f"Failed to run checkpoint generator: {e}")
+        logger.error(f"Error running checkpoint generator: {e}")
 
     logger.info("DAS Iteration completed.")
 
