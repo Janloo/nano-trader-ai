@@ -56,7 +56,7 @@ class GeminiAssetSelector:
 
         if not self.is_mocked:
             self.client = genai.Client(api_key=self.api_key)
-            self.model_name = "gemini-3.5-flash"
+            self.model_name = "gemini-2.0-flash"
         else:
             logger.warning("[DAS] No GEMINI_API_KEY found. Running Asset Selector in MOCK mode.")
 
@@ -100,6 +100,15 @@ class GeminiAssetSelector:
         )
 
         user_content = f"Latest macro news headlines (last 24h):\n\n{macro_news_text}"
+
+        try:
+            from strategy.ai_limiter import AILimiter, RateLimitExceededException
+            AILimiter.check_and_log("GeminiAssetSelector", self.model_name)
+        except RateLimitExceededException:
+            logger.warning("[DAS] AI rate limit exceeded for Asset Selection. Falling back to MOCK/DUMMY system.")
+            return self._mock_select(universe_assets, max_sel)
+        except Exception as e:
+            logger.error(f"[DAS] AILimiter check failed: {e}")
 
         max_retries = 3
         backoff = 30

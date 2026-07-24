@@ -16,6 +16,7 @@
     "kelly_fraction_multiplier": 1,
     "historical_win_rate": 0.56,
     "historical_reward_risk": 1.6,
-    "win_rate_estimate": 0.5116,
-    "reward_risk_ratio_estimate": 1.792
+    "win_rate_estimate": 0.5158,
+    "reward_risk_ratio_estimate": 1.7274,
+    "max_ai_calls_per_hour": 50
 }

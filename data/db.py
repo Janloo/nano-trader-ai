@@ -60,6 +60,16 @@ def init_db():
             )
         ''')
         
+        # AI API Logs table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ai_api_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT,
+                module TEXT,
+                model TEXT
+            )
+        ''')
+        
         conn.commit()
 
 @contextmanager
@@ -149,3 +159,24 @@ def get_ai_analytics_completed_feedback():
 
 # Initialize db on module load
 init_db()
+
+def log_ai_call(module, model):
+    from datetime import datetime, timezone
+    timestamp = datetime.now(timezone.utc).isoformat()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO ai_api_logs (timestamp, module, model)
+            VALUES (?, ?, ?)
+        ''', (timestamp, module, model))
+        conn.commit()
+
+def get_ai_call_count(hours=1):
+    from datetime import datetime, timedelta, timezone
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM ai_api_logs WHERE timestamp > ?
+        ''', (cutoff,))
+        return cursor.fetchone()[0]

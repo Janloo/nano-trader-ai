@@ -16,8 +16,7 @@ class FastGuardian:
         else:
             logger.warning("[GUARDIAN] GEMINI_API_KEY not found in environment!")
             self.client = None
-            
-        self.model_name = "gemini-3.5-flash"
+        self.model_name = "gemini-2.0-flash-lite"
         
     def evaluate_headline(self, headline: str) -> str:
         """
@@ -38,6 +37,9 @@ Respond ONLY with the single word (CATACLYSM, MOONSHOT, or IGNORE). No explanati
 Headline: {headline}"""
 
         try:
+            from strategy.ai_limiter import AILimiter, RateLimitExceededException
+            AILimiter.check_and_log("FastGuardian", self.model_name)
+            
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=prompt
@@ -49,6 +51,9 @@ Headline: {headline}"""
                 return "MOONSHOT"
             else:
                 return "IGNORE"
+        except RateLimitExceededException:
+            # Silently fall back to IGNORE if limit reached to not spam logs
+            return "IGNORE"
         except Exception as e:
             logger.error(f"[GUARDIAN] Error evaluating headline: {e}")
             return "IGNORE"

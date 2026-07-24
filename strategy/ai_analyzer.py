@@ -73,6 +73,23 @@ class GeminiSentimentStrategy(BaseStrategy):
 
         for attempt in range(max_retries):
             try:
+                from strategy.ai_limiter import AILimiter, RateLimitExceededException
+                AILimiter.check_and_log("GeminiAssetAnalyzer", "gemini-2.0-flash")
+            except RateLimitExceededException:
+                logger.warning("[DAS] AI rate limit exceeded for Asset Analyzer. Falling back to HOLD.")
+                fallback = {}
+                for sym in assets_news.keys():
+                    fallback[sym] = {
+                        "sentiment_score": 0.0,
+                        "action": "HOLD",
+                        "confidence": 0,
+                        "reasoning": "AI Rate Limit Exceeded. Defaulting to HOLD."
+                    }
+                return fallback
+            except Exception as e:
+                logger.error(f"[DAS] AILimiter check failed: {e}")
+
+            try:
                 response = self.model.generate_content(
                     contents=f"{system_prompt}\n\n{user_content}",
                     generation_config={"response_mime_type": "application/json"}
