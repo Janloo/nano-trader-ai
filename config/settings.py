@@ -13,8 +13,7 @@ log_dir = os.path.join("data", "logs")
 os.makedirs(log_dir, exist_ok=True)
 log_file = os.path.join(log_dir, "nano_trader.log")
 
-from logging.handlers import TimedRotatingFileHandler
-file_handler = TimedRotatingFileHandler(log_file, when="midnight", interval=1, backupCount=7)
+file_handler = logging.FileHandler(log_file, encoding='utf-8')
 file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
