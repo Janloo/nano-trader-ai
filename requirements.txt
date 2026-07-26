@@ -4,3 +4,4 @@ pandas>=2.0.0
 pytest>=8.0.0
 google-genai>=0.1.0
 
+concurrent-log-handler>=0.9.29

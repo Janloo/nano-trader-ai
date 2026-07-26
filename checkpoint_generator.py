@@ -22,7 +22,7 @@ def create_daily_checkpoint():
         shadow_pnl = 0.0
         real_winrate = 0.0
         try:
-            req = urllib.request.Request("http://localhost:8000/api/analytics")
+            req = urllib.request.Request("http://localhost:8080/api/performance_comparison")
             with urllib.request.urlopen(req, timeout=5) as response:
                 if response.status == 200:
                     data = json.loads(response.read().decode('utf-8'))

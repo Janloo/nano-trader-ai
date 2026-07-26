@@ -13,7 +13,12 @@ log_dir = os.path.join("data", "logs")
 os.makedirs(log_dir, exist_ok=True)
 log_file = os.path.join(log_dir, "nano_trader.log")
 
-file_handler = logging.FileHandler(log_file, encoding='utf-8')
+# Fail-safe logging config: do not crash on logging errors
+logging.raiseExceptions = False
+
+from concurrent_log_handler import ConcurrentRotatingFileHandler
+# Max 10MB per file, keep 5 backups, safe for multiprocess
+file_handler = ConcurrentRotatingFileHandler(log_file, "a", 10 * 1024 * 1024, 5, encoding='utf-8')
 file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))

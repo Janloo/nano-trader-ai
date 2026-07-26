@@ -502,7 +502,7 @@ class RealtimeExecutor:
             if "BTC" in symbol:
                 alpha_inverse_hedge = risk_config.get("alpha_inverse_hedge", False)
                 if not alpha_inverse_hedge:
-                    logger.warning(f"[WS SHADOW] Shadow Hedge logged for {symbol} (Alpha feature disabled).")
+                    logger.warning(f"[WS ALPHA] Alpha Hedge logged for {symbol} (Alpha feature disabled).")
                     from data.db import insert_ai_analytics
                     insert_ai_analytics(
                         timestamp=datetime.now(timezone.utc).isoformat(),
@@ -512,12 +512,12 @@ class RealtimeExecutor:
                         confidence=0.9,
                         sentiment_score=sentiment_score,
                         prompt_tokens=0, completion_tokens=0,
-                        reasoning=f"Shadow Hedge triggered from Bearish {symbol}",
+                        reasoning=f"Alpha Hedge triggered from Bearish {symbol}",
                         return_1h=None, return_4h=None
                     )
                     return None
                 else:
-                    logger.warning(f"[WS SHADOW] Shadow Classic Short logged for {symbol} (Alpha feature active).")
+                    logger.warning(f"[WS ALPHA] Alpha Classic Short logged for {symbol} (Alpha feature active).")
                     from data.db import insert_ai_analytics
                     insert_ai_analytics(
                         timestamp=datetime.now(timezone.utc).isoformat(),
@@ -527,7 +527,7 @@ class RealtimeExecutor:
                         confidence=0.9,
                         sentiment_score=sentiment_score,
                         prompt_tokens=0, completion_tokens=0,
-                        reasoning=f"Shadow Classic Short triggered (Alpha is hedging on BITI)",
+                        reasoning=f"Alpha Classic Short triggered (Alpha is hedging on BITI)",
                         return_1h=None, return_4h=None
                     )
                     
@@ -911,7 +911,7 @@ class RealtimeExecutor:
         
         alpha_smart_trailing = risk_config.get("alpha_smart_trailing", False)
         
-        # Shadow logging for trailing buy — cooldown checked via DB so it survives restarts
+        # Alpha logging for trailing buy — cooldown checked via DB so it survives restarts
         shadow_cooldown = 1800  # 30 minutes
         dip_condition = (not alpha_smart_trailing and trailing_dip is not None) or \
                         (alpha_smart_trailing and immediate_dip is not None)
@@ -941,7 +941,7 @@ class RealtimeExecutor:
                         asset=symbol, price=price, action="SHADOW_BUY",
                         confidence=0.9, sentiment_score=0.0,
                         prompt_tokens=0, completion_tokens=0,
-                        reasoning=f"Shadow Trailing Buy hit at {trailing_dip:.2f}%",
+                        reasoning=f"Alpha Trailing Buy hit at {trailing_dip:.2f}%",
                         return_1h=None, return_4h=None
                     )
                 elif alpha_smart_trailing and immediate_dip is not None:
@@ -950,7 +950,7 @@ class RealtimeExecutor:
                         asset=symbol, price=price, action="SHADOW_BUY",
                         confidence=0.9, sentiment_score=0.0,
                         prompt_tokens=0, completion_tokens=0,
-                        reasoning=f"Shadow Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
+                        reasoning=f"Alpha Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
                         return_1h=None, return_4h=None
                     )
             
