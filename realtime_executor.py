@@ -446,7 +446,7 @@ class RealtimeExecutor:
         
         try:
             self._init_trading_client()
-            check_symbol = symbol.replace("USD", "/USD") if "USD" in symbol else symbol
+            check_symbol = symbol
             try:
                 pos = self._trading_client.get_open_position(check_symbol)
                 qty = float(pos.qty)
@@ -637,7 +637,7 @@ class RealtimeExecutor:
             else:
                 max_open = risk_config.get("max_open_positions_per_asset", 1)
             
-            check_symbol = symbol.replace("USD", "/USD") if (is_crypto and "USD" in symbol) else symbol
+            check_symbol = symbol
             
             try:
                 open_pos = self._trading_client.get_open_position(check_symbol)
@@ -719,10 +719,7 @@ class RealtimeExecutor:
                                 sl_price = round(price * 0.985, 2)
                                 side = OrderSide.BUY
 
-                if is_crypto and "USD" in symbol and "/" not in symbol:
-                    order_symbol = symbol.replace("USD", "/USD")
-                else:
-                    order_symbol = symbol
+                order_symbol = symbol
                 
                 qty = size_usd / price if price > 0 else 0.0
                 qty = round(qty, 4) if is_crypto else round(qty, 2)
@@ -863,7 +860,7 @@ class RealtimeExecutor:
                         logger.error(f"[GUARDIAN KILL SWITCH] CATACLYSM CONFIRMED for {symbol}! Liquidating!")
                         try:
                             self._init_trading_client()
-                            self._trading_client.close_position(symbol.replace("USD", "/USD") if is_crypto else symbol)
+                            self._trading_client.close_position(symbol)
                             WSTradeLogger.write_logbook(f"[EMERGENCY] Chiusura d'emergenza su {symbol} completata.")
                         except Exception:
                             pass
