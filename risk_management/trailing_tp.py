@@ -13,9 +13,10 @@ class TrailingTakeProfitManager:
         self.trailing_pct = trailing_pct
         self.peaks: Dict[str, float] = {}
 
-    def update_and_check(self, symbol: str, current_price: float, avg_entry_price: float, is_short: bool = False) -> bool:
+    def update_and_check(self, symbol: str, current_price: float, avg_entry_price: float, is_short: bool = False, atr_pct: float = None) -> bool:
         """
         Returns True if the trailing stop has been hit and the position should be closed.
+        If atr_pct is provided, dynamically widens the activation and trailing thresholds based on volatility.
         """
         if avg_entry_price <= 0:
             return False
@@ -24,10 +25,18 @@ class TrailingTakeProfitManager:
         if is_short:
             profit_pct = -profit_pct
             
+        # Calculate dynamic thresholds if ATR is provided
+        current_activation = self.activation_pct
+        current_trailing = self.trailing_pct
+        if atr_pct is not None and atr_pct > 0:
+            # Scale activation to at least 1.5x ATR, and trailing to 0.5x ATR
+            current_activation = max(self.activation_pct, atr_pct * 1.5)
+            current_trailing = max(self.trailing_pct, atr_pct * 0.5)
+
         # Is the position profitable enough to activate trailing?
-        if profit_pct >= self.activation_pct:
+        if profit_pct >= current_activation:
             if symbol not in self.peaks:
-                logger.info(f"[TRAILING TP] {symbol} trailing activated! Profit: {profit_pct*100:.2f}% (Price: {current_price:.2f})")
+                logger.info(f"[TRAILING TP] {symbol} trailing activated! Profit: {profit_pct*100:.2f}% (Price: {current_price:.2f}, Dynamic Activation: {current_activation*100:.2f}%)")
                 self.peaks[symbol] = current_price
             else:
                 if not is_short and current_price > self.peaks[symbol]:
@@ -39,13 +48,13 @@ class TrailingTakeProfitManager:
             peak = self.peaks[symbol]
             drawdown = (peak - current_price) / peak if not is_short else (current_price - peak) / peak
             
-            if drawdown >= self.trailing_pct:
-                logger.info(f"[TRAILING TP] {symbol} hit trail trigger! Peak: {peak:.2f}, Drop: {drawdown*100:.2f}%. Executing close.")
+            if drawdown >= current_trailing:
+                logger.info(f"[TRAILING TP] {symbol} hit trail trigger! Peak: {peak:.2f}, Drop: {drawdown*100:.2f}% (Dynamic Trailing: {current_trailing*100:.2f}%). Executing close.")
                 del self.peaks[symbol]
                 return True
                 
         # Reset peak if it falls below activation (shouldn't happen often if we exit, but just in case)
-        elif profit_pct < self.activation_pct and symbol in self.peaks:
+        elif profit_pct < current_activation and symbol in self.peaks:
              del self.peaks[symbol]
              
         return False

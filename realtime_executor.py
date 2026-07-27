@@ -453,7 +453,11 @@ class RealtimeExecutor:
                 avg_entry = float(pos.avg_entry_price)
                 is_short = qty < 0
                 
-                should_close = self.trailing_mgr.update_and_check(symbol, current_price, avg_entry, is_short)
+                # Fetch ATR to pass to trailing manager
+                atr_val = self.indicator_mgr.get_atr(symbol)
+                atr_pct = (atr_val / current_price) if atr_val and current_price > 0 else 0.0
+                
+                should_close = self.trailing_mgr.update_and_check(symbol, current_price, avg_entry, is_short, atr_pct)
                 if should_close:
                     logger.info(f"[WS] Trailing TP triggered for {symbol}! Closing position.")
                     from alpaca.trading.requests import MarketOrderRequest
@@ -629,7 +633,7 @@ class RealtimeExecutor:
                 WSTradeLogger.write_logbook("[API WARNING] Liquidità esaurita! Acquisti in pausa per 1 ora.")
                 return None
 
-        # Check max open positions (anti-spam)
+        # Check max open positions (anti-spam) and apply Martingale scaling
         try:
             self._init_trading_client()
             if is_crypto:
@@ -638,15 +642,22 @@ class RealtimeExecutor:
                 max_open = risk_config.get("max_open_positions_per_asset", 1)
             
             check_symbol = symbol
+            base_size_usd = size_usd
             
             try:
                 open_pos = self._trading_client.get_open_position(check_symbol)
                 current_qty = abs(float(open_pos.qty))
                 if current_qty > 0:
-                    current_layers = float(open_pos.market_value) / size_usd if size_usd > 0 else 0
+                    # Estimate current layers based on original base size
+                    current_layers = float(open_pos.market_value) / base_size_usd if base_size_usd > 0 else 0
                     if current_layers >= (max_open - 0.5):
                         logger.warning(f"[WS] Max grid layers reached for {check_symbol} (Current: ~{current_layers:.1f}, Max: {max_open}). Skipping order.")
                         return None
+                        
+                    # Smart Asymmetric DCA (Martingale)
+                    layer_int = int(current_layers)
+                    size_usd = base_size_usd * (1.5 ** layer_int)
+                    logger.info(f"[WS] Smart DCA active for {check_symbol}: Layer {layer_int+1}, Base Size: ${base_size_usd:.2f} -> Scaled Size: ${size_usd:.2f}")
             except Exception as e:
                 pass # Usually implies no open position
         except Exception as e:
