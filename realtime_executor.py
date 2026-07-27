@@ -1232,9 +1232,22 @@ class RealtimeExecutor:
             t_stock.start()
             t_news.start()
             
-            # Keep main thread alive while streams run in background
+            last_snap_time = time.time()
             while t_crypto.is_alive() or t_stock.is_alive() or t_news.is_alive():
                 time.sleep(1)
+                now_ts = time.time()
+                if now_ts - last_snap_time > 60:
+                    try:
+                        from client.alpaca_client import AlpacaClientWrapper
+                        from data.db import insert_portfolio_snap
+                        
+                        _temp_client = AlpacaClientWrapper()
+                        _acc = _temp_client.get_account_info()
+                        if _acc:
+                            insert_portfolio_snap(datetime.now(timezone.utc).isoformat(), float(_acc.equity), float(_acc.buying_power), 0.0)
+                        last_snap_time = now_ts
+                    except Exception as e:
+                        logger.debug(f"[WS] Failed to save periodic portfolio snap: {e}")
                 
         except KeyboardInterrupt:
             logger.info("[WS] Shutting down WebSocket executor gracefully.")
