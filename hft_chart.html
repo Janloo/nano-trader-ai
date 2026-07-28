@@ -119,6 +119,7 @@ const MECHS=[
   {id:'l2',     label:'L2 Orderbook',       color:'#a78bfa'},
   {id:'mtf',    label:'MTF Filter',         color:'#3b82f6'},
   {id:'guard',  label:'Guardian',           color:'#ef4444'},
+  {id:'div',    label:'RSI Divergence',     color:'#22c55e'},
 ];
 let active=new Set(MECHS.map(m=>m.id));
 let allData=null, chart=null, priceSeries=null;
@@ -228,6 +229,8 @@ function renderMarkers(){
       markers.push({time:ts,position:'aboveBar',color:'#3b82f6',shape:'circle',text:'MTF',size:1});
     if(active.has('guard')&&msg.includes('[GUARDIAN]')&&msg.includes(sym3))
       markers.push({time:ts,position:'aboveBar',color:'#ef4444',shape:'circle',text:'GUARD',size:2});
+    if(active.has('div')&&msg.includes('[WS DIVERGENCE]')&&msg.includes(sym))
+      markers.push({time:ts,position:'belowBar',color:'#22c55e',shape:'arrowUp',text:'DIV',size:2});
   });
 
   markers.sort((a,b)=>a.time-b.time);
@@ -258,6 +261,7 @@ const TAG_META={
   '[WS DIP]':       {label:'DIP',   bg:'rgba(245,158,11,.2)', color:'#f59e0b'},
   '[WS LEAD-LAG]':  {label:'LEAD',  bg:'rgba(236,72,153,.2)', color:'#ec4899'},
   '[GUARDIAN]':     {label:'GUARD', bg:'rgba(239,68,68,.2)',  color:'#ef4444'},
+  '[WS DIVERGENCE]':{label:'DIV',   bg:'rgba(34,197,94,.2)',  color:'#22c55e'},
   '[WS] Smart DCA': {label:'DCA',   bg:'rgba(236,72,153,.15)',color:'#ec4899'},
   '[WS DRY-RUN]':   {label:'DRY',   bg:'rgba(100,116,139,.2)',color:'#94a3b8'},
   '[KELLY ADAPTIVE]':{label:'KELLY',bg:'rgba(16,185,129,.15)',color:'#10b981'},

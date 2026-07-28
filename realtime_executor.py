@@ -225,11 +225,18 @@ class IndicatorManager:
     def __init__(self, period=14):
         self.period = period
         self._bars: Dict[str, deque] = {}
+        self._rsi_history: Dict[str, deque] = {}
 
     def update(self, symbol: str, high: float, low: float, close: float):
         if symbol not in self._bars:
             self._bars[symbol] = deque(maxlen=self.period + 1)
+            self._rsi_history[symbol] = deque(maxlen=60) # keep last 60 periods of RSI
         self._bars[symbol].append({"high": high, "low": low, "close": close})
+        
+        # Calculate and store RSI for history if we have enough bars
+        rsi_val = self.get_rsi(symbol)
+        if rsi_val is not None:
+            self._rsi_history[symbol].append({"close": close, "rsi": rsi_val})
 
     def get_last_price(self, symbol: str) -> Optional[float]:
         if symbol in self._bars and len(self._bars[symbol]) > 0:
@@ -273,6 +280,38 @@ class IndicatorManager:
             return 100.0
         rs = avg_gain / avg_loss
         return 100.0 - (100.0 / (1.0 + rs))
+
+    def detect_bullish_divergence(self, symbol: str) -> bool:
+        """
+        Detects Bullish RSI Divergence: Price makes a Lower Low, but RSI makes a Higher Low.
+        We look over the last 15 periods in the rsi_history.
+        """
+        history = self._rsi_history.get(symbol, [])
+        if len(history) < 15:
+            return False
+        
+        # Get the last point
+        curr = history[-1]
+        
+        # Find the minimum price in the older history (e.g., from index -15 to -2)
+        older_history = list(history)[-15:-1]
+        
+        min_older_idx = 0
+        min_older_price = older_history[0]["close"]
+        for i, pt in enumerate(older_history):
+            if pt["close"] < min_older_price:
+                min_older_price = pt["close"]
+                min_older_idx = i
+                
+        older_min_pt = older_history[min_older_idx]
+        
+        # Check if current price is a new low (Lower Low)
+        if curr["close"] < older_min_pt["close"]:
+            # Check if current RSI is HIGHER than the RSI at the previous price low (Higher Low)
+            if curr["rsi"] > older_min_pt["rsi"]:
+                return True
+                
+        return False
 
 # ─────────────────────────────────────────────
 # Trade Logger — Writes to trades.json and ws_triggers.json
@@ -416,6 +455,36 @@ class RealtimeExecutor:
         # MTF Confluence Cache: {symbol: {"trend": "UP"/"DOWN"/"NEUTRAL", "fetched_at": datetime}}
         self._mtf_trend_cache: Dict[str, dict] = {}
         self._mtf_cache_ttl_seconds: int = 3600  # Refresh every hour
+        self.panic_cooldown_until: float = 0.0
+
+    def _check_market_panic(self) -> bool:
+        """
+        Checks if >= guardian_panic_asset_count crypto assets are dipping below guardian_panic_threshold_pct.
+        If so, activates panic mode for guardian_panic_cooldown_min minutes.
+        Returns True if panic is active, False otherwise.
+        """
+        now_ts = datetime.now(timezone.utc).timestamp()
+        if now_ts < self.panic_cooldown_until:
+            return True
+
+        risk_config = RiskConfigReader.read()
+        threshold_pct = risk_config.get("guardian_panic_threshold_pct", -0.30)
+        required_count = risk_config.get("guardian_panic_asset_count", 3)
+        cooldown_min = risk_config.get("guardian_panic_cooldown_min", 5)
+
+        panic_count = 0
+        dipping_assets = []
+        for sym, state in self.vol_detector._trailing_state.items():
+            if sym.endswith("USD") and state.get("dip_pct", 0) <= threshold_pct:
+                panic_count += 1
+                dipping_assets.append(sym)
+
+        if panic_count >= required_count:
+            logger.error(f"[GUARDIAN] Market Panic Detected! Assets dipping: {', '.join(dipping_assets)} below {threshold_pct}%. Suspending BUYs for {cooldown_min} minutes.")
+            self.panic_cooldown_until = now_ts + (cooldown_min * 60)
+            return True
+
+        return False
 
     def _check_mtf_trend(self, symbol: str) -> str:
         """
@@ -1003,6 +1072,15 @@ class RealtimeExecutor:
             # Silent return during 14-min warmup
             return
 
+        # Correlated Asset Panic Filter
+        if self._check_market_panic():
+            # Only block BUY signals. We still want to trail stops and update indicators.
+            # We will just skip the rest of the execution block that might trigger a buy.
+            # But let's make sure we still log prices and manage trailing stops.
+            WSTradeLogger.log_price(symbol, price, bar_time)
+            self._manage_trailing_stops(price, symbol)
+            return
+
         # Log streaming price for the real-time dashboard chart
         WSTradeLogger.log_price(symbol, price, bar_time)
 
@@ -1012,17 +1090,15 @@ class RealtimeExecutor:
         # Read Regime and adjust DIP threshold dynamically
         risk_config = RiskConfigReader.read()
         
-        # Override for crypto micro-scalping (with ATR scaling)
+        # Volatility-Adjusted DIP Threshold
         base_dip = abs(risk_config.get("crypto_micro_dip_pct", 0.15))
-        if atr is not None and atr > 0 and price > 0:
-            atr_pct = (atr / price) * 100.0
-            dynamic_dip = -abs(max(base_dip, atr_pct * 0.2))
-        else:
-            dynamic_dip = -base_dip
-        # Update Volatility detector with dynamic threshold
         alpha_dynamic_dip = risk_config.get("alpha_dynamic_dip", False)
-        if not alpha_dynamic_dip:
-            dynamic_dip = -abs(risk_config.get("crypto_micro_dip_pct", 0.15))
+        if alpha_dynamic_dip and atr is not None and atr > 0 and price > 0:
+            atr_pct = (atr / price) * 100.0
+            mult = risk_config.get("atr_dynamic_dip_multiplier", 1.0)
+            dynamic_dip = -abs(base_dip * (1 + (atr_pct * mult)))
+        else:
+            dynamic_dip = -abs(base_dip)
             
         immediate_dip, trailing_dip, spike_pct = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=dynamic_dip)
         
@@ -1106,15 +1182,27 @@ class RealtimeExecutor:
                     logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping STOCK BUY to avoid overbought entry.")
                     return
 
+                # RSI Divergence Filter (The Holy Grail)
+                has_divergence = False
+                if is_crypto:
+                    has_divergence = self.indicator_mgr.detect_bullish_divergence(symbol)
+                    if has_divergence:
+                        logger.info(f"[WS DIVERGENCE] Bullish RSI Divergence detected for {symbol}! Prioritizing trade.")
+                        WSTradeLogger.write_logbook(f"[WS DIVERGENCE] Rilevata Divergenza Rialzista su {symbol}. Size potenziata.")
+
                 # MTF Confluence Filter (1H EMA50)
                 if is_crypto:
                     mtf_trend = self._check_mtf_trend(symbol)
-                    if mtf_trend == "DOWN":
-                        logger.info(f"[MTF FILTER] {symbol} macro trend is DOWN (1H EMA50). Halving position size as a precaution.")
-                        bias_info = dict(bias_info)
-                        bias_info["_mtf_size_multiplier"] = 0.5
-                    elif mtf_trend == "UP":
-                        logger.info(f"[MTF FILTER] {symbol} macro trend is UP (1H EMA50). Full size authorized.")
+                    bias_info = dict(bias_info)
+                    if has_divergence:
+                        logger.info(f"[MTF FILTER] {symbol} has divergence. Ignoring macro trend {mtf_trend} and assigning full size.")
+                        bias_info["_mtf_size_multiplier"] = 1.0
+                    else:
+                        if mtf_trend == "DOWN":
+                            logger.info(f"[MTF FILTER] {symbol} macro trend is DOWN (1H EMA50) without divergence. Halving position size.")
+                            bias_info["_mtf_size_multiplier"] = 0.5
+                        elif mtf_trend == "UP":
+                            logger.info(f"[MTF FILTER] {symbol} macro trend is UP (1H EMA50). Full size authorized.")
 
                 logger.info(f"[WS TRIGGER] DIP confirmed for {symbol}! Executing BUY order...")
                 self._execute_order(symbol, price, dip_pct, bias_info, is_short=False, atr=atr)
