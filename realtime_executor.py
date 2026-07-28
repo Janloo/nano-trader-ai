@@ -656,6 +656,17 @@ class RealtimeExecutor:
                         
                     # Smart Asymmetric DCA (Martingale)
                     layer_int = int(current_layers)
+                    
+                    # ATR Spacing Filter
+                    if atr > 0:
+                        avg_entry = float(open_pos.avg_entry_price)
+                        if not is_short and price > (avg_entry - atr):
+                            logger.info(f"[WS FILTER] Skipping DCA Layer {layer_int+1} per {check_symbol}: Price ${price:.2f} troppo vicino a Avg Entry ${avg_entry:.2f} (Richiesto > 1 ATR spacing: ${atr:.2f})")
+                            return None
+                        elif is_short and price < (avg_entry + atr):
+                            logger.info(f"[WS FILTER] Skipping DCA Layer {layer_int+1} per {check_symbol}: Price ${price:.2f} troppo vicino a Avg Entry ${avg_entry:.2f} (Richiesto > 1 ATR spacing: ${atr:.2f})")
+                            return None
+
                     size_usd = base_size_usd * (1.5 ** layer_int)
                     logger.info(f"[WS] Smart DCA active for {check_symbol}: Layer {layer_int+1}, Base Size: ${base_size_usd:.2f} -> Scaled Size: ${size_usd:.2f}")
             except Exception as e:
@@ -990,8 +1001,11 @@ class RealtimeExecutor:
             stock_buy_condition = not is_crypto and dip_pct is not None and bias == "BULLISH" and sentiment_score >= 0.75
             
             if crypto_buy_condition or stock_buy_condition:
-                if rsi > 70:
-                    logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping BUY to avoid overbought entry.")
+                if is_crypto and rsi > 45:
+                    logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>45). Skipping CRYPTO BUY to wait for oversold momentum.")
+                    return
+                elif not is_crypto and rsi > 70:
+                    logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping STOCK BUY to avoid overbought entry.")
                     return
                 logger.info(f"[WS TRIGGER] DIP confirmed for {symbol}! Executing BUY order...")
                 self._execute_order(symbol, price, dip_pct, bias_info, is_short=False, atr=atr)
