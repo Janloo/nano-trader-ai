@@ -12,14 +12,15 @@ class TrailingTakeProfitManager:
         self.activation_pct = activation_pct
         self.trailing_pct = trailing_pct
         self.peaks: Dict[str, float] = {}
+        self.scaled_out_symbols: set = set()
 
-    def update_and_check(self, symbol: str, current_price: float, avg_entry_price: float, is_short: bool = False, atr_pct: float = None) -> bool:
+    def update_and_check(self, symbol: str, current_price: float, avg_entry_price: float, is_short: bool = False, atr_pct: float = None) -> str:
         """
-        Returns True if the trailing stop has been hit and the position should be closed.
+        Returns "SCALE_OUT", "CLOSE_ALL", or None.
         If atr_pct is provided, dynamically widens the activation and trailing thresholds based on volatility.
         """
         if avg_entry_price <= 0:
-            return False
+            return None
             
         profit_pct = (current_price - avg_entry_price) / avg_entry_price
         if is_short:
@@ -49,12 +50,22 @@ class TrailingTakeProfitManager:
             drawdown = (peak - current_price) / peak if not is_short else (current_price - peak) / peak
             
             if drawdown >= current_trailing:
-                logger.info(f"[TRAILING TP] {symbol} hit trail trigger! Peak: {peak:.2f}, Drop: {drawdown*100:.2f}% (Dynamic Trailing: {current_trailing*100:.2f}%). Executing close.")
-                del self.peaks[symbol]
-                return True
+                if symbol not in self.scaled_out_symbols:
+                    logger.info(f"[TRAILING TP] {symbol} hit trail trigger! Peak: {peak:.2f}, Drop: {drawdown*100:.2f}%. Scaling out 50%.")
+                    self.scaled_out_symbols.add(symbol)
+                    # Reset peak for the remaining half
+                    self.peaks[symbol] = current_price
+                    return "SCALE_OUT"
+                else:
+                    logger.info(f"[TRAILING TP] {symbol} hit trail trigger AGAIN! Peak: {peak:.2f}, Drop: {drawdown*100:.2f}%. Executing CLOSE_ALL.")
+                    del self.peaks[symbol]
+                    self.scaled_out_symbols.remove(symbol)
+                    return "CLOSE_ALL"
                 
         # Reset peak if it falls below activation (shouldn't happen often if we exit, but just in case)
         elif profit_pct < current_activation and symbol in self.peaks:
              del self.peaks[symbol]
+             if symbol in self.scaled_out_symbols:
+                 self.scaled_out_symbols.remove(symbol)
              
-        return False
+        return None

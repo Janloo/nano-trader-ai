@@ -457,9 +457,24 @@ class RealtimeExecutor:
                 atr_val = self.indicator_mgr.get_atr(symbol)
                 atr_pct = (atr_val / current_price) if atr_val and current_price > 0 else 0.0
                 
-                should_close = self.trailing_mgr.update_and_check(symbol, current_price, avg_entry, is_short, atr_pct)
-                if should_close:
-                    logger.info(f"[WS] Trailing TP triggered for {symbol}! Closing position.")
+                action = self.trailing_mgr.update_and_check(symbol, current_price, avg_entry, is_short, atr_pct)
+                if action == "SCALE_OUT":
+                    logger.info(f"[WS] Trailing TP triggered for {symbol}! Scaling out 50%.")
+                    from alpaca.trading.requests import MarketOrderRequest
+                    from alpaca.trading.enums import OrderSide, TimeInForce
+                    
+                    close_side = OrderSide.BUY if is_short else OrderSide.SELL
+                    scale_qty = round(abs(qty) / 2.0, 5) # Assuming crypto precision
+                    req = MarketOrderRequest(
+                        symbol=check_symbol,
+                        qty=scale_qty,
+                        side=close_side,
+                        time_in_force=TimeInForce.GTC
+                    )
+                    self._trading_client.submit_order(req)
+                    WSTradeLogger.write_logbook(f"[TRAILING TP] Scale-out 50% in profitto su {symbol} (Moonbag attivata).")
+                elif action == "CLOSE_ALL":
+                    logger.info(f"[WS] Trailing TP triggered for {symbol}! Closing remaining position.")
                     from alpaca.trading.requests import MarketOrderRequest
                     from alpaca.trading.enums import OrderSide, TimeInForce
                     
@@ -471,7 +486,7 @@ class RealtimeExecutor:
                         time_in_force=TimeInForce.GTC
                     )
                     self._trading_client.submit_order(req)
-                    WSTradeLogger.write_logbook(f"[TRAILING TP] Chiusura in profitto su {symbol} (Trail Hit).")
+                    WSTradeLogger.write_logbook(f"[TRAILING TP] Chiusura totale in profitto su {symbol} (Trail Hit).")
             except Exception:
                 pass # No position
         except Exception as e:
@@ -667,7 +682,25 @@ class RealtimeExecutor:
                             logger.info(f"[WS FILTER] Skipping DCA Layer {layer_int+1} per {check_symbol}: Price ${price:.2f} troppo vicino a Avg Entry ${avg_entry:.2f} (Richiesto > 1 ATR spacing: ${atr:.2f})")
                             return None
 
-                    size_usd = base_size_usd * (1.5 ** layer_int)
+                    # L2 Smart DCA Multiplier
+                    imbalance = self.orderbook_analyzer.check_imbalance(check_symbol)
+                    multiplier = 1.5
+                    if not is_short:
+                        if imbalance == "BULLISH_WALL":
+                            multiplier = 2.0
+                            logger.info(f"[WS L2] Bullish Wall detected on {check_symbol}! Using aggressive DCA multiplier (2.0x)")
+                        elif imbalance == "BEARISH_WALL":
+                            multiplier = 1.2
+                            logger.info(f"[WS L2] Bearish Wall detected on {check_symbol}! Using conservative DCA multiplier (1.2x)")
+                    else:
+                        if imbalance == "BEARISH_WALL":
+                            multiplier = 2.0
+                            logger.info(f"[WS L2] Bearish Wall detected on {check_symbol}! Using aggressive DCA multiplier (2.0x)")
+                        elif imbalance == "BULLISH_WALL":
+                            multiplier = 1.2
+                            logger.info(f"[WS L2] Bullish Wall detected on {check_symbol}! Using conservative DCA multiplier (1.2x)")
+
+                    size_usd = base_size_usd * (multiplier ** layer_int)
                     logger.info(f"[WS] Smart DCA active for {check_symbol}: Layer {layer_int+1}, Base Size: ${base_size_usd:.2f} -> Scaled Size: ${size_usd:.2f}")
             except Exception as e:
                 pass # Usually implies no open position
