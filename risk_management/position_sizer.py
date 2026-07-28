@@ -48,6 +48,18 @@ class PositionSizer:
             kelly_mult = risk_config.get("kelly_fraction_multiplier", 0.5)
             win_rate = risk_config.get("historical_win_rate", 0.55)
             reward_risk = risk_config.get("historical_reward_risk", 1.5)
+
+            # Self-Adapting Kelly: override with REAL live stats if sufficient data exists
+            if use_kelly:
+                try:
+                    from risk_management.performance_tracker import get_live_stats
+                    live = get_live_stats()
+                    if live.get("sufficient_data"):
+                        win_rate = live["win_rate"]
+                        reward_risk = live["reward_risk_ratio"]
+                        logger.info(f"[KELLY ADAPTIVE] Using live stats: WR={win_rate:.1%}, RR={reward_risk:.2f} ({live['total_trades']} trades)")
+                except Exception:
+                    pass  # Fall back to risk_settings.json values
             
             # 1. Volatility Scaling: Calculate stop loss distance based on ATR
             if atr > 0 and price > 0:

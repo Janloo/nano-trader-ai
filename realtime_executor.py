@@ -413,6 +413,65 @@ class RealtimeExecutor:
         self._last_trailing_check = datetime.now(timezone.utc)
         self._global_buy_cooldown_until = 0.0
         self._shadow_last_order_time: Dict[str, datetime] = {}
+        # MTF Confluence Cache: {symbol: {"trend": "UP"/"DOWN"/"NEUTRAL", "fetched_at": datetime}}
+        self._mtf_trend_cache: Dict[str, dict] = {}
+        self._mtf_cache_ttl_seconds: int = 3600  # Refresh every hour
+
+    def _check_mtf_trend(self, symbol: str) -> str:
+        """
+        Checks the macro trend for a given symbol by computing EMA50 on 1H bars.
+        Returns 'UP', 'DOWN', or 'NEUTRAL'.
+        Uses a 1-hour cache to avoid hammering the API.
+        """
+        now = datetime.now(timezone.utc)
+        cached = self._mtf_trend_cache.get(symbol)
+        if cached:
+            age = (now - cached["fetched_at"]).total_seconds()
+            if age < self._mtf_cache_ttl_seconds:
+                return cached["trend"]
+
+        try:
+            from alpaca.data.historical import CryptoHistoricalDataClient
+            from alpaca.data.requests import CryptoBarsRequest
+            from alpaca.data.timeframe import TimeFrame
+            from dateutil.relativedelta import relativedelta
+
+            client = CryptoHistoricalDataClient(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
+            # Fetch last 60 1H bars (enough for EMA50 + a few extras)
+            start = now - relativedelta(hours=62)
+            alpaca_symbol = symbol.replace("USD", "/USD") if "USD" in symbol else symbol
+            req = CryptoBarsRequest(symbol_or_symbols=alpaca_symbol, timeframe=TimeFrame.Hour, start=start, end=now)
+            bars = client.get_crypto_bars(req)
+            df = bars.df if hasattr(bars, "df") else None
+            
+            if df is not None and len(df) >= 50:
+                # Flatten multi-index if needed
+                if hasattr(df.index, "levels"):
+                    df = df.xs(alpaca_symbol, level=0) if alpaca_symbol in df.index.get_level_values(0) else df
+                closes = df["close"].values[-50:]
+                ema50 = closes[-1]
+                k = 2.0 / (50 + 1)
+                for c in closes:
+                    ema50 = c * k + ema50 * (1 - k)
+
+                last_close = closes[-1]
+                if last_close > ema50 * 1.001:
+                    trend = "UP"
+                elif last_close < ema50 * 0.999:
+                    trend = "DOWN"
+                else:
+                    trend = "NEUTRAL"
+
+                logger.info(f"[MTF] {symbol} — EMA50(1H): {ema50:.4f}, Last: {last_close:.4f} → Trend: {trend}")
+            else:
+                trend = "NEUTRAL"
+
+        except Exception as e:
+            logger.warning(f"[MTF] Could not fetch 1H data for {symbol}: {e}")
+            trend = "NEUTRAL"
+
+        self._mtf_trend_cache[symbol] = {"trend": trend, "fetched_at": now}
+        return trend
 
     def _init_trading_client(self):
         """Lazily initializes the Alpaca trading client."""
@@ -502,6 +561,7 @@ class RealtimeExecutor:
         sentiment_score = bias_info.get("sentiment_score", 0.0)
         reasoning = bias_info.get("reasoning", "")
         bias_type = "BEARISH" if is_short else "BULLISH"
+        mtf_size_multiplier = bias_info.get("_mtf_size_multiplier", 1.0)  # MTF Confluence filter
         
         # Determine asset class
         is_crypto = symbol.endswith("USD")
@@ -579,6 +639,11 @@ class RealtimeExecutor:
             symbol, price, sentiment_score, atr, risk_config,
             total_equity, buying_power, NOTIONAL_USD
         )
+
+        # Apply MTF Confluence multiplier (0.5 if macro trend is DOWN, else 1.0)
+        if mtf_size_multiplier != 1.0:
+            size_usd = size_usd * mtf_size_multiplier
+            logger.info(f"[MTF] Applied size multiplier {mtf_size_multiplier:.1f}x to {symbol}: ${size_usd:.2f}")
 
         # --- NEW: Global Allocation & Cash Reserve Checks ---
         try:
@@ -1040,6 +1105,17 @@ class RealtimeExecutor:
                 elif not is_crypto and rsi > 70:
                     logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping STOCK BUY to avoid overbought entry.")
                     return
+
+                # MTF Confluence Filter (1H EMA50)
+                if is_crypto:
+                    mtf_trend = self._check_mtf_trend(symbol)
+                    if mtf_trend == "DOWN":
+                        logger.info(f"[MTF FILTER] {symbol} macro trend is DOWN (1H EMA50). Halving position size as a precaution.")
+                        bias_info = dict(bias_info)
+                        bias_info["_mtf_size_multiplier"] = 0.5
+                    elif mtf_trend == "UP":
+                        logger.info(f"[MTF FILTER] {symbol} macro trend is UP (1H EMA50). Full size authorized.")
+
                 logger.info(f"[WS TRIGGER] DIP confirmed for {symbol}! Executing BUY order...")
                 self._execute_order(symbol, price, dip_pct, bias_info, is_short=False, atr=atr)
             

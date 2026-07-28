@@ -1,5 +1,6 @@
 import logging
 from typing import Dict
+from risk_management.performance_tracker import record_win, record_loss
 
 logger = logging.getLogger("nano-trader-ai")
 
@@ -53,11 +54,22 @@ class TrailingTakeProfitManager:
                 if symbol not in self.scaled_out_symbols:
                     logger.info(f"[TRAILING TP] {symbol} hit trail trigger! Peak: {peak:.2f}, Drop: {drawdown*100:.2f}%. Scaling out 50%.")
                     self.scaled_out_symbols.add(symbol)
+                    # Record partial win in performance tracker
+                    actual_profit_pct = profit_pct - drawdown
+                    if actual_profit_pct > 0:
+                        record_win(actual_profit_pct)
+                    else:
+                        record_loss(abs(actual_profit_pct))
                     # Reset peak for the remaining half
                     self.peaks[symbol] = current_price
                     return "SCALE_OUT"
                 else:
                     logger.info(f"[TRAILING TP] {symbol} hit trail trigger AGAIN! Peak: {peak:.2f}, Drop: {drawdown*100:.2f}%. Executing CLOSE_ALL.")
+                    actual_profit_pct = profit_pct - drawdown
+                    if actual_profit_pct > 0:
+                        record_win(actual_profit_pct)
+                    else:
+                        record_loss(abs(actual_profit_pct))
                     del self.peaks[symbol]
                     self.scaled_out_symbols.remove(symbol)
                     return "CLOSE_ALL"
