@@ -571,6 +571,7 @@ def generate_dashboard():
                         <div class="hidden md:flex items-center gap-2 ml-10">
                             <a href="/" class="text-sm font-bold text-white px-4 py-1.5 bg-slate-800/80 rounded-lg border border-slate-700 shadow-sm">Dashboard</a>
                             <a href="/analytics" class="text-sm font-bold text-slate-400 hover:text-white px-4 py-1.5 transition-colors rounded-lg hover:bg-slate-800/50">Analytics</a>
+                            <a href="/hft-chart" class="text-sm font-bold text-slate-400 hover:text-white px-4 py-1.5 transition-colors rounded-lg hover:bg-slate-800/50">HFT Mechanisms</a>
                         </div>
                     </div>
                     <div class="flex items-center gap-4">

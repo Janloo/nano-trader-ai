@@ -56,6 +56,78 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 self.send_error(500, f"Server error: {e}")
             return
 
+        # Serve HFT Mechanisms Chart
+        if clean_path == "/hft-chart":
+            filepath = "hft_chart.html"
+            if not os.path.exists(filepath):
+                self.send_error(404, "hft_chart.html not found")
+                return
+            try:
+                with open(filepath, "rb") as f:
+                    file_content = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.send_cors_headers()
+                self.end_headers()
+                self._safe_write(file_content)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
+            return
+
+        # HFT Chart Data API
+        if clean_path == "/api/hft-data":
+            try:
+                import json as _json
+                # Price history
+                price_history = {}
+                ph_path = os.path.join("data", "state", "realtime_price_history.json")
+                if os.path.exists(ph_path):
+                    with open(ph_path, "r", encoding="utf-8") as f:
+                        price_history = _json.load(f)
+                # WS Triggers (all, not only executed)
+                ws_triggers = []
+                wt_path = os.path.join("data", "state", "ws_triggers.json")
+                if os.path.exists(wt_path):
+                    with open(wt_path, "r", encoding="utf-8") as f:
+                        ws_triggers = _json.load(f)
+                # Trades from DB
+                from data.db import get_trades
+                trades = get_trades(limit=500)
+                # Log events from log file (last 3000 lines)
+                log_events = []
+                log_path = os.path.join("data", "logs", "nano_trader.log")
+                if os.path.exists(log_path):
+                    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                        lines = f.readlines()[-3000:]
+                    tags = ["[WS FILTER]", "[TRAILING TP]", "[WS TRIGGER]", "[WS L2]",
+                            "[MTF FILTER]", "[MTF]", "[KELLY ADAPTIVE]", "[WS LEAD-LAG]",
+                            "[GUARDIAN]", "[WS DIP]", "[WS DRY-RUN]", "[WS] Smart DCA"]
+                    for line in lines:
+                        line = line.strip()
+                        for tag in tags:
+                            if tag in line:
+                                try:
+                                    ts = line.split(" [")[0].strip()
+                                    log_events.append({"timestamp": ts, "tag": tag, "message": line})
+                                except Exception:
+                                    pass
+                                break
+                payload = {
+                    "price_history": price_history,
+                    "ws_triggers": ws_triggers[-500:],
+                    "trades": trades,
+                    "log_events": log_events
+                }
+                content = _json.dumps(payload).encode("utf-8")
+            except Exception as e:
+                content = _json.dumps({"error": str(e)}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self._safe_write(content)
+            return
+
         # Serve dashboard
         if clean_path in ["/", "/dashboard.html"]:
             filepath = "dashboard.html"

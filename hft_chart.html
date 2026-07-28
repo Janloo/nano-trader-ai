@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>NanoTrader — HFT Mechanisms Chart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;
+      --accent:#3b82f6;--accent2:#8b5cf6;--green:#10b981;--red:#ef4444;
+      --yellow:#f59e0b;--orange:#f97316;--cyan:#06b6d4;--pink:#ec4899;
+      --text:#e2e8f0;--muted:#64748b;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+    header{background:linear-gradient(135deg,#0f1729,#111827);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:14px;}
+    .logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    header h1{font-size:17px;font-weight:700;}
+    header h1 span{color:var(--accent);}
+    .badge{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.5px;}
+    .refresh-btn{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:var(--accent);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;transition:all .2s;}
+    .refresh-btn:hover{background:rgba(59,130,246,.25);}
+    .nav-tabs{display:flex;gap:8px;margin-left:30px;}
+    .nav-link{text-decoration:none;color:var(--muted);font-size:13px;font-weight:600;padding:6px 14px;border-radius:8px;transition:all .2s;}
+    .nav-link:hover{color:var(--text);background:rgba(255,255,255,.05);}
+    .nav-link.active{color:var(--text);background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 24px;background:var(--surface);border-bottom:1px solid var(--border);}
+    .controls label{font-size:12px;color:var(--muted);}
+    .controls select,.controls input[type=range]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;}
+    .sep{width:1px;height:24px;background:var(--border);}
+    .legend{display:flex;flex-wrap:wrap;gap:7px;padding:8px 24px;background:var(--surface);border-bottom:1px solid var(--border);}
+    .legend-pill{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .2s;user-select:none;background:rgba(255,255,255,.04);}
+    .legend-pill.inactive{opacity:.3;}
+    .legend-pill .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+    #chart-wrap{flex:1;position:relative;}
+    #chart{width:100%;height:480px;}
+    #tooltip{position:absolute;z-index:100;pointer-events:none;background:rgba(10,14,26,.96);border:1px solid var(--border);backdrop-filter:blur(12px);border-radius:10px;padding:12px 14px;min-width:220px;max-width:320px;display:none;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+    #tooltip .tt-time{font-size:10px;color:var(--muted);margin-bottom:6px;font-family:'JetBrains Mono',monospace;}
+    #tooltip .tt-price{font-size:18px;font-weight:700;margin-bottom:8px;}
+    #tooltip .tt-event{display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;font-size:11px;line-height:1.4;}
+    #tooltip .tt-event .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+    #stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--border);border-top:1px solid var(--border);}
+    .stat-item{background:var(--surface);padding:10px 16px;}
+    .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}
+    .stat-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+    .stat-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+    .green{color:var(--green);}.red{color:var(--red);}.yellow{color:var(--yellow);}.blue{color:var(--accent);}.purple{color:var(--accent2);}.cyan{color:var(--cyan);}.orange{color:var(--orange);}
+    #events-feed{height:170px;overflow-y:auto;background:var(--surface);border-top:1px solid var(--border);padding:6px 0;}
+    .event-row{display:grid;grid-template-columns:160px 100px 1fr;gap:8px;padding:4px 18px;font-size:11px;font-family:'JetBrains Mono',monospace;border-bottom:1px solid rgba(30,45,69,.4);transition:background .15s;}
+    .event-row:hover{background:rgba(59,130,246,.05);}
+    .et{color:var(--muted);}
+    .etag{padding:1px 6px;border-radius:4px;font-weight:600;font-size:10px;text-align:center;}
+    .emsg{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #events-feed::-webkit-scrollbar{width:4px;}
+    #events-feed::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+    #no-data{text-align:center;padding:20px;color:var(--muted);font-size:13px;}
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="logo-dot"></div>
+    <h1>Nano<span>Trader</span> &middot; HFT Mechanisms Chart</h1>
+  </div>
+  <div class="nav-tabs">
+    <a href="/" class="nav-link">Dashboard</a>
+    <a href="/analytics" class="nav-link">Analytics</a>
+    <a href="/hft-chart" class="nav-link active">HFT Mechanisms</a>
+  </div>
+  <span class="badge" style="margin-left:14px;">LIVE</span>
+  <button class="refresh-btn" style="margin-left:auto;" onclick="loadData()">&#8634; Aggiorna</button>
+</header>
+
+<div class="controls">
+  <label>Asset:</label>
+  <select id="sym-select" onchange="onSymChange()">
+    <option value="BTCUSD">BTC/USD</option>
+    <option value="ETHUSD">ETH/USD</option>
+    <option value="DOGEUSD">DOGE/USD</option>
+    <option value="SOLUSD">SOL/USD</option>
+  </select>
+  <div class="sep"></div>
+  <label>Ultimi bars:</label>
+  <input type="range" id="zoom-range" min="20" max="200" value="200" step="10" oninput="onZoom()">
+  <span id="zoom-val" style="font-size:12px;color:var(--muted)">200</span>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div id="chart-wrap">
+  <div id="chart"></div>
+  <div id="tooltip"></div>
+</div>
+
+<div id="stats-bar">
+  <div class="stat-item"><div class="stat-label">Buy Eseguiti</div><div class="stat-val green" id="s-buys">—</div><div class="stat-sub">ordini inviati</div></div>
+  <div class="stat-item"><div class="stat-label">Trailing TP Hit</div><div class="stat-val cyan" id="s-trails">—</div><div class="stat-sub">chiusure trailing</div></div>
+  <div class="stat-item"><div class="stat-label">RSI Filter Block</div><div class="stat-val yellow" id="s-rsi">—</div><div class="stat-sub">trade bloccati RSI</div></div>
+  <div class="stat-item"><div class="stat-label">L2 Aggr. DCA</div><div class="stat-val purple" id="s-l2">—</div><div class="stat-sub">x2.0 Bullish Wall</div></div>
+  <div class="stat-item"><div class="stat-label">MTF Filter</div><div class="stat-val blue" id="s-mtf">—</div><div class="stat-sub">filtri macro-trend</div></div>
+  <div class="stat-item"><div class="stat-label">DCA Layers</div><div class="stat-val orange" id="s-dca">—</div><div class="stat-sub">smart DCA attivati</div></div>
+</div>
+
+<div id="events-feed"><div id="no-data">Caricamento...</div></div>
+
+<script>
+const MECHS=[
+  {id:'buy',    label:'BUY Eseguito',       color:'#10b981'},
+  {id:'sell',   label:'SELL / Scale-Out',   color:'#06b6d4'},
+  {id:'dip',    label:'DIP Rilevato',       color:'#f59e0b'},
+  {id:'rsi',    label:'RSI Filter Block',   color:'#f97316'},
+  {id:'trail',  label:'Trailing TP',        color:'#8b5cf6'},
+  {id:'dca',    label:'Smart DCA',          color:'#ec4899'},
+  {id:'l2',     label:'L2 Orderbook',       color:'#a78bfa'},
+  {id:'mtf',    label:'MTF Filter',         color:'#3b82f6'},
+  {id:'guard',  label:'Guardian',           color:'#ef4444'},
+];
+let active=new Set(MECHS.map(m=>m.id));
+let allData=null, chart=null, priceSeries=null;
+
+function buildLegend(){
+  const el=document.getElementById('legend');
+  el.innerHTML='';
+  MECHS.forEach(m=>{
+    const p=document.createElement('div');
+    p.className='legend-pill'+(active.has(m.id)?'':' inactive');
+    p.id='pill-'+m.id;
+    p.innerHTML=`<span class="dot" style="background:${m.color}"></span>${m.label}`;
+    p.onclick=()=>{
+      if(active.has(m.id))active.delete(m.id);else active.add(m.id);
+      p.classList.toggle('inactive');
+      renderMarkers();
+    };
+    el.appendChild(p);
+  });
+}
+
+function parseLogTs(ts){
+  try{return Math.floor(new Date(ts.replace(',','.').replace(' ','T')+'Z').getTime()/1000);}catch{return null;}
+}
+function parseIsoTs(ts){
+  try{return Math.floor(new Date(ts).getTime()/1000);}catch{return null;}
+}
+
+async function loadData(){
+  try{
+    const r=await fetch('/api/hft-data');
+    allData=await r.json();
+    renderChart();
+    updateStats();
+    renderEvents();
+  }catch(e){document.getElementById('no-data').textContent='Errore: '+e.message;}
+}
+
+function renderChart(){
+  if(!allData)return;
+  const sym=document.getElementById('sym-select').value;
+  const zoom=parseInt(document.getElementById('zoom-range').value);
+
+  const raw=(allData.price_history||{})[sym]||[];
+  const prices=raw.slice(-zoom);
+
+  const wrap=document.getElementById('chart');
+  if(chart){chart.remove();chart=null;priceSeries=null;}
+
+  chart=LightweightCharts.createChart(wrap,{
+    layout:{background:{color:'#0a0e1a'},textColor:'#64748b'},
+    grid:{vertLines:{color:'#1e2d45'},horzLines:{color:'#1e2d45'}},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+    rightPriceScale:{borderColor:'#1e2d45'},
+    timeScale:{borderColor:'#1e2d45',timeVisible:true,secondsVisible:false},
+    width:wrap.clientWidth,height:480,
+  });
+
+  window.onresize=()=>{if(chart)chart.applyOptions({width:wrap.clientWidth});};
+
+  priceSeries=chart.addLineSeries({color:'#3b82f6',lineWidth:2,priceLineVisible:false,lastValueVisible:true});
+  const lineData=prices.map(p=>({time:parseIsoTs(p.timestamp),value:parseFloat(p.price)})).filter(d=>d.time&&!isNaN(d.value));
+  if(lineData.length)priceSeries.setData(lineData);
+
+  renderMarkers();
+  setupTooltip();
+}
+
+function renderMarkers(){
+  if(!priceSeries||!allData)return;
+  const sym=document.getElementById('sym-select').value;
+  const zoom=parseInt(document.getElementById('zoom-range').value);
+  const raw=(allData.price_history||{})[sym]||[];
+  const prices=raw.slice(-zoom);
+  const minTs=prices.length?parseIsoTs(prices[0].timestamp):0;
+
+  const markers=[];
+  const sym3=sym.replace('USD','');
+
+  (allData.trades||[]).filter(t=>t.symbol===sym&&parseIsoTs(t.timestamp)>=minTs).forEach(t=>{
+    const ts=parseIsoTs(t.timestamp);if(!ts)return;
+    if(t.action==='BUY'&&active.has('buy'))
+      markers.push({time:ts,position:'belowBar',color:'#10b981',shape:'arrowUp',text:'BUY $'+Number(t.notional||0).toFixed(0),size:2});
+    else if(t.action==='SELL'&&active.has('sell'))
+      markers.push({time:ts,position:'aboveBar',color:'#06b6d4',shape:'arrowDown',text:'SELL',size:2});
+  });
+
+  (allData.log_events||[]).filter(e=>{
+    const ts=parseLogTs(e.timestamp);
+    return ts&&ts>=minTs;
+  }).forEach(e=>{
+    const ts=parseLogTs(e.timestamp);
+    const msg=e.message;
+    if(active.has('dip')&&msg.includes('[WS DIP]')&&msg.includes(sym3))
+      markers.push({time:ts,position:'belowBar',color:'#f59e0b',shape:'circle',text:'DIP',size:1});
+    if(active.has('rsi')&&msg.includes('[WS FILTER]')&&msg.includes(sym3))
+      markers.push({time:ts,position:'belowBar',color:'#f97316',shape:'circle',text:'RSI✗',size:1});
+    if(active.has('trail')&&msg.includes('trailing activated')&&msg.includes(sym))
+      markers.push({time:ts,position:'aboveBar',color:'#8b5cf6',shape:'circle',text:'▲TRAIL',size:1});
+    if(active.has('trail')&&msg.includes('hit trail trigger')&&msg.includes(sym))
+      markers.push({time:ts,position:'aboveBar',color:'#06b6d4',shape:'circle',text:'⊗HIT',size:2});
+    if(active.has('dca')&&msg.includes('Smart DCA')&&msg.includes(sym))
+      markers.push({time:ts,position:'belowBar',color:'#ec4899',shape:'circle',text:'DCA',size:1});
+    if(active.has('l2')&&msg.includes('Bullish Wall')&&msg.includes(sym3))
+      markers.push({time:ts,position:'belowBar',color:'#a78bfa',shape:'circle',text:'L2x2',size:1});
+    if(active.has('mtf')&&msg.includes('[MTF FILTER]')&&msg.includes(sym))
+      markers.push({time:ts,position:'aboveBar',color:'#3b82f6',shape:'circle',text:'MTF',size:1});
+    if(active.has('guard')&&msg.includes('[GUARDIAN]')&&msg.includes(sym3))
+      markers.push({time:ts,position:'aboveBar',color:'#ef4444',shape:'circle',text:'GUARD',size:2});
+  });
+
+  markers.sort((a,b)=>a.time-b.time);
+  priceSeries.setMarkers(markers);
+}
+
+function updateStats(){
+  if(!allData)return;
+  const sym=document.getElementById('sym-select').value;
+  const sym3=sym.replace('USD','');
+  const ev=allData.log_events||[];
+  const tr=allData.trades||[];
+  document.getElementById('s-buys').textContent=tr.filter(t=>t.symbol===sym&&t.action==='BUY').length;
+  document.getElementById('s-trails').textContent=ev.filter(e=>e.message.includes('hit trail trigger')&&e.message.includes(sym)).length;
+  document.getElementById('s-rsi').textContent=ev.filter(e=>e.message.includes('[WS FILTER]')&&e.message.includes(sym3)).length;
+  document.getElementById('s-l2').textContent=ev.filter(e=>e.message.includes('Bullish Wall')&&e.message.includes(sym3)).length;
+  document.getElementById('s-mtf').textContent=ev.filter(e=>e.message.includes('[MTF FILTER]')&&e.message.includes(sym)).length;
+  document.getElementById('s-dca').textContent=ev.filter(e=>e.message.includes('Smart DCA')&&e.message.includes(sym)).length;
+}
+
+const TAG_META={
+  '[WS TRIGGER]':   {label:'BUY',   bg:'rgba(16,185,129,.2)', color:'#10b981'},
+  '[WS FILTER]':    {label:'RSI✗',  bg:'rgba(249,115,22,.2)', color:'#f97316'},
+  '[TRAILING TP]':  {label:'TRAIL', bg:'rgba(6,182,212,.2)',  color:'#06b6d4'},
+  '[WS L2]':        {label:'L2',    bg:'rgba(139,92,246,.2)', color:'#8b5cf6'},
+  '[MTF FILTER]':   {label:'MTF',   bg:'rgba(59,130,246,.2)', color:'#3b82f6'},
+  '[MTF]':          {label:'MTF',   bg:'rgba(59,130,246,.1)', color:'#3b82f6'},
+  '[WS DIP]':       {label:'DIP',   bg:'rgba(245,158,11,.2)', color:'#f59e0b'},
+  '[WS LEAD-LAG]':  {label:'LEAD',  bg:'rgba(236,72,153,.2)', color:'#ec4899'},
+  '[GUARDIAN]':     {label:'GUARD', bg:'rgba(239,68,68,.2)',  color:'#ef4444'},
+  '[WS] Smart DCA': {label:'DCA',   bg:'rgba(236,72,153,.15)',color:'#ec4899'},
+  '[WS DRY-RUN]':   {label:'DRY',   bg:'rgba(100,116,139,.2)',color:'#94a3b8'},
+  '[KELLY ADAPTIVE]':{label:'KELLY',bg:'rgba(16,185,129,.15)',color:'#10b981'},
+};
+
+function renderEvents(){
+  if(!allData)return;
+  const feed=document.getElementById('events-feed');
+  feed.innerHTML='';
+  const evs=[...(allData.log_events||[])].reverse().slice(0,300);
+  if(!evs.length){feed.innerHTML='<div id="no-data">Nessun evento nei log.</div>';return;}
+  evs.forEach(e=>{
+    const meta=TAG_META[e.tag]||{label:e.tag,bg:'transparent',color:'#64748b'};
+    const row=document.createElement('div');row.className='event-row';
+    row.innerHTML=`<span class="et">${e.timestamp.replace(/,\d+$/,'')}</span><span class="etag" style="background:${meta.bg};color:${meta.color}">${meta.label}</span><span class="emsg">${e.message.replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+ \[INFO\] nano-trader-ai: /,'')}</span>`;
+    feed.appendChild(row);
+  });
+}
+
+function setupTooltip(){
+  if(!chart||!priceSeries)return;
+  const tt=document.getElementById('tooltip');
+  const wrap=document.getElementById('chart-wrap');
+  chart.subscribeCrosshairMove(param=>{
+    if(!param||!param.time){tt.style.display='none';return;}
+    const price=param.seriesData.get(priceSeries);
+    if(!price){tt.style.display='none';return;}
+    const sym=document.getElementById('sym-select').value;
+    const d=new Date(param.time*1000);
+    const timeStr=d.toISOString().replace('T',' ').slice(0,19)+' UTC';
+    const evts=(allData?.log_events||[]).filter(e=>{
+      const ts=parseLogTs(e.timestamp);
+      return ts&&Math.abs(ts-param.time)<90&&e.message.includes(sym.replace('USD',''));
+    }).slice(0,5);
+    let evtHtml=evts.map(e=>{
+      const meta=TAG_META[e.tag]||{color:'#64748b'};
+      return `<div class="tt-event"><span class="dot" style="background:${meta.color}"></span><span>${e.message.replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+ \[INFO\] nano-trader-ai: /,'').slice(0,100)}</span></div>`;
+    }).join('');
+    if(!evtHtml)evtHtml='<div style="color:var(--muted);font-size:11px">Nessun meccanismo in questo momento</div>';
+    tt.innerHTML=`<div class="tt-time">${timeStr}</div><div class="tt-price">${Number(price.value).toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:6})}</div>${evtHtml}`;
+    tt.style.display='block';
+    const x=param.point.x,y=param.point.y;
+    const rect=wrap.getBoundingClientRect();
+    const ttW=tt.offsetWidth;
+    let left=x+16;if(left+ttW>rect.width-20)left=x-ttW-16;
+    tt.style.left=left+'px';tt.style.top=Math.max(0,y-40)+'px';
+  });
+}
+
+function onSymChange(){renderChart();updateStats();}
+function onZoom(){
+  document.getElementById('zoom-val').textContent=document.getElementById('zoom-range').value;
+  renderChart();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  buildLegend();
+  loadData();
+  setInterval(()=>loadData(),60000);
+});
+</script>
+</body>
+</html>
