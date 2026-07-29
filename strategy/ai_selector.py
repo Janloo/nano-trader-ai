@@ -190,19 +190,37 @@ class GeminiAssetSelector:
         return selected[:max_sel]
 
     def _fallback_selection(self, universe_assets: List[Dict], max_sel: int) -> List[Dict]:
-        """Fallback when API is exhausted: prefer crypto assets (trade 24/7)."""
-        logger.warning("[DAS] API exhausted — falling back to safe crypto-first selection.")
-        cryptos = [a for a in universe_assets if a.get("type") == "crypto"]
-        selected = []
-        for asset in cryptos[:max_sel]:
-            selected.append({
-                "symbol": asset["symbol"],
-                "type": asset["type"],
-                "sentiment_score": 0.0,
-                "reasoning": "Fallback selection: Gemini API quota exhausted. Defaulting to crypto HOLD.",
+        """Fallback when API is exhausted: use analytical technical regimes."""
+        logger.warning("[DAS] API exhausted — falling back to analytical technical regimes.")
+        from strategy.regime_analyzer import MarketRegimeAnalyzer
+        analyzer = MarketRegimeAnalyzer()
+        
+        analyzed_assets = []
+        for asset in universe_assets:
+            symbol = asset["symbol"]
+            is_crypto = (asset.get("type") == "crypto")
+            
+            regime_data = analyzer.analyze_asset(symbol, is_crypto)
+            regime = regime_data.get("regime", "UNKNOWN")
+            adx = regime_data.get("adx", 0.0)
+            
+            sentiment = 0.0
+            if regime == "BULL_TREND":
+                sentiment = 0.80 + (adx / 100.0) * 0.19
+            elif regime == "BEAR_TREND":
+                sentiment = -0.80 - (adx / 100.0) * 0.19
+                
+            analyzed_assets.append({
+                "symbol": symbol,
+                "type": asset.get("type", "unknown"),
+                "sentiment_score": round(sentiment, 2),
+                "reasoning": f"Analytical Fallback: {regime} (ADX: {adx})",
                 "selected_at": datetime.now(timezone.utc).isoformat()
             })
-        return selected
+            
+        # Sort by strongest trend (absolute sentiment score)
+        analyzed_assets.sort(key=lambda x: abs(x["sentiment_score"]), reverse=True)
+        return analyzed_assets[:max_sel]
 
     def _write_logbook_warning(self, error: str):
         """Writes a warning entry to data/human_logbook.txt."""
