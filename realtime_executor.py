@@ -221,22 +221,48 @@ class VolatilityDetector:
 # IndicatorManager — ATR & RSI Calculation
 # ─────────────────────────────────────────────
 class IndicatorManager:
-    """Calculates ATR and RSI from incoming OHLC bars."""
+    """Calculates ATR, RSI, and Multi-Timeframe RSI Confluence from incoming OHLC bars."""
     def __init__(self, period=14):
         self.period = period
         self._bars: Dict[str, deque] = {}
         self._rsi_history: Dict[str, deque] = {}
+        # Multi-TF RSI: aggregate 1min bars into 5min and 15min
+        self._mtf_bar_counter: Dict[str, int] = {}
+        self._mtf_5m_closes: Dict[str, deque] = {}
+        self._mtf_15m_closes: Dict[str, deque] = {}
+        self._mtf_5m_buffer: Dict[str, list] = {}  # accumulate 5 x 1min closes
+        self._mtf_15m_buffer: Dict[str, list] = {}  # accumulate 15 x 1min closes
 
     def update(self, symbol: str, high: float, low: float, close: float):
         if symbol not in self._bars:
             self._bars[symbol] = deque(maxlen=self.period + 1)
-            self._rsi_history[symbol] = deque(maxlen=60) # keep last 60 periods of RSI
+            self._rsi_history[symbol] = deque(maxlen=60)
+            self._mtf_bar_counter[symbol] = 0
+            self._mtf_5m_closes[symbol] = deque(maxlen=self.period + 1)
+            self._mtf_15m_closes[symbol] = deque(maxlen=self.period + 1)
+            self._mtf_5m_buffer[symbol] = []
+            self._mtf_15m_buffer[symbol] = []
         self._bars[symbol].append({"high": high, "low": low, "close": close})
         
         # Calculate and store RSI for history if we have enough bars
         rsi_val = self.get_rsi(symbol)
         if rsi_val is not None:
             self._rsi_history[symbol].append({"close": close, "rsi": rsi_val})
+
+        # Multi-TF aggregation
+        self._mtf_bar_counter[symbol] = self._mtf_bar_counter.get(symbol, 0) + 1
+        self._mtf_5m_buffer[symbol].append(close)
+        self._mtf_15m_buffer[symbol].append(close)
+        # Every 5 bars, aggregate to 5min close
+        if len(self._mtf_5m_buffer[symbol]) >= 5:
+            avg_close = sum(self._mtf_5m_buffer[symbol]) / len(self._mtf_5m_buffer[symbol])
+            self._mtf_5m_closes[symbol].append(avg_close)
+            self._mtf_5m_buffer[symbol] = []
+        # Every 15 bars, aggregate to 15min close
+        if len(self._mtf_15m_buffer[symbol]) >= 15:
+            avg_close = sum(self._mtf_15m_buffer[symbol]) / len(self._mtf_15m_buffer[symbol])
+            self._mtf_15m_closes[symbol].append(avg_close)
+            self._mtf_15m_buffer[symbol] = []
 
     def get_last_price(self, symbol: str) -> Optional[float]:
         if symbol in self._bars and len(self._bars[symbol]) > 0:
@@ -312,6 +338,72 @@ class IndicatorManager:
                 return True
                 
         return False
+
+    def _calc_rsi_from_closes(self, closes: deque) -> Optional[float]:
+        """Calculates RSI from a deque of close prices."""
+        if len(closes) < self.period + 1:
+            return None
+        data = list(closes)
+        gains = []
+        losses = []
+        for i in range(1, len(data)):
+            change = data[i] - data[i-1]
+            if change > 0:
+                gains.append(change)
+                losses.append(0)
+            else:
+                gains.append(0)
+                losses.append(abs(change))
+        avg_gain = sum(gains[-self.period:]) / self.period
+        avg_loss = sum(losses[-self.period:]) / self.period
+        if avg_loss == 0:
+            return 100.0
+        rs = avg_gain / avg_loss
+        return 100.0 - (100.0 / (1.0 + rs))
+
+    def get_rsi_5m(self, symbol: str) -> Optional[float]:
+        """Returns RSI calculated on aggregated 5-minute closes."""
+        closes = self._mtf_5m_closes.get(symbol)
+        if closes is None:
+            return None
+        return self._calc_rsi_from_closes(closes)
+
+    def get_rsi_15m(self, symbol: str) -> Optional[float]:
+        """Returns RSI calculated on aggregated 15-minute closes."""
+        closes = self._mtf_15m_closes.get(symbol)
+        if closes is None:
+            return None
+        return self._calc_rsi_from_closes(closes)
+
+    def get_mtf_rsi_confluence(self, symbol: str) -> tuple:
+        """
+        Returns (score, description) for multi-timeframe RSI confluence.
+        score: 0 = no confluence, 1 = double (1m+5m), 2 = triple (1m+5m+15m)
+        Only counts when RSI < 30 (oversold).
+        """
+        rsi_1m = self.get_rsi(symbol)
+        rsi_5m = self.get_rsi_5m(symbol)
+        rsi_15m = self.get_rsi_15m(symbol)
+
+        oversold_threshold = 30.0
+        count = 0
+        parts = []
+
+        if rsi_1m is not None and rsi_1m < oversold_threshold:
+            count += 1
+            parts.append(f"1m:{rsi_1m:.1f}")
+        if rsi_5m is not None and rsi_5m < oversold_threshold:
+            count += 1
+            parts.append(f"5m:{rsi_5m:.1f}")
+        if rsi_15m is not None and rsi_15m < oversold_threshold:
+            count += 1
+            parts.append(f"15m:{rsi_15m:.1f}")
+
+        if count >= 3:
+            return (2, f"Triple RSI Confluence ({', '.join(parts)})")
+        elif count >= 2:
+            return (1, f"Double RSI Confluence ({', '.join(parts)})")
+        return (0, "No MTF RSI Confluence")
 
 # ─────────────────────────────────────────────
 # Trade Logger — Writes to trades.json and ws_triggers.json
@@ -445,9 +537,18 @@ class RealtimeExecutor:
         from risk_management.orderbook_analyzer import OrderBookAnalyzer
         from risk_management.trailing_tp import TrailingTakeProfitManager
         from strategy.fast_guardian import FastGuardian
+        from strategy.momentum_filter import MomentumAccelerationFilter
+        from strategy.vwap_reversion import VWAPReversionStrategy
+        from strategy.bollinger_squeeze import BollingerSqueezeDetector
+        from strategy.correlation_engine import CrossAssetCorrelationEngine
         self.orderbook_analyzer = OrderBookAnalyzer(imbalance_threshold=3.0)
         self.trailing_mgr = TrailingTakeProfitManager(activation_pct=0.005, trailing_pct=0.002)
         self.fast_guardian = FastGuardian()
+        # New strategies
+        self.momentum_filter = MomentumAccelerationFilter(fast_period=5, slow_period=10)
+        self.vwap_strategy = VWAPReversionStrategy(max_bars=200, entry_atr_mult=0.5, exit_atr_mult=0.3)
+        self.bollinger_detector = BollingerSqueezeDetector(period=20, std_dev=2.0, squeeze_threshold_pct=0.5)
+        self.correlation_engine = CrossAssetCorrelationEngine(window=30, min_correlation=0.65)
         self.alert_states: Dict[str, dict] = {}
         self._last_trailing_check = datetime.now(timezone.utc)
         self._global_buy_cooldown_until = 0.0
@@ -1062,7 +1163,14 @@ class RealtimeExecutor:
         # Update Indicator Manager with OHLC
         high = float(bar.high) if hasattr(bar, "high") else price
         low = float(bar.low) if hasattr(bar, "low") else price
+        volume = float(bar.volume) if hasattr(bar, "volume") else 0.0
         self.indicator_mgr.update(symbol, high, low, price)
+
+        # Update new strategy modules
+        self.momentum_filter.update(symbol, price)
+        self.vwap_strategy.update(symbol, price, volume)
+        self.bollinger_detector.update(symbol, price)
+        self.correlation_engine.update(symbol, price)
 
         # Check Warm-up
         atr = self.indicator_mgr.get_atr(symbol)
@@ -1182,6 +1290,17 @@ class RealtimeExecutor:
                     logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping STOCK BUY to avoid overbought entry.")
                     return
 
+                # === Momentum Acceleration Filter ===
+                if risk_config.get("strategy_momentum_filter_enabled", True):
+                    if not self.momentum_filter.should_allow_buy(symbol):
+                        WSTradeLogger.log_trigger(symbol, price, dip_pct or 0.0, "MOMENTUM_BLOCK", 0.0, "Momentum still accelerating downward", "", False)
+                        return
+
+                # === Multi-TF RSI Confluence Boost ===
+                mtf_score, mtf_desc = self.indicator_mgr.get_mtf_rsi_confluence(symbol)
+                if mtf_score > 0:
+                    logger.info(f"[MTF RSI] {symbol} {mtf_desc} — boosting position size")
+
                 # RSI Divergence Filter (The Holy Grail)
                 has_divergence = False
                 if is_crypto:
@@ -1204,8 +1323,34 @@ class RealtimeExecutor:
                         elif mtf_trend == "UP":
                             logger.info(f"[MTF FILTER] {symbol} macro trend is UP (1H EMA50). Full size authorized.")
 
+                # === Apply MTF RSI Confluence multiplier ===
+                if mtf_score >= 2:
+                    bias_info = dict(bias_info)
+                    current_mult = bias_info.get("_mtf_size_multiplier", 1.0)
+                    bias_info["_mtf_size_multiplier"] = current_mult * 1.5
+                    logger.info(f"[MTF RSI] Triple confluence on {symbol}! Size boosted 1.5x")
+                elif mtf_score >= 1:
+                    bias_info = dict(bias_info)
+                    current_mult = bias_info.get("_mtf_size_multiplier", 1.0)
+                    bias_info["_mtf_size_multiplier"] = current_mult * 1.2
+                    logger.info(f"[MTF RSI] Double confluence on {symbol}! Size boosted 1.2x")
+
                 logger.info(f"[WS TRIGGER] DIP confirmed for {symbol}! Executing BUY order...")
                 self._execute_order(symbol, price, dip_pct, bias_info, is_short=False, atr=atr)
+
+                # === Cross-Asset Correlation Lead-Lag ===
+                if dip_pct is not None and risk_config.get("strategy_correlation_enabled", True):
+                    lag_signals = self.correlation_engine.get_lead_lag_signals(symbol, dip_pct)
+                    for sig in lag_signals:
+                        follower = sig["symbol"]
+                        if sig["direction"] == "BUY" and not self._is_on_cooldown(follower):
+                            follower_price = self.indicator_mgr.get_last_price(follower)
+                            follower_atr = self.indicator_mgr.get_atr(follower)
+                            if follower_price and follower_atr:
+                                follower_bias = BiasReader.get_bias_for_symbol(follower)
+                                logger.info(f"[CORRELATION TRIGGER] {symbol} dip → Anticipatory BUY on {follower} (corr: {sig['correlation']:.3f})")
+                                self._execute_order(follower, follower_price, dip_pct, follower_bias, is_short=False, atr=follower_atr)
+                                self._last_order_time[follower] = datetime.now(timezone.utc)
             
             # Logic 2: SPIKE + BEARISH = SHORT
             elif spike_pct is not None and bias == "BEARISH" and sentiment_score <= -0.75:
@@ -1219,6 +1364,41 @@ class RealtimeExecutor:
                     symbol, price, change, bias, sentiment_score,
                     bias_info.get("reasoning", ""), "", False
                 )
+
+        # === VWAP Reversion Strategy (independent signal source) ===
+        if risk_config.get("strategy_vwap_enabled", True):
+            vwap_signal = self.vwap_strategy.check_signal(symbol, price, atr=atr, rsi=rsi)
+            if vwap_signal == "VWAP_BUY" and not self._is_on_cooldown(symbol):
+                momentum_ok = True
+                if risk_config.get("strategy_momentum_filter_enabled", True):
+                    momentum_ok = self.momentum_filter.should_allow_buy(symbol)
+                
+                if momentum_ok:
+                    bias_info = BiasReader.get_bias_for_symbol(symbol)
+                    logger.info(f"[VWAP TRIGGER] Mean-reversion BUY on {symbol} at ${price:.2f}")
+                    self._execute_order(symbol, price, 0.0, bias_info, is_short=False, atr=atr)
+                    self._last_order_time[symbol] = datetime.now(timezone.utc)
+
+        # === Bollinger Squeeze Breakout (independent signal source) ===
+        if risk_config.get("strategy_bollinger_enabled", True):
+            bb_signal = self.bollinger_detector.check_signal(symbol, price)
+            if bb_signal == "SQUEEZE_BUY" and not self._is_on_cooldown(symbol):
+                momentum_ok = True
+                if risk_config.get("strategy_momentum_filter_enabled", True):
+                    momentum_ok = self.momentum_filter.should_allow_buy(symbol)
+                    
+                if momentum_ok:
+                    bias_info = BiasReader.get_bias_for_symbol(symbol)
+                    logger.info(f"[BOLLINGER TRIGGER] Squeeze breakout BUY on {symbol} at ${price:.2f}")
+                    self._execute_order(symbol, price, 0.0, bias_info, is_short=False, atr=atr)
+                    self._last_order_time[symbol] = datetime.now(timezone.utc)
+            elif bb_signal == "SQUEEZE_SHORT":
+                bias_info = BiasReader.get_bias_for_symbol(symbol)
+                bias = bias_info.get("bias", "NEUTRAL")
+                if bias == "BEARISH" and not self._is_on_cooldown(symbol):
+                    logger.info(f"[BOLLINGER TRIGGER] Squeeze breakout SHORT on {symbol} at ${price:.2f}")
+                    self._execute_order(symbol, price, 0.0, bias_info, is_short=True, atr=atr)
+                    self._last_order_time[symbol] = datetime.now(timezone.utc)
 
     def on_stock_bar(self, bar):
         """

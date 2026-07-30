@@ -4,6 +4,46 @@ import json
 def generate_analytics_page():
     html_path = 'analytics.html'
     
+    # Calculate Scorecard Metrics
+    win_rate = 0.0
+    rr_ratio = 0.0
+    ev_per_trade = 0.0
+    profit_factor = 0.0
+    
+    risk_config_path = os.path.join("config", "risk_settings.json")
+    if os.path.exists(risk_config_path):
+        try:
+            with open(risk_config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                win_rate = cfg.get("win_rate_estimate", 0.0) * 100
+                rr_ratio = cfg.get("reward_risk_ratio_estimate", 0.0)
+                loss_rate = (100 - win_rate) / 100
+                ev_per_trade = ((win_rate/100) * rr_ratio) - (loss_rate * 1)
+                if loss_rate > 0:
+                    profit_factor = ((win_rate/100) * rr_ratio) / (loss_rate * 1)
+        except Exception:
+            pass
+
+    total_trades = 0
+    db_path = os.path.join("data", "trading_bot.db")
+    if os.path.exists(db_path):
+        try:
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT count(*) FROM trades")
+            row = cursor.fetchone()
+            if row:
+                total_trades = row[0]
+            conn.close()
+        except Exception:
+            pass
+
+    pf_color = "text-emerald-400" if profit_factor > 1.2 else "text-rose-400"
+    pf_badge = "🟢 Eccellente" if profit_factor >= 1.5 else "🟡 Buono" if profit_factor >= 1.0 else "🔴 Rischio"
+    ev_color = "text-emerald-400" if ev_per_trade > 0 else "text-rose-400"
+    wr_color = "text-emerald-400" if win_rate > 50 else "text-amber-400"
+    
     template = '''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,6 +138,42 @@ def generate_analytics_page():
                                 <span id="shadowWinRate" class="text-purple-400 font-bold font-mono">0%</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Health Scorecard Section -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-white"><span class="text-emerald-400 mr-2">🎯</span> System Health Scorecard</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg text-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-t from-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Total Trades</h3>
+                        <p class="text-2xl font-bold font-mono text-white">__TOTAL_TRADES__</p>
+                        <p class="text-xs text-slate-500 mt-1">Need 100 for validation</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg text-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-t from-emerald-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Win Rate</h3>
+                        <p class="text-2xl font-bold font-mono __WR_COLOR__">__WIN_RATE__%</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg text-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-t from-amber-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Reward/Risk</h3>
+                        <p class="text-2xl font-bold font-mono text-amber-400">__RR_RATIO__</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg text-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-t from-emerald-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Expected Value</h3>
+                        <p class="text-2xl font-bold font-mono __EV_COLOR__">__EV_PER_TRADE__ R</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg text-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-t from-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Profit Factor</h3>
+                        <p class="text-2xl font-bold font-mono __PF_COLOR__">__PROFIT_FACTOR__</p>
+                        <p class="text-xs mt-1 font-semibold text-slate-300">__PF_BADGE__</p>
                     </div>
                 </div>
             </div>
@@ -277,6 +353,16 @@ def generate_analytics_page():
     </script>
 </body>
 </html>'''
+
+    template = template.replace('__TOTAL_TRADES__', str(total_trades))
+    template = template.replace('__WIN_RATE__', f"{win_rate:.1f}")
+    template = template.replace('__RR_RATIO__', f"{rr_ratio:.2f}")
+    template = template.replace('__EV_PER_TRADE__', f"{ev_per_trade:+.3f}")
+    template = template.replace('__PROFIT_FACTOR__', f"{profit_factor:.2f}")
+    template = template.replace('__PF_BADGE__', str(pf_badge))
+    template = template.replace('__WR_COLOR__', str(wr_color))
+    template = template.replace('__EV_COLOR__', str(ev_color))
+    template = template.replace('__PF_COLOR__', str(pf_color))
 
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(template)
