@@ -56,10 +56,23 @@ def init_db():
                 equity REAL,
                 buying_power REAL,
                 unrealized_pnl REAL,
-                average_sentiment REAL DEFAULT 0.0
+                average_sentiment REAL DEFAULT 0.0,
+                crypto_equity REAL DEFAULT 0.0,
+                stock_equity REAL DEFAULT 0.0
             )
         ''')
         
+        # Add columns for existing databases safely
+        try:
+            cursor.execute("ALTER TABLE portfolio_history ADD COLUMN crypto_equity REAL DEFAULT 0.0")
+        except sqlite3.OperationalError:
+            pass
+            
+        try:
+            cursor.execute("ALTER TABLE portfolio_history ADD COLUMN stock_equity REAL DEFAULT 0.0")
+        except sqlite3.OperationalError:
+            pass
+
         # AI API Logs table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS ai_api_logs (
@@ -101,13 +114,13 @@ def insert_ai_analytics(timestamp, asset, price, action, confidence, sentiment_s
         conn.commit()
         return cursor.lastrowid
 
-def insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl, average_sentiment=0.0):
+def insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl, average_sentiment=0.0, crypto_equity=0.0, stock_equity=0.0):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO portfolio_history (timestamp, equity, buying_power, unrealized_pnl, average_sentiment)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (timestamp, equity, buying_power, unrealized_pnl, average_sentiment))
+            INSERT INTO portfolio_history (timestamp, equity, buying_power, unrealized_pnl, average_sentiment, crypto_equity, stock_equity)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (timestamp, equity, buying_power, unrealized_pnl, average_sentiment, crypto_equity, stock_equity))
         conn.commit()
 
 def update_ai_analytics_feedback(analytics_id, return_1h, return_4h):

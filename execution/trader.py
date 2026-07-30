@@ -12,11 +12,11 @@ class AITrader:
     def __init__(self, client: AlpacaClientWrapper):
         self.client = client
 
-    def log_portfolio_status(self, equity: float, buying_power: float, unrealized_pnl: float, average_sentiment: float):
+    def log_portfolio_status(self, equity: float, buying_power: float, unrealized_pnl: float, average_sentiment: float, crypto_equity: float = 0.0, stock_equity: float = 0.0):
         """Saves current portfolio value and the run's average AI sentiment score to history."""
         try:
             timestamp = datetime.now(timezone.utc).isoformat()
-            insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl, average_sentiment)
+            insert_portfolio_snap(timestamp, equity, buying_power, unrealized_pnl, average_sentiment, crypto_equity, stock_equity)
         except Exception as e:
             logger.error(f"Error logging portfolio snapshot: {e}")
 

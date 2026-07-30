@@ -353,8 +353,11 @@ def run_iteration(
             equity = account_equity
             buying_power = account_buying_power
             unrealized_pnl = 0.00
+            
+    crypto_equity = sum(float(p.market_value) for p in positions if getattr(p, "asset_class", "") == "crypto") if not dry_run else 0.0
+    stock_equity = sum(float(p.market_value) for p in positions if getattr(p, "asset_class", "") != "crypto") if not dry_run else 0.0
 
-    executor.log_portfolio_status(equity, buying_power, unrealized_pnl, avg_sentiment)
+    executor.log_portfolio_status(equity, buying_power, unrealized_pnl, avg_sentiment, crypto_equity, stock_equity)
 
     try:
         from execution.tracker import update_feedback_loop_metrics

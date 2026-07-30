@@ -554,7 +554,7 @@ def generate_dashboard():
     <div class="min-h-full">
         <!-- Navigation -->
         <nav class="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md sticky top-0 z-40">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="w-full px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -566,12 +566,24 @@ def generate_dashboard():
                             <span class="text-lg font-bold bg-gradient-to-r from-blue-400 to-indigo-200 bg-clip-text text-transparent">Nano-Trader-AI</span>
                             <span class="ml-1.5 text-xs font-semibold px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">Control Room</span>
                         </div>
-                        
-                        <!-- Tab Links -->
-                        <div class="hidden md:flex items-center gap-2 ml-10">
-                            <a href="/" class="text-sm font-bold text-white px-4 py-1.5 bg-slate-800/80 rounded-lg border border-slate-700 shadow-sm">Dashboard</a>
-                            <a href="/analytics" class="text-sm font-bold text-slate-400 hover:text-white px-4 py-1.5 transition-colors rounded-lg hover:bg-slate-800/50">Analytics</a>
-                            <a href="/hft-chart" class="text-sm font-bold text-slate-400 hover:text-white px-4 py-1.5 transition-colors rounded-lg hover:bg-slate-800/50">HFT Mechanisms</a>
+                        <!-- Premium Tab Links -->
+                        <div class="hidden md:flex items-center p-1 bg-slate-900/80 border border-slate-700/50 rounded-2xl shadow-inner ml-8">
+                            <a href="/" class="flex items-center gap-2 text-sm font-bold px-4 py-2 transition-all rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                Dashboard
+                            </a>
+                            <a href="/advanced-chart" class="flex items-center gap-2 text-sm font-bold px-4 py-2 transition-all rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                                Adv. Chart
+                            </a>
+                            <a href="/analytics" class="flex items-center gap-2 text-sm font-bold px-4 py-2 transition-all rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                Analytics
+                            </a>
+                            <a href="/hft-chart" class="flex items-center gap-2 text-sm font-bold px-4 py-2 transition-all rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                HFT Mechanisms
+                            </a>
                         </div>
                     </div>
                     <div class="flex items-center gap-4">
@@ -610,7 +622,7 @@ def generate_dashboard():
         </nav>
 
         <!-- Main Content -->
-        <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <main class="w-full px-4 py-8 sm:px-6 lg:px-8">
             <!-- Control Room Settings Panel -->
             <div id="settingsPanel" class="hidden mb-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-md">
                 <h2 class="text-lg font-bold text-white mb-4">Credentials & Environment Settings Manager</h2>
@@ -919,9 +931,8 @@ def generate_dashboard():
                             <p class="text-xs text-slate-500 mt-0.5">Real-time micro price tracking with AI execution points overlay</p>
                         </div>
                         <!-- Tabs / Symbol Selectors -->
-                        <div class="flex gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800/60">
-                            <button id="wsTabBTC" onclick="switchWSSymbol('BTCUSD')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition-all">BTCUSD</button>
-                            <button id="wsTabETH" onclick="switchWSSymbol('ETHUSD')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">ETHUSD</button>
+                        <div class="flex gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800/60" id="wsSymbolTabs">
+                            <!-- JS fills this -->
                         </div>
                     </div>
                     <div class="h-80 w-full relative">
@@ -1106,7 +1117,31 @@ def generate_dashboard():
         let wsTriggersData = appData.wsTriggersData;
 
         let wsChartInstance = null;
-        let activeWSSymbol = 'BTCUSD';
+        let activeWSSymbol = null;
+
+        function updateWSSymbolTabs() {{
+            const tabsContainer = document.getElementById('wsSymbolTabs');
+            if (!tabsContainer || !priceHistoryData) return;
+            const symbols = Object.keys(priceHistoryData);
+            if (symbols.length === 0) return;
+            
+            if (!activeWSSymbol || !symbols.includes(activeWSSymbol)) {{
+                activeWSSymbol = symbols[0];
+            }}
+            
+            tabsContainer.innerHTML = '';
+            symbols.forEach(sym => {{
+                const btn = document.createElement('button');
+                btn.onclick = () => switchWSSymbol(sym);
+                if (sym === activeWSSymbol) {{
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition-all";
+                }} else {{
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all";
+                }}
+                btn.textContent = sym;
+                tabsContainer.appendChild(btn);
+            }});
+        }}
 
         function renderWSRealtimeChart(symbol, isSilentUpdate = false) {{
             const ctx = document.getElementById('wsRealtimeChart').getContext('2d');
@@ -1216,24 +1251,14 @@ def generate_dashboard():
 
         function switchWSSymbol(symbol) {{
             activeWSSymbol = symbol;
-            
-            const btcBtn = document.getElementById('wsTabBTC');
-            const ethBtn = document.getElementById('wsTabETH');
-            
-            if (symbol === 'BTCUSD') {{
-                btcBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition-all";
-                ethBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all";
-            }} else {{
-                ethBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition-all";
-                btcBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all";
-            }}
-            
+            updateWSSymbolTabs();
             renderWSRealtimeChart(symbol);
         }}
 
         // Initialize WS chart
         window.addEventListener("DOMContentLoaded", () => {{
-            renderWSRealtimeChart(activeWSSymbol);
+            updateWSSymbolTabs();
+            if (activeWSSymbol) renderWSRealtimeChart(activeWSSymbol);
         }});
 
         // Render Correlation Chart
@@ -1827,10 +1852,11 @@ def generate_dashboard():
                 // WS Chart — update priceHistoryData and re-render
                 if (data.price_history_raw) {{
                     priceHistoryData = data.price_history_raw;
+                    updateWSSymbolTabs();
                     const loader = document.getElementById('wsChartLoader');
-                    const hasData = priceHistoryData[activeWSSymbol] && priceHistoryData[activeWSSymbol].length > 0;
+                    const hasData = activeWSSymbol && priceHistoryData[activeWSSymbol] && priceHistoryData[activeWSSymbol].length > 0;
                     if (loader) loader.style.display = hasData ? 'none' : 'flex';
-                    if (typeof renderWSRealtimeChart === 'function') {{
+                    if (typeof renderWSRealtimeChart === 'function' && activeWSSymbol) {{
                         renderWSRealtimeChart(activeWSSymbol, !!wsChartInstance);
                     }}
                 }}

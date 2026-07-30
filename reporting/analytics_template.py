@@ -16,7 +16,7 @@ def generate_analytics_page():
 <body class="h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-white flex flex-col">
     <!-- Navigation -->
     <nav class="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md sticky top-0 z-40">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="w-full px-4 sm:px-6 lg:px-8">
             <div class="flex h-16 items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -29,10 +29,24 @@ def generate_analytics_page():
                         <span class="ml-1.5 text-xs font-semibold px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full border border-purple-500/20">Analytics</span>
                     </div>
                     
-                    <!-- Tab Links -->
-                    <div class="hidden md:flex items-center gap-2 ml-10">
-                        <a href="/" class="text-sm font-bold text-slate-400 hover:text-white px-4 py-1.5 transition-colors rounded-lg hover:bg-slate-800/50">Dashboard</a>
-                        <a href="/analytics" class="text-sm font-bold text-white px-4 py-1.5 bg-slate-800/80 rounded-lg border border-slate-700 shadow-sm">Analytics</a>
+                    <!-- Premium Tab Links -->
+                    <div class="hidden md:flex items-center p-1 bg-slate-900/80 border border-slate-700/50 rounded-2xl shadow-inner ml-8">
+                        <a href="/" class="flex items-center gap-2 text-sm font-bold px-4 py-2 transition-all rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            Dashboard
+                        </a>
+                        <a href="/advanced-chart" class="flex items-center gap-2 text-sm font-bold px-4 py-2 transition-all rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                            Adv. Chart
+                        </a>
+                        <a href="/analytics" class="flex items-center gap-2 text-sm font-bold px-4 py-2 transition-all rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            Analytics
+                        </a>
+                        <a href="/hft-chart" class="flex items-center gap-2 text-sm font-bold px-4 py-2 transition-all rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            HFT Mechanisms
+                        </a>
                     </div>
                 </div>
             </div>
@@ -41,7 +55,7 @@ def generate_analytics_page():
 
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        <div class="mx-auto max-w-7xl">
+        <div class="w-full">
             <!-- Shadow vs Real Performance Section -->
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-4">

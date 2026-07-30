@@ -24,10 +24,11 @@
     .badge{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.5px;}
     .refresh-btn{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:var(--accent);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;transition:all .2s;}
     .refresh-btn:hover{background:rgba(59,130,246,.25);}
-    .nav-tabs{display:flex;gap:8px;margin-left:30px;}
-    .nav-link{text-decoration:none;color:var(--muted);font-size:13px;font-weight:600;padding:6px 14px;border-radius:8px;transition:all .2s;}
-    .nav-link:hover{color:var(--text);background:rgba(255,255,255,.05);}
-    .nav-link.active{color:var(--text);background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);}
+    .nav-tabs{display:flex;gap:6px;margin-left:30px;background:rgba(17, 24, 39, 0.7);padding:6px;border-radius:14px;border:1px solid rgba(255,255,255,0.05);box-shadow:inset 0 2px 4px rgba(0,0,0,0.2);}
+    .nav-link{text-decoration:none;color:var(--muted);font-size:13px;font-weight:700;padding:8px 16px;border-radius:10px;transition:all .2s;display:flex;align-items:center;gap:6px;}
+    .nav-link svg{width:16px;height:16px;}
+    .nav-link:hover{color:var(--text);background:rgba(30, 41, 59, 0.6);}
+    .nav-link.active{color:var(--text);background:linear-gradient(90deg, #2563eb, #4f46e5);border:none;box-shadow:0 4px 12px rgba(59,130,246,0.3);}
     .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 24px;background:var(--surface);border-bottom:1px solid var(--border);}
     .controls label{font-size:12px;color:var(--muted);}
     .controls select,.controls input[type=range]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;}
@@ -68,9 +69,22 @@
     <h1>Nano<span>Trader</span> &middot; HFT Mechanisms Chart</h1>
   </div>
   <div class="nav-tabs">
-    <a href="/" class="nav-link">Dashboard</a>
-    <a href="/analytics" class="nav-link">Analytics</a>
-    <a href="/hft-chart" class="nav-link active">HFT Mechanisms</a>
+    <a href="/" class="nav-link">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+      Dashboard
+    </a>
+    <a href="/advanced-chart" class="nav-link">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+      Adv. Chart
+    </a>
+    <a href="/analytics" class="nav-link">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+      Analytics
+    </a>
+    <a href="/hft-chart" class="nav-link active">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+      HFT Mechanisms
+    </a>
   </div>
   <span class="badge" style="margin-left:14px;">LIVE</span>
   <button class="refresh-btn" style="margin-left:auto;" onclick="loadData()">&#8634; Aggiorna</button>
@@ -79,10 +93,7 @@
 <div class="controls">
   <label>Asset:</label>
   <select id="sym-select" onchange="onSymChange()">
-    <option value="BTCUSD">BTC/USD</option>
-    <option value="ETHUSD">ETH/USD</option>
-    <option value="DOGEUSD">DOGE/USD</option>
-    <option value="SOLUSD">SOL/USD</option>
+    <option value="">Caricamento...</option>
   </select>
   <div class="sep"></div>
   <label>Ultimi bars:</label>
@@ -152,6 +163,28 @@ async function loadData(){
   try{
     const r=await fetch('/api/hft-data');
     allData=await r.json();
+    
+    // Dynamically update sym-select
+    if (allData.price_history) {
+      const symbols = Object.keys(allData.price_history);
+      const select = document.getElementById('sym-select');
+      const currentVal = select.value;
+      if (symbols.length > 0) {
+        select.innerHTML = '';
+        symbols.forEach(sym => {
+          const opt = document.createElement('option');
+          opt.value = sym;
+          opt.textContent = sym;
+          select.appendChild(opt);
+        });
+        if (symbols.includes(currentVal)) {
+          select.value = currentVal;
+        } else {
+          select.value = symbols[0];
+        }
+      }
+    }
+
     renderChart();
     updateStats();
     renderEvents();

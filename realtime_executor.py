@@ -1466,7 +1466,10 @@ class RealtimeExecutor:
                         _temp_client = AlpacaClientWrapper()
                         _acc = _temp_client.get_account_info()
                         if _acc:
-                            insert_portfolio_snap(datetime.now(timezone.utc).isoformat(), float(_acc.equity), float(_acc.buying_power), 0.0)
+                            pos = _temp_client.get_positions()
+                            crypto_eq = sum(float(p.market_value) for p in pos if getattr(p, "asset_class", "") == "crypto")
+                            stock_eq = sum(float(p.market_value) for p in pos if getattr(p, "asset_class", "") != "crypto")
+                            insert_portfolio_snap(datetime.now(timezone.utc).isoformat(), float(_acc.equity), float(_acc.buying_power), 0.0, 0.0, crypto_eq, stock_eq)
                         last_snap_time = now_ts
                     except Exception as e:
                         logger.debug(f"[WS] Failed to save periodic portfolio snap: {e}")

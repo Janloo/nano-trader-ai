@@ -55,8 +55,44 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self.send_error(500, f"Server error: {e}")
             return
+            
+        # Serve Advanced Chart
+        if clean_path == "/advanced-chart":
+            filepath = "advanced_chart.html"
+            if not os.path.exists(filepath):
+                self.send_error(404, "advanced_chart.html not found")
+                return
+            try:
+                with open(filepath, "rb") as f:
+                    file_content = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.send_cors_headers()
+                self.end_headers()
+                self._safe_write(file_content)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
+            return
 
-        # Serve HFT Mechanisms Chart
+        # Advanced Portfolio Data API
+        if clean_path == "/api/portfolio-advanced":
+            try:
+                from data.db import get_db
+                import json as _json
+                with get_db() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM portfolio_history ORDER BY timestamp ASC LIMIT 5000")
+                    hist = [dict(row) for row in cursor.fetchall()]
+                    
+                payload = _json.dumps(hist).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_cors_headers()
+                self.end_headers()
+                self._safe_write(payload)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
+            return
         if clean_path == "/hft-chart":
             filepath = "hft_chart.html"
             if not os.path.exists(filepath):
