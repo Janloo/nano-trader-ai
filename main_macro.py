@@ -144,6 +144,14 @@ def run_iteration(
       Phase 4 — Log portfolio snapshot + regenerate dashboard
     """
     logger.info("Starting nano-trader-ai DAS quantitative scanning iteration...")
+    
+    try:
+        from execution.emergency import EmergencyLiquidator
+        if EmergencyLiquidator.is_locked():
+            logger.critical("🚨 [DAS MACRO] EMERGENCY LOCKDOWN ACTIVE. SKIPPING ITERATION.")
+            return
+    except Exception:
+        pass
 
     # --- Account info ---
     if dry_run:

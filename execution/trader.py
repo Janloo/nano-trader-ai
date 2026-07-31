@@ -57,6 +57,15 @@ class AITrader:
         sentiment_score = ai_decision.get("sentiment_score", 0.0)
         reasoning = ai_decision.get("reasoning", "")
         
+        try:
+            from execution.emergency import EmergencyLiquidator
+            if EmergencyLiquidator.is_locked():
+                logger.warning(f"[{symbol} AI Trader] EMERGENCY LOCKDOWN ACTIVE. Blocking {action} decision.")
+                self.log_ai_analytics(symbol, current_price, raw_news_titles, ai_decision, False, "Blocked by Emergency Lockdown")
+                return None
+        except Exception:
+            pass
+        
         # Check if we already hold a position (slash-insensitive)
         clean_sym = symbol.replace("/", "").upper()
         has_position = False

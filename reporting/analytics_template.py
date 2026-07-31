@@ -84,6 +84,30 @@ def generate_analytics_page():
                     '''
         except Exception:
             pass
+
+    # Check for Emergency Lockdown
+    lock_file = os.path.join("data", "state", "EMERGENCY_LOCKDOWN.txt")
+    if os.path.exists(lock_file):
+        try:
+            with open(lock_file, "r", encoding="utf-8") as f:
+                reason = f.read().strip()
+        except Exception:
+            reason = "Unknown Error"
+            
+        system_errors_html = f'''
+        <div class="mb-8 bg-red-900 border border-red-500 rounded-xl p-6 shadow-[0_0_50px_rgba(239,68,68,0.4)] animate-pulse">
+            <div class="flex items-center gap-4">
+                <div class="bg-red-500/20 p-3 rounded-full text-red-100">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-black text-white uppercase tracking-widest">🚨 DEAD MAN'S SWITCH ACTIVATED</h2>
+                    <p class="text-red-200 mt-2 text-lg"><strong>ALL POSITIONS LIQUIDATED. TRADING IS BLOCKED.</strong></p>
+                    <p class="text-sm text-red-100 font-mono mt-2 bg-black/50 p-2 rounded">Reason: {reason}</p>
+                </div>
+            </div>
+        </div>
+        ''' + system_errors_html
             
     pf_color = "text-emerald-400" if profit_factor > 1.2 else "text-rose-400"
     pf_badge = "🟢 Eccellente" if profit_factor >= 1.5 else "🟡 Buono" if profit_factor >= 1.0 else "🔴 Rischio"

@@ -39,6 +39,23 @@ def log_system_error(module: str, error: Exception, context: str = ""):
             
             with open(ERROR_FILE_PATH, "w", encoding="utf-8") as f:
                 json.dump(errors, f, indent=4)
+                
+            # Check for Dead Man's Switch
+            try:
+                from execution.emergency import EmergencyLiquidator
+                if not EmergencyLiquidator.is_locked() and len(errors) >= 5:
+                    now = datetime.now(timezone.utc)
+                    # Parse timestamps of the last 5 errors
+                    recent_errors = errors[-5:]
+                    first_err_time = datetime.fromisoformat(recent_errors[0]["timestamp"])
+                    if (now - first_err_time).total_seconds() <= 180:
+                        # 5 errors in 3 minutes -> TRIGGER EMERGENCY
+                        reason = "5 crash errors logged within 3 minutes."
+                        EmergencyLiquidator.trigger_lockdown(reason)
+                        threading.Thread(target=EmergencyLiquidator.liquidate_all_positions, daemon=True).start()
+            except Exception as e:
+                logger.error(f"Failed to check Dead Man's Switch: {e}")
+                
         except Exception as e:
             logger.error(f"Could not write to system_errors.json: {e}")
 
