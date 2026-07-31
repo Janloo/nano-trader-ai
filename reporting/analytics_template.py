@@ -4,40 +4,62 @@ import json
 def generate_analytics_page():
     html_path = 'analytics.html'
     
-    # Calculate Scorecard Metrics
+    # Calculate Scorecard Metrics from DB
     win_rate = 0.0
     rr_ratio = 0.0
     ev_per_trade = 0.0
     profit_factor = 0.0
-    
-    risk_config_path = os.path.join("config", "risk_settings.json")
-    if os.path.exists(risk_config_path):
-        try:
-            with open(risk_config_path, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                win_rate = cfg.get("win_rate_estimate", 0.0) * 100
-                rr_ratio = cfg.get("reward_risk_ratio_estimate", 0.0)
-                loss_rate = (100 - win_rate) / 100
-                ev_per_trade = ((win_rate/100) * rr_ratio) - (loss_rate * 1)
-                if loss_rate > 0:
-                    profit_factor = ((win_rate/100) * rr_ratio) / (loss_rate * 1)
-        except Exception:
-            pass
-
     total_trades = 0
+    
     db_path = os.path.join("data", "trading_bot.db")
     if os.path.exists(db_path):
         try:
             import sqlite3
             conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
+            
+            # Count real trades for the validation counter
             cursor.execute("SELECT count(*) FROM trades")
             row = cursor.fetchone()
             if row:
                 total_trades = row[0]
+            
+            # Calculate real metrics using ai_analytics (where we have exact return_1h)
+            cursor.execute("SELECT return_1h FROM ai_analytics WHERE action NOT LIKE 'SHADOW_%' AND return_1h IS NOT NULL")
+            logs = cursor.fetchall()
+            
+            wins = []
+            losses = []
+            for log in logs:
+                ret = log['return_1h']
+                if ret > 0:
+                    wins.append(ret)
+                elif ret < 0:
+                    losses.append(abs(ret))
+                    
+            executed = len(wins) + len(losses)
+            if executed > 0:
+                win_rate = (len(wins) / executed) * 100
+                loss_rate = (len(losses) / executed)
+                win_rate_decimal = len(wins) / executed
+                
+                avg_win = sum(wins) / len(wins) if wins else 0
+                avg_loss = sum(losses) / len(losses) if losses else 0
+                
+                if avg_loss > 0:
+                    rr_ratio = avg_win / avg_loss
+                    ev_per_trade = (win_rate_decimal * rr_ratio) - (loss_rate * 1)
+                    profit_factor = sum(wins) / sum(losses)
+                else:
+                    rr_ratio = avg_win
+                    ev_per_trade = win_rate_decimal * rr_ratio
+                    profit_factor = 99.9  # arbitrarily high
+                    
             conn.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Scorecard calculation error: {e}")
+
 
     pf_color = "text-emerald-400" if profit_factor > 1.2 else "text-rose-400"
     pf_badge = "🟢 Eccellente" if profit_factor >= 1.5 else "🟡 Buono" if profit_factor >= 1.0 else "🔴 Rischio"
