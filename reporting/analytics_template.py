@@ -60,7 +60,31 @@ def generate_analytics_page():
         except Exception as e:
             print(f"Scorecard calculation error: {e}")
 
-
+    # Load System Errors for UI Alert Banner
+    system_errors_html = ""
+    error_file_path = os.path.join("data", "state", "system_errors.json")
+    if os.path.exists(error_file_path):
+        try:
+            with open(error_file_path, "r", encoding="utf-8") as f:
+                errors = json.load(f)
+                if errors:
+                    latest = errors[-1]
+                    system_errors_html = f'''
+                    <div class="mb-6 bg-rose-900/40 border border-rose-500/50 rounded-xl p-4 flex items-start gap-4 shadow-lg shadow-rose-900/20">
+                        <div class="bg-rose-500/20 p-2 rounded-lg text-rose-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-rose-400 font-bold text-lg">⚠️ FAIL-SAFE TRIGGERED: {latest.get("module", "System")}</h3>
+                            <p class="text-sm text-rose-200 mt-1">Context: {latest.get("context", "")}</p>
+                            <p class="text-sm text-white font-mono mt-2 bg-black/40 p-2 rounded">{latest.get("error", "")}</p>
+                            <p class="text-xs text-rose-500/80 mt-2">Logged at: {latest.get("timestamp", "")}</p>
+                        </div>
+                    </div>
+                    '''
+        except Exception:
+            pass
+            
     pf_color = "text-emerald-400" if profit_factor > 1.2 else "text-rose-400"
     pf_badge = "🟢 Eccellente" if profit_factor >= 1.5 else "🟡 Buono" if profit_factor >= 1.0 else "🔴 Rischio"
     ev_color = "text-emerald-400" if ev_per_trade > 0 else "text-rose-400"
@@ -118,6 +142,7 @@ def generate_analytics_page():
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div class="w-full">
+            __SYSTEM_ERRORS_HTML__
             <!-- Shadow vs Real Performance Section -->
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-4">
@@ -377,6 +402,7 @@ def generate_analytics_page():
 </html>'''
 
     template = template.replace('__TOTAL_TRADES__', str(total_trades))
+    template = template.replace('__TOTAL_TRADES__', str(total_trades))
     template = template.replace('__WIN_RATE__', f"{win_rate:.1f}")
     template = template.replace('__RR_RATIO__', f"{rr_ratio:.2f}")
     template = template.replace('__EV_PER_TRADE__', f"{ev_per_trade:+.3f}")
@@ -385,6 +411,7 @@ def generate_analytics_page():
     template = template.replace('__WR_COLOR__', str(wr_color))
     template = template.replace('__EV_COLOR__', str(ev_color))
     template = template.replace('__PF_COLOR__', str(pf_color))
+    template = template.replace('__SYSTEM_ERRORS_HTML__', system_errors_html)
 
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(template)

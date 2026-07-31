@@ -36,6 +36,15 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        try:
+            self._do_GET_internal()
+        except Exception as e:
+            try:
+                self.send_error(500, f"Server error: {e}")
+            except Exception:
+                pass
+
+    def _do_GET_internal(self):
         clean_path = self.path.split("?")[0]
         
         # Serve analytics

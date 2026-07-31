@@ -724,6 +724,8 @@ class RealtimeExecutor:
     def _execute_order(self, symbol: str, price: float, change_pct: float,
                        bias_info: Dict, is_short: bool = False, atr: float = 0.0) -> Optional[str]:
         """Places a Bracket Order with dynamic TP/SL."""
+        risk_config = RiskConfigReader.read()
+        
         if not is_short and time.time() < self._global_buy_cooldown_until:
             logger.info(f"[WS] Skipping BUY for {symbol} due to global cooldown.")
             return None
@@ -791,8 +793,6 @@ class RealtimeExecutor:
                 WSTradeLogger.write_logbook(f"[WS INFO] Salto lo Short su Crypto {symbol} (non supportato).")
                 return None
 
-        risk_config = RiskConfigReader.read()
-        
         # Fetch account data for position sizing
         try:
             self._init_trading_client()
@@ -1546,13 +1546,22 @@ class RealtimeExecutor:
                 equity_symbols_ws.append(sym)
 
         async def crypto_handler(bar):
-            self.on_bar(bar)
+            try:
+                self.on_bar(bar)
+            except Exception as e:
+                from utils.error_handler import log_system_error
+                log_system_error("WebSocket Crypto", e, f"Processing bar for {bar.symbol}")
+            
             
         async def stock_handler(bar):
-            if bar.symbol == "QQQ":
-                self.on_stock_bar(bar)
-            if bar.symbol in self.target_symbols:
-                self.on_bar(bar)
+            try:
+                if bar.symbol == "QQQ":
+                    self.on_stock_bar(bar)
+                if bar.symbol in self.target_symbols:
+                    self.on_bar(bar)
+            except Exception as e:
+                from utils.error_handler import log_system_error
+                log_system_error("WebSocket Stock", e, f"Processing bar for {bar.symbol}")
 
         if "QQQ" not in equity_symbols_ws:
             equity_symbols_ws.append("QQQ")
@@ -1602,21 +1611,25 @@ class RealtimeExecutor:
                     news_stream = NewsDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
                     
                     async def news_handler(news):
-                        # Alpaca sends news.symbols like ['BTCUSD', 'ETHUSD', 'AAPL']
-                        # Match them against our target symbols
-                        symbols_in_news = [s for s in news.symbols if s.replace("/", "") in self.target_symbols or s in self.target_symbols]
-                        if not symbols_in_news:
-                            return
+                        try:
+                            # Alpaca sends news.symbols like ['BTCUSD', 'ETHUSD', 'AAPL']
+                            # Match them against our target symbols
+                            symbols_in_news = [s for s in news.symbols if s.replace("/", "") in self.target_symbols or s in self.target_symbols]
+                            if not symbols_in_news:
+                                return
+                                
+                            logger.info(f"[NEWS INCOMING] {news.headline}")
+                            eval_result = self.fast_guardian.evaluate_headline(news.headline)
                             
-                        logger.info(f"[NEWS INCOMING] {news.headline}")
-                        eval_result = self.fast_guardian.evaluate_headline(news.headline)
-                        
-                        if eval_result != "IGNORE":
-                            logger.critical(f"[GUARDIAN ALERT] {eval_result} detected for {symbols_in_news}!")
-                            WSTradeLogger.write_logbook(f"🚨 [GUARDIAN ALERT] {eval_result}: {news.headline} ({symbols_in_news})")
-                            now = datetime.now(timezone.utc)
-                            for sym in symbols_in_news:
-                                self.alert_states[sym] = {"type": eval_result, "timestamp": now}
+                            if eval_result != "IGNORE":
+                                logger.critical(f"[GUARDIAN ALERT] {eval_result} detected for {symbols_in_news}!")
+                                WSTradeLogger.write_logbook(f"🚨 [GUARDIAN ALERT] {eval_result}: {news.headline} ({symbols_in_news})")
+                                now = datetime.now(timezone.utc)
+                                for sym in symbols_in_news:
+                                    self.alert_states[sym] = {"type": eval_result, "timestamp": now}
+                        except Exception as e:
+                            from utils.error_handler import log_system_error
+                            log_system_error("WebSocket News", e, "Processing incoming news headline")
                     
                     # Subscribe to news for all target symbols
                     news_stream.subscribe_news(news_handler, *[s.replace("USD", "") for s in self.target_symbols] + self.target_symbols)

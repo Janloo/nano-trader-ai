@@ -417,7 +417,11 @@ def main():
         if args.loop:
             logger.info(f"Starting DAS bot in loop mode. Interval: {args.interval}s.")
             while True:
-                run_iteration(client, selector, executor, args.dry_run)
+                try:
+                    run_iteration(client, selector, executor, args.dry_run)
+                except Exception as e:
+                    from utils.error_handler import log_system_error
+                    log_system_error("Main Macro Loop", e, "Running DAS iteration")
                 logger.info(f"Sleeping for {args.interval} seconds...")
                 time.sleep(args.interval)
         else:
