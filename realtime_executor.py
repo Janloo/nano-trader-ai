@@ -807,10 +807,13 @@ class RealtimeExecutor:
             buying_power = 10000.0 # fallback
             
         from risk_management.position_sizer import PositionSizer
-        size_usd = PositionSizer.calculate_position_size(
-            symbol, price, sentiment_score, atr, risk_config,
-            total_equity, buying_power, NOTIONAL_USD
-        )
+        if risk_config.get("hft_mode", False):
+            size_usd = NOTIONAL_USD
+        else:
+            size_usd = PositionSizer.calculate_position_size(
+                symbol, price, sentiment_score, atr, risk_config,
+                total_equity, buying_power, NOTIONAL_USD
+            )
 
         # Apply MTF Confluence multiplier (0.5 if macro trend is DOWN, else 1.0)
         if mtf_size_multiplier != 1.0:
