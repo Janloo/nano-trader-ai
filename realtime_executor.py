@@ -551,7 +551,6 @@ class RealtimeExecutor:
         self.correlation_engine = CrossAssetCorrelationEngine(window=30, min_correlation=0.65)
         self.alert_states: Dict[str, dict] = {}
         self._last_trailing_check = datetime.now(timezone.utc)
-        self._global_buy_cooldown_until = 0.0
         self._shadow_last_order_time: Dict[str, datetime] = {}
         # MTF Confluence Cache: {symbol: {"trend": "UP"/"DOWN"/"NEUTRAL", "fetched_at": datetime}}
         self._mtf_trend_cache: Dict[str, dict] = {}
@@ -725,10 +724,6 @@ class RealtimeExecutor:
                        bias_info: Dict, is_short: bool = False, atr: float = 0.0) -> Optional[str]:
         """Places a Bracket Order with dynamic TP/SL."""
         risk_config = RiskConfigReader.read()
-        
-        if not is_short and time.time() < self._global_buy_cooldown_until:
-            logger.info(f"[WS] Skipping BUY for {symbol} due to global cooldown.")
-            return None
 
         sentiment_score = bias_info.get("sentiment_score", 0.0)
         reasoning = bias_info.get("reasoning", "")
@@ -843,8 +838,6 @@ class RealtimeExecutor:
                 available_cash_for_trading = buying_power - min_cash_usd
                 if available_cash_for_trading <= 0:
                     logger.warning(f"[WS] Cash Reserve limit reached (Available: ${buying_power:.2f}, Min Req: ${min_cash_usd:.2f})")
-                    self._global_buy_cooldown_until = time.time() + 1800
-                    WSTradeLogger.write_logbook("[API WARNING] Riserva Cash Intoccabile raggiunta! Acquisti in pausa.")
                     return None
                     
                 if size_usd > available_cash_for_trading:
@@ -855,8 +848,6 @@ class RealtimeExecutor:
                     available_crypto = max_crypto_usd - current_crypto_value
                     if available_crypto <= 0:
                         logger.warning(f"[WS] Global Crypto limit reached (Current: ${current_crypto_value:.2f}, Max: ${max_crypto_usd:.2f})")
-                        self._global_buy_cooldown_until = time.time() + 1800
-                        WSTradeLogger.write_logbook("[API WARNING] Tetto massimo Crypto raggiunto! Acquisti in pausa.")
                         return None
                     if size_usd > available_crypto:
                         size_usd = available_crypto
@@ -864,8 +855,6 @@ class RealtimeExecutor:
                     available_stocks = max_stocks_usd - current_stocks_value
                     if available_stocks <= 0:
                         logger.warning(f"[WS] Global Stocks limit reached (Current: ${current_stocks_value:.2f}, Max: ${max_stocks_usd:.2f})")
-                        self._global_buy_cooldown_until = time.time() + 1800
-                        WSTradeLogger.write_logbook("[API WARNING] Tetto massimo Azioni raggiunto! Acquisti in pausa.")
                         return None
                     if size_usd > available_stocks:
                         size_usd = available_stocks
@@ -879,8 +868,6 @@ class RealtimeExecutor:
                 size_usd = buying_power * 0.95  # Leave 5% buffer
             if size_usd < 10.0:
                 logger.warning(f"[WS] Insufficient balance for {symbol} (Requires > $10, Available: ${buying_power:.2f})")
-                self._global_buy_cooldown_until = time.time() + 3600
-                WSTradeLogger.write_logbook("[API WARNING] Liquidità esaurita! Acquisti in pausa per 1 ora.")
                 return None
 
         # Check max open positions (anti-spam) and apply Martingale scaling
@@ -1283,18 +1270,19 @@ class RealtimeExecutor:
             stock_buy_condition = not is_crypto and dip_pct is not None and bias == "BULLISH" and sentiment_score >= 0.75
             
             if crypto_buy_condition or stock_buy_condition:
-                if is_crypto and rsi > 45:
-                    logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>45). Skipping CRYPTO BUY to wait for oversold momentum.")
-                    return
-                elif not is_crypto and rsi > 70:
-                    logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping STOCK BUY to avoid overbought entry.")
-                    return
-
-                # === Momentum Acceleration Filter ===
-                if risk_config.get("strategy_momentum_filter_enabled", True):
-                    if not self.momentum_filter.should_allow_buy(symbol):
-                        WSTradeLogger.log_trigger(symbol, price, dip_pct or 0.0, "MOMENTUM_BLOCK", 0.0, "Momentum still accelerating downward", "", False)
+                if not risk_config.get("hft_mode", False):
+                    if is_crypto and rsi > 45:
+                        logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>45). Skipping CRYPTO BUY to wait for oversold momentum.")
                         return
+                    elif not is_crypto and rsi > 70:
+                        logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping STOCK BUY to avoid overbought entry.")
+                        return
+
+                    # === Momentum Acceleration Filter ===
+                    if risk_config.get("strategy_momentum_filter_enabled", True):
+                        if not self.momentum_filter.should_allow_buy(symbol):
+                            WSTradeLogger.log_trigger(symbol, price, dip_pct or 0.0, "MOMENTUM_BLOCK", 0.0, "Momentum still accelerating downward", "", False)
+                            return
 
                 # === Multi-TF RSI Confluence Boost ===
                 mtf_score, mtf_desc = self.indicator_mgr.get_mtf_rsi_confluence(symbol)
@@ -1370,7 +1358,7 @@ class RealtimeExecutor:
             vwap_signal = self.vwap_strategy.check_signal(symbol, price, atr=atr, rsi=rsi)
             if vwap_signal == "VWAP_BUY" and not self._is_on_cooldown(symbol):
                 momentum_ok = True
-                if risk_config.get("strategy_momentum_filter_enabled", True):
+                if risk_config.get("strategy_momentum_filter_enabled", True) and not risk_config.get("hft_mode", False):
                     momentum_ok = self.momentum_filter.should_allow_buy(symbol)
                 
                 if momentum_ok:

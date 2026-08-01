@@ -335,6 +335,22 @@ def run_iteration(
             )
         except Exception as e:
             logger.error(f"Failed to append to ai_analytics table: {e}")
+            
+        # Execute SWING Trade if actionable
+        if not dry_run and action in ["BUY", "SELL"]:
+            try:
+                current_price = _fetch_price(client, symbol, dry_run)
+                positions = client.get_positions()
+                decision_dict = {
+                    "action": action,
+                    "confidence": int(abs(sentiment_score) * 100),
+                    "sentiment_score": sentiment_score,
+                    "reasoning": reasoning_with_titles if 'reasoning_with_titles' in locals() else reasoning
+                }
+                logger.info(f"[SWING TRADER] Executing {action} for {symbol} based on macro AI bias.")
+                executor.execute_ai_decision(symbol, decision_dict, current_price, positions, titles if 'titles' in locals() else [])
+            except Exception as e:
+                logger.error(f"Failed to execute swing trade for {symbol}: {e}")
 
     # Write market_bias.json atomically (write to .tmp then replace)
     _write_market_bias(bias_assets, len(macro_articles))
