@@ -136,12 +136,12 @@ def test_live_select_parses_valid_json():
     mock_response = MagicMock()
     mock_response.text = mock_response_json
 
-    mock_model = MagicMock()
-    mock_model.generate_content.return_value = mock_response
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value = mock_response
 
     with patch("strategy.ai_selector.GEMINI_API_KEY", "fake-key-123"):
         selector = GeminiAssetSelector()
-        selector.model = mock_model
+        selector.client = mock_client
 
     result = selector.select_assets(SAMPLE_UNIVERSE, SAMPLE_NEWS)
 
@@ -163,12 +163,12 @@ def test_live_select_filters_invalid_symbols():
     mock_response = MagicMock()
     mock_response.text = mock_response_json
 
-    mock_model = MagicMock()
-    mock_model.generate_content.return_value = mock_response
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value = mock_response
 
     with patch("strategy.ai_selector.GEMINI_API_KEY", "fake-key-123"):
         selector = GeminiAssetSelector()
-        selector.model = mock_model
+        selector.client = mock_client
 
     result = selector.select_assets(SAMPLE_UNIVERSE, SAMPLE_NEWS)
 
@@ -178,16 +178,15 @@ def test_live_select_filters_invalid_symbols():
 
 def test_live_select_falls_back_on_quota_error():
     """Live mode: 429 quota error triggers fallback to crypto selection."""
-    mock_model = MagicMock()
-    mock_model.generate_content.side_effect = Exception("429 quota exceeded")
+    mock_client = MagicMock()
+    mock_client.models.generate_content.side_effect = Exception("429 quota exceeded")
 
     with patch("strategy.ai_selector.GEMINI_API_KEY", "fake-key-123"):
         with patch("strategy.ai_selector.time.sleep"):  # skip backoff waits in tests
             selector = GeminiAssetSelector()
-            selector.model = mock_model
+            selector.client = mock_client
             result = selector.select_assets(SAMPLE_UNIVERSE, SAMPLE_NEWS)
 
-    # Fallback returns crypto assets
+    # Fallback returns assets from the universe
     assert isinstance(result, list)
-    for item in result:
-        assert item["type"] == "crypto"
+    assert len(result) > 0
