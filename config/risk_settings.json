@@ -3,6 +3,7 @@
     "max_risk_per_trade_pct": 0.02,
     "max_open_positions_per_asset": 1,
     "atr_stop_loss_multiplier": 2,
+    "hft_budget_pct": 0.20,
     "global_max_stocks_pct": 1.0,
     "global_max_crypto_pct": 1.0,
     "global_min_cash_pct": 0,

@@ -83,12 +83,37 @@ class AITrader:
                 self.log_ai_analytics(symbol, current_price, raw_news_titles, ai_decision, False, "Position already exists")
                 return None
                 
-            logger.info(
-                f"[{symbol} AI Trader] Executing BUY order of $5.00 for {symbol} "
-                f"(Sentiment: {sentiment_score:.2f}, Confidence: {confidence}%)"
-            )
-            
             try:
+                # Calculate Slow Trader Budget
+                import json
+                import os
+                risk_config = {}
+                try:
+                    with open(os.path.join("config", "risk_settings.json"), "r") as f:
+                        risk_config = json.load(f)
+                except Exception:
+                    pass
+                
+                hft_pct = risk_config.get("hft_budget_pct", 0.0)
+                max_capital_pct = risk_config.get("max_capital_per_trade_pct", 0.05)
+                
+                account_equity = 100000.0  # Mock fallback
+                if self.client is not None:
+                    try:
+                        acc = self.client.get_account()
+                        account_equity = float(acc.equity)
+                    except Exception:
+                        pass
+                
+                # The slow trader cannot use the HFT budget
+                slow_equity = account_equity * (1.0 - hft_pct)
+                trade_size_usd = max(10.0, slow_equity * max_capital_pct)
+                
+                logger.info(
+                    f"[{symbol} AI Trader] Executing BUY order of ${trade_size_usd:.2f} for {symbol} "
+                    f"(Sentiment: {sentiment_score:.2f}, Confidence: {confidence}%)"
+                )
+
                 order_id = "mock-ai-buy-id"
                 order = None
                 order_symbol = symbol.replace("BTCUSD", "BTC/USD")
@@ -97,7 +122,7 @@ class AITrader:
                 if self.client is not None:
                     order_data = MarketOrderRequest(
                         symbol=order_symbol,
-                        notional=5.00,
+                        notional=round(trade_size_usd, 2),
                         side=OrderSide.BUY,
                         time_in_force=TimeInForce.DAY
                     )
@@ -106,7 +131,7 @@ class AITrader:
                 
                 # Fetch execution price and deduce fractional quantity
                 price = current_price
-                qty = 5.00 / current_price
+                qty = trade_size_usd / current_price
                 
                 if order and getattr(order, "filled_avg_price", None) is not None:
                     try:

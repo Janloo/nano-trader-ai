@@ -794,6 +794,13 @@ class RealtimeExecutor:
             account = self._trading_client.get_account()
             total_equity = float(account.equity)
             buying_power = float(account.buying_power)
+            
+            # --- Chinese Wall: Restrict HFT to its allocated budget ---
+            hft_budget_pct = risk_config.get("hft_budget_pct", 0.20)
+            if risk_config.get("hft_mode", False):
+                total_equity = total_equity * hft_budget_pct
+                buying_power = min(buying_power, total_equity)
+                
         except Exception as e:
             logger.warning(f"[WS] Failed to get account info: {e}")
             total_equity = 10000.0 # fallback
