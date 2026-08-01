@@ -98,18 +98,18 @@ class BiasReader:
 # ─────────────────────────────────────────────
 # RiskConfigReader
 # ─────────────────────────────────────────────
+from config.config_manager import config_manager, RiskSettings
+import dataclasses
+
 class RiskConfigReader:
     @staticmethod
     def read() -> Dict:
         try:
-            path = os.path.join("config", "risk_settings.json")
-            if not os.path.exists(path):
-                return {}
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            settings = config_manager.load_risk_settings()
+            return dataclasses.asdict(settings)
         except Exception as e:
-            logger.error(f"[WS] Error reading risk_settings.json: {e}")
-            return {}
+            logger.error(f"[CONFIG] Error reading risk config: {e}")
+            return dataclasses.asdict(RiskSettings())
 
 class RegimeConfigReader:
     @staticmethod
@@ -795,25 +795,22 @@ class RealtimeExecutor:
             total_equity = float(account.equity)
             buying_power = float(account.buying_power)
             
-            # --- Chinese Wall: Restrict HFT to its allocated budget ---
-            hft_budget_pct = risk_config.get("hft_budget_pct", 0.20)
-            if True:
-                total_equity = total_equity * hft_budget_pct
-                buying_power = min(buying_power, total_equity)
-                
+            # Budget logic moved to position_sizer.py
+
         except Exception as e:
             logger.warning(f"[WS] Failed to get account info: {e}")
             total_equity = 10000.0 # fallback
             buying_power = 10000.0 # fallback
             
         from risk_management.position_sizer import PositionSizer
-        if True:
-            size_usd = NOTIONAL_USD
-        else:
-            size_usd = PositionSizer.calculate_position_size(
-                symbol, price, sentiment_score, atr, risk_config,
-                total_equity, buying_power, NOTIONAL_USD
-            )
+        from config.config_manager import config_manager
+        
+        # Load typed config for position sizer
+        typed_config = config_manager.load_risk_settings()
+        
+        size_usd = PositionSizer.calculate_micro_size(
+            symbol, typed_config, total_equity, buying_power, NOTIONAL_USD
+        )
 
         # Apply MTF Confluence multiplier (0.5 if macro trend is DOWN, else 1.0)
         if mtf_size_multiplier != 1.0:

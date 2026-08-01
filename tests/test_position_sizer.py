@@ -1,75 +1,89 @@
 import unittest
-import sys
-import os
-
-# Add parent directory to path to import risk_management
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from unittest.mock import patch
 from risk_management.position_sizer import PositionSizer
+from config.config_manager import RiskSettings
 
 class TestPositionSizer(unittest.TestCase):
-    def test_kelly_fraction_positive(self):
-        # W = 0.55, R = 1.5 -> f = 0.55 - (0.45 / 1.5) = 0.55 - 0.30 = 0.25
-        f = PositionSizer.calculate_kelly_fraction(0.55, 1.5, multiplier=1.0)
-        self.assertAlmostEqual(f, 0.25)
-        
-        # With Half-Kelly multiplier
-        f_half = PositionSizer.calculate_kelly_fraction(0.55, 1.5, multiplier=0.5)
-        self.assertAlmostEqual(f_half, 0.125)
+    def setUp(self):
+        self.config = RiskSettings()
+        self.config.hft_budget_pct = 0.20
+        self.config.max_capital_per_trade_pct = 0.05
+        self.config.max_risk_per_trade_pct = 0.01
 
-    def test_kelly_fraction_negative_edge(self):
-        # W = 0.40, R = 1.0 -> f = 0.40 - (0.60 / 1.0) = -0.20 -> capped at 0.0
-        f = PositionSizer.calculate_kelly_fraction(0.40, 1.0)
+    def test_kelly_fraction_basic(self):
+        f = PositionSizer.calculate_kelly_fraction(win_rate=0.55, reward_risk_ratio=1.5, multiplier=1.0)
+        # f = 0.55 - (0.45 / 1.5) = 0.55 - 0.3 = 0.25
+        self.assertAlmostEqual(f, 0.25)
+
+    def test_kelly_fraction_no_edge(self):
+        # f = 0.4 - (0.6 / 1.0) = -0.2 -> 0.0
+        f = PositionSizer.calculate_kelly_fraction(win_rate=0.4, reward_risk_ratio=1.0)
         self.assertEqual(f, 0.0)
 
-    def test_calculate_position_size_atr(self):
-        risk_config = {
-            "max_capital_per_trade_pct": 0.1,
-            "max_risk_per_trade_pct": 0.02,
-            "atr_stop_loss_multiplier": 2.0,
-            "use_kelly_criterion": False
-        }
-        total_equity = 10000.0
-        buying_power = 10000.0
-        atr = 5.0
-        price = 100.0
+    @patch("risk_management.performance_tracker.get_live_stats")
+    def test_calculate_kelly_size_success(self, mock_get_live_stats):
+        # Force get_live_stats to fail or return insufficient data
+        mock_get_live_stats.return_value = {"sufficient_data": False}
         
-        # sl_distance = (5 * 2) / 100 = 0.10 (10%)
-        # risk_amount = 10000 * 0.02 = 200
-        # pos_size = 200 / 0.10 = 2000
-        # capped by max capital = 1000 (10% of bp) -> allocation = 1000
-        # modulation (sentiment=1.0) = 1.0
+        # 100k equity, 0.01 risk = 1k. 
+        # ATR=5, Price=100. SL distance = 5*2.0 / 100 = 0.1 (10%)
+        # Base Size = 1k / 0.1 = 10k.
+        # Max cap = 100k * 0.05 = 5k.
+        # Allocation = 5k.
+        # Kelly = 0.55, RR = 1.5 -> f = 0.25
+        # Kelly size = 5k * 0.25 = 1250
+        # Sentiment = 1.0 -> modulation = 1.0. Final = 1250
         
-        size = PositionSizer.calculate_position_size("AAPL", price, 1.0, atr, risk_config, total_equity, buying_power, 0)
-        self.assertEqual(size, 1000.0)
-        
-        # Test lower sentiment
-        # sentiment = 0.75 -> modulation = 0.5
-        size_low_sent = PositionSizer.calculate_position_size("AAPL", price, 0.75, atr, risk_config, total_equity, buying_power, 0)
-        self.assertEqual(size_low_sent, 500.0)
+        size = PositionSizer.calculate_kelly_size(
+            symbol="BTCUSD", price=100.0, sentiment_score=1.0, 
+            atr=5.0, config=self.config, 
+            total_equity=100000.0, buying_power=100000.0
+        )
+        self.assertAlmostEqual(size, 1250.0)
 
-    def test_calculate_position_size_with_kelly(self):
-        risk_config = {
-            "max_capital_per_trade_pct": 1.0, # no cap
-            "max_risk_per_trade_pct": 0.02,
-            "atr_stop_loss_multiplier": 2.0,
-            "use_kelly_criterion": True,
-            "kelly_fraction_multiplier": 0.5,
-            "historical_win_rate": 0.55,
-            "historical_reward_risk": 1.5
-        }
-        total_equity = 10000.0
-        buying_power = 10000.0
-        atr = 5.0
-        price = 100.0
-        
-        # Kelly fraction = 0.125 (from above)
-        # base allocation = 2000
-        # with Kelly = 2000 * 0.125 = 250
-        # sentiment 1.0 -> modulation 1.0 -> final = 250
-        
-        size = PositionSizer.calculate_position_size("AAPL", price, 1.0, atr, risk_config, total_equity, buying_power, 0)
-        self.assertAlmostEqual(size, 250.0)
+    def test_calculate_kelly_size_zero_equity(self):
+        size = PositionSizer.calculate_kelly_size(
+            symbol="BTCUSD", price=100.0, sentiment_score=1.0, 
+            atr=5.0, config=self.config, 
+            total_equity=0.0, buying_power=100000.0
+        )
+        self.assertEqual(size, 0.0)
 
-if __name__ == '__main__':
+    def test_calculate_kelly_size_insufficient_bp(self):
+        size = PositionSizer.calculate_kelly_size(
+            symbol="BTCUSD", price=100.0, sentiment_score=1.0, 
+            atr=5.0, config=self.config, 
+            total_equity=100000.0, buying_power=500.0
+        )
+        # Wanted 1250, only has 500. Should return 500.
+        self.assertAlmostEqual(size, 500.0)
+
+    def test_calculate_micro_size_basic(self):
+        # HFT Budget = 20k. Max size = 20k * 0.01 = 200.
+        # Notional = 10.0. Min is 10.0, max is 200. Should return 10.0.
+        size = PositionSizer.calculate_micro_size(
+            symbol="BTCUSD", config=self.config,
+            total_equity=100000.0, buying_power=100000.0, notional=10.0
+        )
+        self.assertEqual(size, 10.0)
+
+    def test_calculate_micro_size_insufficient_bp(self):
+        size = PositionSizer.calculate_micro_size(
+            symbol="BTCUSD", config=self.config,
+            total_equity=100000.0, buying_power=5.0, notional=10.0
+        )
+        # Cannot afford minimum 10.0
+        self.assertEqual(size, 0.0)
+
+    def test_calculate_micro_size_capped_by_hft_budget(self):
+        # If total equity is 500, HFT budget is 100.
+        # Max size = 1% of 100 = 1.0.
+        # 1.0 is less than 10.0, so it will cap at 1.0, but then fail the < 10.0 minimum check.
+        size = PositionSizer.calculate_micro_size(
+            symbol="BTCUSD", config=self.config,
+            total_equity=500.0, buying_power=500.0, notional=10.0
+        )
+        self.assertEqual(size, 0.0)
+
+if __name__ == "__main__":
     unittest.main()

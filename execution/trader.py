@@ -84,30 +84,34 @@ class AITrader:
                 return None
                 
             try:
-                # Calculate Slow Trader Budget
-                import json
-                import os
-                risk_config = {}
-                try:
-                    with open(os.path.join("config", "risk_settings.json"), "r") as f:
-                        risk_config = json.load(f)
-                except Exception:
-                    pass
+                from config.config_manager import config_manager
+                from risk_management.position_sizer import PositionSizer
                 
-                hft_pct = risk_config.get("hft_budget_pct", 0.0)
-                max_capital_pct = risk_config.get("max_capital_per_trade_pct", 0.05)
+                typed_config = config_manager.load_risk_settings()
                 
                 account_equity = 100000.0  # Mock fallback
+                buying_power = 100000.0
                 if self.client is not None:
                     try:
                         acc = self.client.get_account()
                         account_equity = float(acc.equity)
+                        buying_power = float(acc.buying_power)
                     except Exception:
                         pass
                 
                 # The slow trader cannot use the HFT budget
-                slow_equity = account_equity * (1.0 - hft_pct)
-                trade_size_usd = max(10.0, slow_equity * max_capital_pct)
+                slow_equity = account_equity * (1.0 - typed_config.hft_budget_pct)
+                
+                # We use ATR=0.0 as fallback for macro trades lacking ATR data
+                trade_size_usd = PositionSizer.calculate_kelly_size(
+                    symbol=symbol, price=current_price, sentiment_score=sentiment_score,
+                    atr=0.0, config=typed_config, total_equity=slow_equity, buying_power=buying_power
+                )
+                
+                if trade_size_usd <= 0.0:
+                    logger.warning(f"[{symbol} AI Trader] Position Sizer rejected the trade (0 allocation).")
+                    return None
+
                 
                 logger.info(
                     f"[{symbol} AI Trader] Executing BUY order of ${trade_size_usd:.2f} for {symbol} "

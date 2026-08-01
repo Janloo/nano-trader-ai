@@ -539,12 +539,12 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 risk_data = json.loads(post_data.decode('utf-8'))
                 
                 config_path = os.path.join("config", "risk_settings.json")
-                os.makedirs(os.path.dirname(config_path), exist_ok=True)
-                with open(config_path, "w", encoding="utf-8") as f:
+                temp_path = config_path + ".tmp"
+                with open(temp_path, 'w') as f:
                     json.dump(risk_data, f, indent=4)
-                    
-                logger.info("Risk settings updated from dashboard.")
+                os.replace(temp_path, config_path)
                 
+                logger.info("Risk settings updated from dashboard (atomic save).")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_cors_headers()

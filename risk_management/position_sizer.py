@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from config.config_manager import RiskSettings
 
 logger = logging.getLogger("nano-trader-ai")
 
@@ -31,72 +31,81 @@ class PositionSizer:
         return min(max(fraction, 0.0), 1.0)
 
     @classmethod
-    def calculate_position_size(cls, symbol: str, price: float, sentiment_score: float, 
-                                atr: float, risk_config: Dict, 
-                                total_equity: float, buying_power: float, 
-                                fallback_notional: float) -> float:
+    def calculate_kelly_size(cls, symbol: str, price: float, sentiment_score: float, 
+                             atr: float, config: RiskSettings, 
+                             total_equity: float, buying_power: float) -> float:
         """
-        Calculates the optimal USD position size using Volatility (ATR) and Kelly Criterion.
+        Calculates the optimal USD position size using Volatility (ATR) and Kelly Criterion for Swing Bot.
         """
         try:
-            max_capital_pct = risk_config.get("max_capital_per_trade_pct", 0.05)
-            max_risk_pct = risk_config.get("max_risk_per_trade_pct", 0.01)
-            atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
-            
-            # Kelly configs
-            use_kelly = risk_config.get("use_kelly_criterion", False)
-            kelly_mult = risk_config.get("kelly_fraction_multiplier", 0.5)
-            win_rate = risk_config.get("historical_win_rate", 0.55)
-            reward_risk = risk_config.get("historical_reward_risk", 1.5)
+            if total_equity <= 0 or buying_power <= 0:
+                return 0.0
+                
+            win_rate = config.historical_win_rate
+            reward_risk = config.historical_reward_risk
 
-            # Self-Adapting Kelly: override with REAL live stats if sufficient data exists
-            if use_kelly:
+            if config.use_kelly_criterion:
                 try:
                     from risk_management.performance_tracker import get_live_stats
                     live = get_live_stats()
                     if live.get("sufficient_data"):
                         win_rate = live["win_rate"]
                         reward_risk = live["reward_risk_ratio"]
-                        logger.info(f"[KELLY ADAPTIVE] Using live stats: WR={win_rate:.1%}, RR={reward_risk:.2f} ({live['total_trades']} trades)")
                 except Exception:
-                    pass  # Fall back to risk_settings.json values
+                    pass
             
             # 1. Volatility Scaling: Calculate stop loss distance based on ATR
             if atr > 0 and price > 0:
-                sl_distance_pct = (atr * atr_sl_mult) / price
+                sl_distance_pct = (atr * config.atr_stop_loss_multiplier) / price
             else:
                 sl_distance_pct = 0.015 # fallback 1.5% stop loss
                 
             # 2. Risk Amount ($)
-            risk_amount_usd = total_equity * max_risk_pct
+            risk_amount_usd = total_equity * config.max_risk_per_trade_pct
             
             # 3. Position Size ($) based on Risk and Volatility
             position_size_usd = risk_amount_usd / sl_distance_pct if sl_distance_pct > 0 else 0
             
-            # 4. Apply maximum capital cap (based on actual equity, not leveraged buying power)
-            max_capital_usd = total_equity * max_capital_pct
+            # 4. Apply maximum capital cap (based on actual equity)
+            max_capital_usd = total_equity * config.max_capital_per_trade_pct
             allocation = min(position_size_usd, max_capital_usd)
             
             # 5. Apply Kelly Criterion Modulation (if enabled)
-            if use_kelly:
-                kelly_fraction = cls.calculate_kelly_fraction(win_rate, reward_risk, multiplier=kelly_mult)
+            if config.use_kelly_criterion:
+                kelly_fraction = cls.calculate_kelly_fraction(win_rate, reward_risk, multiplier=config.kelly_fraction_multiplier)
                 if kelly_fraction <= 0:
                     logger.info(f"[RISK CALC] Kelly fraction is 0 (No edge). Rejecting trade for {symbol}.")
                     return 0.0
-                # Scale the allocation by the Kelly Fraction
                 allocation = allocation * kelly_fraction
             
             # 6. Modulate by sentiment score (0.75 -> 50% of allocation, 1.0 -> 100% of allocation)
             score_abs = min(max(abs(sentiment_score), 0.75), 1.0)
             modulation = 0.5 + 0.5 * ((score_abs - 0.75) / 0.25)
-            
             final_allocation = allocation * modulation
             
-            logger.info(f"[RISK CALC] {symbol} | Eq: ${total_equity:.2f} | SL: {sl_distance_pct*100:.2f}% | " 
-                        f"Base: ${position_size_usd:.2f} | Final: ${final_allocation:.2f}")
-            
-            return max(final_allocation, 10.50) # Alpaca minimum is $10 for crypto
+            # Ensure it fits buying power and is at least Alpaca minimum
+            final_allocation = min(final_allocation, buying_power)
+            if final_allocation < 10.50:
+                return 0.0 # Cannot afford minimum trade
+            return final_allocation
             
         except Exception as e:
             logger.error(f"[RISK CALC] Error calculating dynamic size: {e}")
-            return fallback_notional
+            return 0.0
+
+    @classmethod
+    def calculate_micro_size(cls, symbol: str, config: RiskSettings, total_equity: float, buying_power: float, notional: float = 10.0) -> float:
+        """
+        Calculates a static micro-size for the HFT Scalper Bot, strictly enforcing the Chinese Wall budget.
+        """
+        hft_equity = total_equity * config.hft_budget_pct
+        effective_buying_power = min(buying_power, hft_equity)
+        
+        # We enforce a hard limit: HFT size should not exceed 1% of the HFT budget to prevent rapid depletion
+        max_hft_size = hft_equity * 0.01
+        
+        size = min(notional, max_hft_size)
+        if size > effective_buying_power or size < 10.0: # 10.0 is Alpaca's crypto minimum roughly
+            return 0.0
+            
+        return size
