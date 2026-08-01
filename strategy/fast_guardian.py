@@ -16,7 +16,7 @@ class FastGuardian:
         else:
             logger.warning("[GUARDIAN] GEMINI_API_KEY not found in environment!")
             self.client = None
-        self.model_name = "gemini-2.0-flash"
+        self.model_name = "gemini-2.5-flash"
         
     def evaluate_headline(self, headline: str) -> str:
         """
