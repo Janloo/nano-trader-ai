@@ -797,7 +797,7 @@ class RealtimeExecutor:
             
             # --- Chinese Wall: Restrict HFT to its allocated budget ---
             hft_budget_pct = risk_config.get("hft_budget_pct", 0.20)
-            if risk_config.get("hft_mode", False):
+            if True:
                 total_equity = total_equity * hft_budget_pct
                 buying_power = min(buying_power, total_equity)
                 
@@ -807,7 +807,7 @@ class RealtimeExecutor:
             buying_power = 10000.0 # fallback
             
         from risk_management.position_sizer import PositionSizer
-        if risk_config.get("hft_mode", False):
+        if True:
             size_usd = NOTIONAL_USD
         else:
             size_usd = PositionSizer.calculate_position_size(
@@ -1280,7 +1280,7 @@ class RealtimeExecutor:
             stock_buy_condition = not is_crypto and dip_pct is not None and bias == "BULLISH" and sentiment_score >= 0.75
             
             if crypto_buy_condition or stock_buy_condition:
-                if not risk_config.get("hft_mode", False):
+                if not True:
                     if is_crypto and rsi > 45:
                         logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>45). Skipping CRYPTO BUY to wait for oversold momentum.")
                         return
@@ -1368,7 +1368,7 @@ class RealtimeExecutor:
             vwap_signal = self.vwap_strategy.check_signal(symbol, price, atr=atr, rsi=rsi)
             if vwap_signal == "VWAP_BUY" and not self._is_on_cooldown(symbol):
                 momentum_ok = True
-                if risk_config.get("strategy_momentum_filter_enabled", True) and not risk_config.get("hft_mode", False):
+                if risk_config.get("strategy_momentum_filter_enabled", True) and not True:
                     momentum_ok = self.momentum_filter.should_allow_buy(symbol)
                 
                 if momentum_ok:
