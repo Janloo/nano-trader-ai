@@ -45,5 +45,9 @@ class TestFastGuardian(unittest.TestCase):
         result = self.guardian.evaluate_headline("Some bad news")
         self.assertEqual(result, "CATACLYSM")
 
+    def test_model_version_is_current(self):
+        # We must not use gemini-2.0-flash-lite as it's deprecated.
+        self.assertEqual(self.guardian.model_name, "gemini-2.0-flash")
+
 if __name__ == '__main__':
     unittest.main()
