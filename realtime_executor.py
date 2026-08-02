@@ -809,7 +809,7 @@ class RealtimeExecutor:
         typed_config = config_manager.load_risk_settings()
         
         size_usd = PositionSizer.calculate_micro_size(
-            symbol, typed_config, total_equity, buying_power, NOTIONAL_USD
+            symbol, typed_config, total_equity, buying_power
         )
 
         # Apply MTF Confluence multiplier (0.5 if macro trend is DOWN, else 1.0)

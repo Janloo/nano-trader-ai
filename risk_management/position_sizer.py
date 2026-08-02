@@ -94,17 +94,16 @@ class PositionSizer:
             return 0.0
 
     @classmethod
-    def calculate_micro_size(cls, symbol: str, config: RiskSettings, total_equity: float, buying_power: float, notional: float = 10.0) -> float:
+    def calculate_micro_size(cls, symbol: str, config: RiskSettings, total_equity: float, buying_power: float, risk_fraction: float = 0.01) -> float:
         """
-        Calculates a static micro-size for the HFT Scalper Bot, strictly enforcing the Chinese Wall budget.
+        Calculates a dynamic micro-size for the HFT Scalper Bot, strictly enforcing the Chinese Wall budget.
         """
         hft_equity = total_equity * config.hft_budget_pct
         effective_buying_power = min(buying_power, hft_equity)
         
-        # We enforce a hard limit: HFT size should not exceed 1% of the HFT budget to prevent rapid depletion
-        max_hft_size = hft_equity * 0.01
+        # Calculate size based on a fraction of the HFT budget
+        size = hft_equity * risk_fraction
         
-        size = min(notional, max_hft_size)
         if size > effective_buying_power or size < 10.0: # 10.0 is Alpaca's crypto minimum roughly
             return 0.0
             

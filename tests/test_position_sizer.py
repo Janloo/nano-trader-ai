@@ -59,18 +59,17 @@ class TestPositionSizer(unittest.TestCase):
         self.assertAlmostEqual(size, 500.0)
 
     def test_calculate_micro_size_basic(self):
-        # HFT Budget = 20k. Max size = 20k * 0.01 = 200.
-        # Notional = 10.0. Min is 10.0, max is 200. Should return 10.0.
+        # HFT Budget = 20k. Risk fraction = 0.01 -> size = 20k * 0.01 = 200.
         size = PositionSizer.calculate_micro_size(
             symbol="BTCUSD", config=self.config,
-            total_equity=100000.0, buying_power=100000.0, notional=10.0
+            total_equity=100000.0, buying_power=100000.0, risk_fraction=0.01
         )
-        self.assertEqual(size, 10.0)
+        self.assertEqual(size, 200.0)
 
     def test_calculate_micro_size_insufficient_bp(self):
         size = PositionSizer.calculate_micro_size(
             symbol="BTCUSD", config=self.config,
-            total_equity=100000.0, buying_power=5.0, notional=10.0
+            total_equity=100000.0, buying_power=5.0, risk_fraction=0.01
         )
         # Cannot afford minimum 10.0
         self.assertEqual(size, 0.0)
@@ -78,10 +77,10 @@ class TestPositionSizer(unittest.TestCase):
     def test_calculate_micro_size_capped_by_hft_budget(self):
         # If total equity is 500, HFT budget is 100.
         # Max size = 1% of 100 = 1.0.
-        # 1.0 is less than 10.0, so it will cap at 1.0, but then fail the < 10.0 minimum check.
+        # 1.0 is less than 10.0 minimum check.
         size = PositionSizer.calculate_micro_size(
             symbol="BTCUSD", config=self.config,
-            total_equity=500.0, buying_power=500.0, notional=10.0
+            total_equity=500.0, buying_power=500.0, risk_fraction=0.01
         )
         self.assertEqual(size, 0.0)
 
