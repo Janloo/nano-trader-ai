@@ -95,4 +95,30 @@ class AlpacaClientWrapper:
 
     def submit_order(self, order_request: MarketOrderRequest) -> Order:
         """Submits an order to Alpaca."""
-        return self.trading_client.submit_order(order_request)
+        try:
+            return self.trading_client.submit_order(order_request)
+        except Exception as e:
+            error_msg = str(e)
+            if "minimal amount of order" in error_msg:
+                import re
+                match = re.search(r"minimal amount of order ([\d\.]+)", error_msg)
+                if match:
+                    min_req = float(match.group(1))
+                    new_size_usd = min_req * 1.05  # Pad by 5%
+                    logger.info(f"[AlpacaClient] Retrying {order_request.symbol} with dynamic minimum allowed size: ${new_size_usd:.2f}")
+                    
+                    if getattr(order_request, "notional", None) is not None:
+                        order_request.notional = round(new_size_usd, 2)
+                    elif getattr(order_request, "qty", None) is not None:
+                        # Attempt to derive price from limit_price if it's a LimitOrderRequest
+                        limit_price = getattr(order_request, "limit_price", None)
+                        if limit_price and float(limit_price) > 0:
+                            is_crypto = "/" in order_request.symbol or order_request.symbol.endswith("USD")
+                            new_qty = new_size_usd / float(limit_price)
+                            order_request.qty = round(new_qty, 4) if is_crypto else round(new_qty, 2)
+                        else:
+                            # We can't safely deduce the price if it's a market order with qty. Re-raise.
+                            raise e
+                    return self.trading_client.submit_order(order_request)
+            
+            raise e

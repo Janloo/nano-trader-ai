@@ -59,3 +59,40 @@ def test_alpaca_client_wrapper_methods(mock_news, mock_historical, mock_trading)
     instance_trading.submit_order.return_value = "mock_order"
     assert wrapper.submit_order("order_req") == "mock_order"
     instance_trading.submit_order.assert_called_once_with("order_req")
+
+@patch("client.alpaca_client.TradingClient")
+@patch("client.alpaca_client.StockHistoricalDataClient")
+@patch("client.alpaca_client.NewsClient")
+def test_submit_order_retry_on_minimal_amount(mock_news, mock_historical, mock_trading):
+    """Verify that submit_order automatically retries when hitting minimal amount error."""
+    instance_trading = mock_trading.return_value
+    wrapper = AlpacaClientWrapper()
+    
+    # Configure the mock to raise the specific error on the first call, then succeed on the second
+    error_mock = Exception("40010000: order notional 8.5 is less than the minimal amount of order 10.5")
+    success_mock = MagicMock(id="retry-order-123")
+    instance_trading.submit_order.side_effect = [error_mock, success_mock]
+    
+    from alpaca.trading.requests import MarketOrderRequest
+    from alpaca.trading.enums import OrderSide, TimeInForce
+    
+    # Create a request with notional that is too small
+    req = MarketOrderRequest(
+        symbol="SPY",
+        notional=8.5,
+        side=OrderSide.BUY,
+        time_in_force=TimeInForce.DAY
+    )
+    
+    # Call submit_order. It should catch the exception, adjust notional, and retry.
+    order = wrapper.submit_order(req)
+    
+    # Verify the order was returned correctly
+    assert order == success_mock
+    
+    # Verify submit_order was called exactly twice
+    assert instance_trading.submit_order.call_count == 2
+    
+    # Verify the second call modified the notional to 10.5 * 1.05 = 11.025 rounded to 11.03
+    retried_req = instance_trading.submit_order.call_args_list[1][0][0]
+    assert retried_req.notional == 11.03
