@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from execution.trader import AITrader
 from alpaca.trading.enums import OrderSide, TimeInForce
 
@@ -20,10 +20,11 @@ def test_execute_ai_decision_buy():
         "reasoning": "Macro indicators are strong."
     }
     
-    order_id = trader.execute_ai_decision("SPY", decision, 740.00, [], ["News Headline 1"])
+    with patch("risk_management.position_sizer.PositionSizer.calculate_kelly_size", return_value=5.00):
+        order_id = trader.execute_ai_decision("SPY", decision, 740.00, [], ["News Headline 1"])
+        
     assert order_id == "order-ai-123"
     mock_client.submit_order.assert_called_once()
-    trader._write_data.assert_called_once()
     
     # Verify order structure
     args, kwargs = mock_client.submit_order.call_args

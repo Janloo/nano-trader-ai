@@ -12,7 +12,7 @@ class GeminiSentimentStrategy(BaseStrategy):
         if not self.is_mocked:
             logger.info("Initializing Gemini API client wrapper.")
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel("gemini-2.5-flash")
+            self.model = genai.GenerativeModel("gemini-3.5-flash")
         else:
             logger.warning("No valid GEMINI_API_KEY found in .env. Running in MOCK sentiment analysis mode.")
 
@@ -74,7 +74,7 @@ class GeminiSentimentStrategy(BaseStrategy):
         for attempt in range(max_retries):
             try:
                 from strategy.ai_limiter import AILimiter, RateLimitExceededException
-                AILimiter.check_and_log("GeminiAssetAnalyzer", "gemini-2.5-flash")
+                AILimiter.check_and_log("GeminiAssetAnalyzer", "gemini-3.5-flash")
             except RateLimitExceededException:
                 logger.warning("[DAS] AI rate limit exceeded for Asset Analyzer. Falling back to HOLD.")
                 fallback = {}

@@ -190,3 +190,30 @@ def test_live_select_falls_back_on_quota_error():
     # Fallback returns assets from the universe
     assert isinstance(result, list)
     assert len(result) > 0
+
+
+def test_live_select_weekend_logic():
+    """Live mode: on weekends, the prompt must explicitly restrict to crypto."""
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({"selected_assets": []})
+    mock_client.models.generate_content.return_value = mock_response
+
+    with patch("strategy.ai_selector.GEMINI_API_KEY", "fake-key-123"):
+        selector = GeminiAssetSelector()
+        selector.client = mock_client
+
+    # Mock datetime to a Sunday (e.g., Aug 2, 2026)
+    from datetime import datetime, timezone
+    mock_now = datetime(2026, 8, 2, 12, 0, tzinfo=timezone.utc)
+    
+    with patch("strategy.ai_selector.datetime") as mock_dt:
+        mock_dt.now.return_value = mock_now
+        selector.select_assets(SAMPLE_UNIVERSE, SAMPLE_NEWS)
+        
+    # Check that the prompt sent to the model contains the weekend restriction
+    call_args = mock_client.models.generate_content.call_args
+    assert call_args is not None
+    prompt = call_args.kwargs.get("contents", "")
+    assert "The stock market is CLOSED" in prompt
+    assert "You MUST select ONLY 'crypto' assets" in prompt

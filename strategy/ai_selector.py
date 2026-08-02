@@ -56,7 +56,7 @@ class GeminiAssetSelector:
 
         if not self.is_mocked:
             self.client = genai.Client(api_key=self.api_key)
-            self.model_name = "gemini-2.5-flash"
+            self.model_name = "gemini-3.5-flash"
         else:
             logger.warning("[DAS] No GEMINI_API_KEY found. Running Asset Selector in MOCK mode.")
 
@@ -82,6 +82,18 @@ class GeminiAssetSelector:
             for a in universe_assets
         )
 
+        # Check if it's the weekend
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        is_weekend = now.weekday() >= 5
+        weekend_instruction = ""
+        if is_weekend:
+            current_day = now.strftime("%A")
+            weekend_instruction = (
+                f"\n\nCRITICAL: Today is {current_day} (Weekend). The stock market is CLOSED. "
+                "You MUST select ONLY 'crypto' assets! Do not select any 'equity' assets."
+            )
+
         system_prompt = (
             "You are a quantitative Portfolio Manager AI.\n"
             "Analyze the global macroeconomic and market news provided below.\n"
@@ -95,7 +107,8 @@ class GeminiAssetSelector:
             '    {"symbol": "BTCUSD", "sentiment_score": 0.85, "reasoning": "Institutional adoption surging."},\n'
             '    {"symbol": "NVDA",   "sentiment_score": 0.90, "reasoning": "Record earnings beat estimates."}\n'
             "  ]\n"
-            "}\n\n"
+            "}\n"
+            f"{weekend_instruction}\n\n"
             f"Available Universe:\n{universe_lines}"
         )
 

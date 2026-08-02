@@ -41,40 +41,32 @@ def test_update_feedback_loop_metrics():
     # Mock data logs path
     test_logs = [
         {
+            "id": 1,
             "timestamp": "2026-07-17T15:30:00.000000+00:00",
             "asset": "SPY",
             "price": 100.00,
-            "raw_news_titles": ["Test"],
-            "ai_raw_output": {},
-            "execution_success": True,
+            "raw_news_titles": '["Test"]',
+            "ai_raw_output": "{}",
+            "execution_success": 1,
             "error_details": "",
-            "feedback_loop_metric": {
-                "price_at_1h": None,
-                "price_at_4h": None,
-                "return_1h": None,
-                "return_4h": None
-            }
+            "return_1h": None,
+            "return_4h": None
         }
     ]
-    
-    with patch("os.path.exists", return_value=True), \
-         patch("builtins.open", mock_open(read_data=json.dumps(test_logs))) as mock_file, \
-         patch("json.dump") as mock_dump:
-         
+
+    with patch("data.db.get_ai_analytics_pending_feedback", return_value=test_logs), \
+         patch("data.db.update_ai_analytics_feedback") as mock_update:
+
          # Force datetime now to be in the future (older than 4 hours from trade time)
          with patch("execution.tracker.datetime") as mock_dt:
              mock_dt.now.return_value = datetime(2026, 7, 17, 21, 0, tzinfo=timezone.utc)
              mock_dt.fromisoformat = datetime.fromisoformat
-             
+
              update_feedback_loop_metrics(mock_client)
              
-             # Check that json dump was called to update values
-             assert mock_dump.called
-             args, kwargs = mock_dump.call_args
-             written_data = args[0]
-             
-             feedback = written_data[0]["feedback_loop_metric"]
-             assert feedback["price_at_1h"] == 105.00
-             assert feedback["return_1h"] == pytest.approx(5.0)
-             assert feedback["price_at_4h"] == 90.00
-             assert feedback["return_4h"] == pytest.approx(-10.0)
+             assert mock_update.called
+             args, _ = mock_update.call_args
+             # args = (analytics_id, ret_1h, ret_4h)
+             assert args[0] == 1
+             assert args[1] == pytest.approx(5.0)
+             assert args[2] == pytest.approx(-10.0)

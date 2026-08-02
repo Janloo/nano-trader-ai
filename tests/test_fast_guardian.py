@@ -47,7 +47,7 @@ class TestFastGuardian(unittest.TestCase):
 
     def test_model_version_is_current(self):
         # We must not use gemini-2.0-flash-lite as it's deprecated.
-        self.assertEqual(self.guardian.model_name, "gemini-2.5-flash")
+        self.assertEqual(self.guardian.model_name, "gemini-3.5-flash")
 
 if __name__ == '__main__':
     unittest.main()
