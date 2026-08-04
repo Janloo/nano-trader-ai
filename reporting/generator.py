@@ -479,6 +479,7 @@ def get_dashboard_data():
 
 def generate_dashboard():
     """Reads sqlite DB to auto-generate an interactive Control Room HTML dashboard."""
+    return  # Disabled to preserve static Dashboard HTML
     html_path = 'dashboard.html'
     data = get_dashboard_data()
     

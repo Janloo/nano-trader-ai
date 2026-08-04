@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NanoTrader AI - HFT Control Room</title>
+    <!-- Chart.js for Equity Curve -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600&display=swap');
+
+        :root {
+            --bg-color: #060913;
+            --panel-bg: rgba(14, 19, 36, 0.65);
+            --panel-border: rgba(43, 90, 255, 0.2);
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --accent-glow: rgba(43, 90, 255, 0.4);
+            --accent-primary: #3b82f6;
+            --accent-secondary: #0ea5e9;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warn-color: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Animated Background Gradients */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.05), transparent 60%),
+                        radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.08), transparent 40%);
+            animation: rotateBg 60s linear infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Glassmorphic Navbar */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(6, 9, 19, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--panel-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px var(--accent-glow);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .brand-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--success-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Main Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(43, 90, 255, 0.15);
+            border-color: rgba(43, 90, 255, 0.4);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 0.8rem;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--accent-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Squeeze Radar Specifics */
+        .squeeze-radar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 250px;
+            position: relative;
+        }
+
+        .radar-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255,255,255,0.1);
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.5s ease;
+        }
+        
+        .radar-inner {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.2), transparent);
+            border: 1px solid rgba(14, 165, 233, 0.5);
+            position: relative;
+        }
+
+        .radar-inner::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-secondary));
+            transform-origin: left;
+            animation: radarScan 4s linear infinite;
+        }
+
+        @keyframes radarScan {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .squeeze-status {
+            position: absolute;
+            bottom: 20px;
+            text-align: center;
+            width: 100%;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--warn-color);
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        /* Volume Engine */
+        .volume-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 200px;
+            gap: 4px;
+            padding: 10px 0;
+        }
+
+        .vol-bar {
+            flex: 1;
+            background: linear-gradient(to top, rgba(16, 185, 129, 0.2), var(--success-color));
+            border-radius: 4px 4px 0 0;
+            min-height: 10%;
+            transition: height 0.3s ease, background 0.3s ease;
+            position: relative;
+        }
+
+        .vol-bar.spike {
+            background: linear-gradient(to top, rgba(239, 68, 68, 0.2), var(--danger-color));
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+        }
+
+        /* Trade Logs Feed */
+        .feed-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .feed-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .feed-container::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid transparent;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-item.buy { border-left-color: var(--success-color); }
+        .log-item.sell { border-left-color: var(--danger-color); }
+        .log-item.tp { border-left-color: var(--accent-secondary); background: rgba(14, 165, 233, 0.1); }
+
+        .log-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .log-content {
+            flex: 1;
+            margin: 0 1rem;
+            font-size: 0.95rem;
+        }
+
+        .log-symbol {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            width: 100%;
+            height: 350px;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="brand-container">
+            <div class="brand-logo">N</div>
+            <div class="brand-text">NanoTrader AI</div>
+        </div>
+        <div class="nav-controls">
+            <div class="status-badge">
+                <div class="pulse-dot"></div>
+                Live Engine Active
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-grid">
+        <!-- Top Left: Equity Curve -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Portfolio Performance</div>
+                <div style="font-family: monospace; color: var(--success-color); font-size: 1.2rem;" id="equityValue">$0.00</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="equityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Right: Squeeze Radar -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Squeeze Radar</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">SOL/USD</div>
+            </div>
+            <div class="squeeze-radar-container">
+                <div class="radar-circle" id="bollingerBands">
+                    <div class="radar-inner"></div>
+                </div>
+                <div class="squeeze-status" id="squeezeStatus">SCANNING...</div>
+            </div>
+            <div style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+                Bandwidth: <span id="bandwidthValue" style="color: #fff;">0.000</span>
+            </div>
+        </div>
+
+        <!-- Bottom Left: Trade Feed -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">HFT Execution Feed</div>
+                <button onclick="clearLogs()" style="background: none; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 4px 10px; border-radius: 4px; cursor: pointer;">Clear</button>
+            </div>
+            <div class="feed-container" id="tradeFeed">
+                <!-- Logs will be injected here -->
+                <div class="log-item" style="opacity: 0.5; justify-content: center;">
+                    <em>Awaiting signals...</em>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Right: Volume Engine -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Volume Spikes</div>
+            </div>
+            <div class="volume-bars" id="volumeBars">
+                <!-- Bars injected by JS -->
+            </div>
+            <div style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+                Multiplier: <span id="volMultiplier" style="color: var(--danger-color); font-weight: bold;">1.0x</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Chart Initialization ---
+        const ctx = document.getElementById('equityChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+        const equityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Equity Curve',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false, color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }
+                },
+                interaction: { intersect: false, mode: 'index' }
+            }
+        });
+
+        // --- Mock Data Injection for Preview ---
+        
+        // Generate random volume bars
+        const volContainer = document.getElementById('volumeBars');
+        for(let i=0; i<30; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'vol-bar';
+            bar.style.height = `${Math.random() * 50 + 10}%`;
+            volContainer.appendChild(bar);
+        }
+
+        // Simulate Live Updates
+        setInterval(() => {
+            // Update Volume
+            const bars = document.getElementsByClassName('vol-bar');
+            for(let i=0; i<bars.length-1; i++) {
+                bars[i].style.height = bars[i+1].style.height;
+                bars[i].className = bars[i+1].className;
+            }
+            const newHeight = Math.random() * 60 + 10;
+            const isSpike = Math.random() > 0.9;
+            bars[bars.length-1].style.height = `${newHeight}%`;
+            bars[bars.length-1].className = isSpike ? 'vol-bar spike' : 'vol-bar';
+            if (isSpike) {
+                document.getElementById('volMultiplier').innerText = `${(Math.random() * 2 + 2).toFixed(1)}x`;
+            } else {
+                document.getElementById('volMultiplier').innerText = `1.${Math.floor(Math.random()*9)}x`;
+            }
+
+            // Update Squeeze Radar
+            const bandwidth = 0.001 + Math.random() * 0.01;
+            document.getElementById('bandwidthValue').innerText = bandwidth.toFixed(4);
+            const radar = document.getElementById('bollingerBands');
+            const status = document.getElementById('squeezeStatus');
+            
+            if(bandwidth < 0.002) {
+                radar.style.borderColor = 'var(--danger-color)';
+                radar.style.transform = 'scale(0.8)';
+                status.innerText = "SQUEEZE DETECTED";
+                status.style.color = 'var(--danger-color)';
+            } else {
+                radar.style.borderColor = 'rgba(255,255,255,0.1)';
+                radar.style.transform = 'scale(1)';
+                status.innerText = "NORMAL";
+                status.style.color = 'var(--warn-color)';
+            }
+        }, 1000);
+
+        // Fetch Live Data (Placeholder for actual API)
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update Equity Chart
+                    if (data.equity_curve && data.equity_curve.length > 0) {
+                        equityChart.data.labels = data.equity_curve.map(d => {
+                            // Extract just the time part if it's a date string
+                            const parts = d.date.split('T');
+                            return parts.length > 1 ? parts[1].substring(0, 8) : d.date;
+                        });
+                        equityChart.data.datasets[0].data = data.equity_curve.map(d => d.equity);
+                        equityChart.update();
+                        
+                        const latestEquity = data.equity_curve[data.equity_curve.length - 1].equity;
+                        document.getElementById('equityValue').innerText = `$${latestEquity.toFixed(2)}`;
+                    }
+
+                    // Process incoming logs
+                    if (data.recent_logs && data.recent_logs.length > 0) {
+                        const feed = document.getElementById('tradeFeed');
+                        // Optional: Clear or append
+                        // feed.innerHTML = ''; 
+                        data.recent_logs.slice(0, 15).forEach(log => {
+                            const item = document.createElement('div');
+                            item.className = 'log-item';
+                            if (log.toLowerCase().includes('buy')) item.classList.add('buy');
+                            else if (log.toLowerCase().includes('sell')) item.classList.add('sell');
+                            else if (log.toLowerCase().includes('profit')) item.classList.add('tp');
+                            
+                            const timeStr = new Date().toLocaleTimeString();
+                            item.innerHTML = `
+                                <span class="log-time">${timeStr}</span>
+                                <span class="log-content">${log}</span>
+                            `;
+                            // Prepend instead of append to show latest on top
+                            feed.insertBefore(item, feed.firstChild);
+                        });
+                        // Limit feed length
+                        while(feed.children.length > 50) {
+                            feed.removeChild(feed.lastChild);
+                        }
+                    }
+                }
+            } catch(e) {
+                console.log("Waiting for API server...");
+            }
+        }
+        
+        setInterval(updateDashboard, 5000);
+        updateDashboard();
+
+        function clearLogs() {
+            document.getElementById('tradeFeed').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

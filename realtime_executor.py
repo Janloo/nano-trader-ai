@@ -1478,14 +1478,8 @@ class RealtimeExecutor:
     def run(self, simulate: bool = False):
         """Starts the WebSocket stream or simulation loop and blocks indefinitely."""
         
-        bias_data = BiasReader.read()
-        target_assets = bias_data.get("target_assets", [])
-        
-        if not target_assets:
-            logger.warning("[WS] No targets found in AI bias. Falling back to default crypto targets.")
-            self.target_symbols = [s.upper() for s in self.symbols]
-        else:
-            self.target_symbols = [asset["symbol"].upper() for asset in target_assets]
+        # Force use of CLI symbols to override AI macro bias
+        self.target_symbols = [s.upper() for s in self.symbols]
 
         logger.info("=" * 60)
         logger.info("[WS] Starting Real-Time WebSocket Executor")
