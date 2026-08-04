@@ -19,11 +19,15 @@ class VirtualAccount:
         self.cash = initial_cash
 
 class VirtualPosition:
-    def __init__(self, symbol: str, qty: float, market_value: float, avg_entry_price: float):
+    def __init__(self, symbol, qty, market_value, avg_entry_price):
         self.symbol = symbol
         self.qty = str(qty)
         self.market_value = str(market_value)
         self.avg_entry_price = str(avg_entry_price)
+        self.asset_class = 'crypto'
+        
+    def __str__(self):
+        return f"{self.symbol}: {self.qty} @ {self.avg_entry_price}"
 
 class VirtualOrder:
     def __init__(self, order_id: str, symbol: str, qty: float, filled_avg_price: float, side: OrderSide):
@@ -34,22 +38,49 @@ class VirtualOrder:
         self.side = side
 
 class SimulatedAlpacaClient(AlpacaClientWrapper):
-    def __init__(self, initial_cash: float = 100000.0):
+    def __init__(self, data_loader, initial_cash: float = 10000.0):
         # Do NOT call super().__init__() because we don't want to initialize real Alpaca clients
+        self.data_loader = data_loader
         self.cash = initial_cash
         self.positions: Dict[str, Dict[str, float]] = {}  # symbol -> {'qty': float, 'avg_price': float}
-        self.data_loader = BacktestDataLoader()
+        self.orders = []
         self.current_time: Optional[datetime] = None
         
         # We need a way to get the "current price" of an asset at the simulated time.
         # This will be injected by the engine or fetched via data_loader.
         self.latest_prices: Dict[str, float] = {}
+        self._cache_bars = None
 
-    def set_simulated_time(self, current_time: datetime):
-        self.current_time = current_time
+    def set_historical_cache(self, df):
+        self._cache_bars = df
 
-    def set_latest_price(self, symbol: str, price: float):
-        self.latest_prices[symbol] = price
+    def set_simulated_time(self, timestamp, price_dict=None, high_dict=None, low_dict=None):
+        self.current_time = timestamp
+        if price_dict:
+            self.latest_prices.update(price_dict)
+            
+            # Check for TP/SL triggers
+            for sym, current_price in price_dict.items():
+                if sym in self.positions:
+                    pos = self.positions[sym]
+                    if pos['qty'] > 0:
+                        high_price = high_dict.get(sym, current_price) if high_dict else current_price
+                        low_price = low_dict.get(sym, current_price) if low_dict else current_price
+                        
+                        # TP hit
+                        if pos['tp'] is not None and high_price >= pos['tp']:
+                            self._execute_close(sym, pos['qty'], pos['tp'], "Take Profit")
+                        # SL hit
+                        elif pos['sl'] is not None and low_price <= pos['sl']:
+                            self._execute_close(sym, pos['qty'], pos['sl'], "Stop Loss")
+
+    def _execute_close(self, symbol, qty, price, reason):
+        logger.info(f"[Backtest] {reason} hit for {symbol}! Closing {qty:.4f} @ ${price:.2f}")
+        proceeds = qty * price
+        self.cash += proceeds
+        self.positions[symbol]['qty'] -= qty
+        if self.positions[symbol]['qty'] <= 1e-8:
+            del self.positions[symbol]
 
     def get_account_info(self) -> VirtualAccount:
         # Calculate total equity
@@ -72,9 +103,22 @@ class SimulatedAlpacaClient(AlpacaClientWrapper):
                 result.append(VirtualPosition(sym, pos['qty'], market_value, pos['avg_price']))
         return result
 
+    # Aliases for native TradingClient compatibility
+    def get_account(self) -> VirtualAccount:
+        return self.get_account_info()
+        
+    def get_all_positions(self) -> List[VirtualPosition]:
+        return self.get_positions()
+
     def get_historical_bars(self, symbols: List[str], timeframe, start: datetime, end: datetime = None) -> pd.DataFrame:
         if end is None:
             end = self.current_time
+        if getattr(self, '_cache_bars', None) is not None:
+            ts = self._cache_bars.index.get_level_values('timestamp')
+            # Assuming single symbol backtest, timestamps are monotonic
+            i1 = ts.searchsorted(start)
+            i2 = ts.searchsorted(end, side='right')
+            return self._cache_bars.iloc[i1:i2]
         return self.data_loader.get_historical_bars(symbols, timeframe, start, end)
 
     def get_news_articles(self, symbols: List[str], start: datetime, end: datetime = None, limit: int = 50) -> pd.DataFrame:
@@ -120,7 +164,15 @@ class SimulatedAlpacaClient(AlpacaClientWrapper):
             self.cash -= cost
             
             if symbol not in self.positions:
-                self.positions[symbol] = {'qty': 0.0, 'avg_price': 0.0}
+                self.positions[symbol] = {'qty': 0.0, 'avg_price': 0.0, 'tp': None, 'sl': None}
+                
+            # If bracket order, store tp and sl
+            tp = getattr(order_request, 'take_profit', None)
+            if tp:
+                self.positions[symbol]['tp'] = float(tp.limit_price)
+            sl = getattr(order_request, 'stop_loss', None)
+            if sl:
+                self.positions[symbol]['sl'] = float(sl.stop_price)
             
             old_qty = self.positions[symbol]['qty']
             old_cost = old_qty * self.positions[symbol]['avg_price']

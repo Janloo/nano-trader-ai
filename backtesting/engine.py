@@ -17,8 +17,8 @@ class BacktestEngine:
         self.end_date = end_date.replace(tzinfo=timezone.utc) if end_date.tzinfo is None else end_date
         self.current_time = self.start_date
         
-        self.broker = SimulatedAlpacaClient(initial_cash=initial_cash)
-        self.data_loader = self.broker.data_loader
+        self.data_loader = BacktestDataLoader()
+        self.broker = SimulatedAlpacaClient(self.data_loader, initial_cash=initial_cash)
         self.equity_curve: List[Dict[str, Any]] = []
         
         # We store original generate_content to call it on cache miss
@@ -111,16 +111,55 @@ class BacktestEngine:
         logger.info("Macro Swing Backtest Complete.")
         return self.equity_curve
 
-    def run_hft_scalper(self, symbols: List[str]):
+    def run_hft_scalper(self, symbols: List[str], hyperparameters: Dict[str, Any] = None):
         """Runs the HFT Scalper strategy using historical 1-minute bars."""
-        logger.info(f"Starting HFT Backtest from {self.start_date} to {self.end_date} on {symbols}")
+        logger.info(f"Starting HFT Backtest from {self.start_date} to {self.end_date} on {symbols} with params {hyperparameters}")
         
         from realtime_executor import RealtimeExecutor
         from alpaca.data.timeframe import TimeFrame
         
         executor = RealtimeExecutor(symbols)
-        # Inject the mock broker directly
+        
+        # Mock disk I/O to avoid extreme slowdowns during backtesting
+        from realtime_executor import WSTradeLogger
+        WSTradeLogger.log_price = lambda symbol, price, timestamp: None
+        
         executor._trading_client = self.broker
+        
+        # Inject hyperparameters
+        if hyperparameters:
+            if 'window_seconds' in hyperparameters:
+                executor.window_seconds = hyperparameters['window_seconds']
+            if 'dip_threshold_pct' in hyperparameters:
+                executor.dip_threshold_pct = hyperparameters['dip_threshold_pct']
+            if 'spike_threshold_pct' in hyperparameters:
+                executor.spike_threshold_pct = hyperparameters['spike_threshold_pct']
+            if 'rsi_threshold' in hyperparameters:
+                executor.rsi_threshold = hyperparameters['rsi_threshold']
+            if 'tp_multiplier' in hyperparameters:
+                mult = hyperparameters['tp_multiplier']
+                executor.trailing_mgr.trailing_pct *= mult
+                new_levels = []
+                for level in executor.trailing_mgr.escalator_levels:
+                    new_levels.append({
+                        "activation_pct": level["activation_pct"] * mult,
+                        "close_fraction": level["close_fraction"],
+                        "label": level["label"]
+                    })
+                executor.trailing_mgr.escalator_levels = new_levels
+            
+            # --- Momentum Breakout Parameters ---
+            if 'squeeze_threshold' in hyperparameters:
+                executor.bollinger_detector.squeeze_threshold_pct = hyperparameters['squeeze_threshold']
+            
+            if 'volume_multiplier' in hyperparameters:
+                # We will inject this temporarily onto the executor so on_bar can use it
+                executor.volume_spike_multiplier = hyperparameters['volume_multiplier']
+            
+            if 'tp_pct' in hyperparameters:
+                executor.crypto_micro_tp_pct = hyperparameters['tp_pct']
+            if 'imbalance_threshold' in hyperparameters and hasattr(executor, 'orderbook_analyzer'):
+                executor.orderbook_analyzer.imbalance_threshold = hyperparameters['imbalance_threshold']
         
         # Fetch 1-minute bars for the entire period
         minute_bars = self.broker.get_historical_bars(symbols, TimeFrame.Minute, self.start_date, self.end_date)
@@ -132,22 +171,44 @@ class BacktestEngine:
         # Convert multi-index dataframe to a flat list of dicts sorted by timestamp
         flat_bars = minute_bars.reset_index().sort_values(by='timestamp')
         
+        # Inject the historical cache into the broker to prevent expensive SQLite lookups per bar
+        self.broker.set_historical_cache(minute_bars)
+        
         class MockBar:
-            def __init__(self, symbol, close, timestamp):
+            def __init__(self, symbol, close, timestamp, high, low, volume):
                 self.symbol = symbol
                 self.close = close
                 self.timestamp = timestamp
+                self.high = high
+                self.low = low
+                self.volume = volume
         
-        for _, row in flat_bars.iterrows():
-            sym = row['symbol']
-            close = float(row['close'])
-            ts = row['timestamp']
+        # Optimize loop using itertuples instead of iterrows for massive speedup
+        for row in flat_bars.itertuples():
+            sym = row.symbol
+            bar_dict = {
+                't': row.timestamp.isoformat() if hasattr(row.timestamp, 'isoformat') else str(row.timestamp),
+                'o': row.open,
+                'h': row.high,
+                'l': row.low,
+                'c': row.close,
+                'v': row.volume,
+                'vw': getattr(row, 'vwap', row.close),
+                'n': getattr(row, 'trade_count', 0)
+            }
+            close = float(row.close)
+            ts = row.timestamp
             
             self.current_time = ts
-            self.broker.set_simulated_time(ts)
-            self.broker.set_latest_price(sym, close)
+            sym_clean = sym.replace("/", "")
+            self.broker.set_simulated_time(
+                ts, 
+                price_dict={sym_clean: close},
+                high_dict={sym_clean: row.high},
+                low_dict={sym_clean: row.low}
+            )
             
-            bar = MockBar(sym, close, ts)
+            bar = MockBar(sym, close, ts, row.high, row.low, row.volume)
             # Feed bar to executor
             try:
                 executor.on_bar(bar)

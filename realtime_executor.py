@@ -25,6 +25,7 @@ import threading
 import logging
 
 from config.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, logger
+from strategy.bollinger_squeeze import BollingerSqueezeDetector
 
 # Suppress noisy asyncio/websockets tracebacks during reconnections
 logging.getLogger("asyncio").setLevel(logging.CRITICAL)
@@ -232,17 +233,28 @@ class IndicatorManager:
         self._mtf_15m_closes: Dict[str, deque] = {}
         self._mtf_5m_buffer: Dict[str, list] = {}  # accumulate 5 x 1min closes
         self._mtf_15m_buffer: Dict[str, list] = {}  # accumulate 15 x 1min closes
+        self._ema_9: Dict[str, float] = {}
+        self._ema_21: Dict[str, float] = {}
+        self._volumes: Dict[str, deque] = {}
 
-    def update(self, symbol: str, high: float, low: float, close: float):
+    def update(self, symbol: str, high: float, low: float, close: float, volume: float = 0.0):
         if symbol not in self._bars:
             self._bars[symbol] = deque(maxlen=self.period + 1)
+            self._volumes[symbol] = deque(maxlen=self.period)
             self._rsi_history[symbol] = deque(maxlen=60)
             self._mtf_bar_counter[symbol] = 0
             self._mtf_5m_closes[symbol] = deque(maxlen=self.period + 1)
             self._mtf_15m_closes[symbol] = deque(maxlen=self.period + 1)
             self._mtf_5m_buffer[symbol] = []
             self._mtf_15m_buffer[symbol] = []
-        self._bars[symbol].append({"high": high, "low": low, "close": close})
+            self._ema_9[symbol] = close
+            self._ema_21[symbol] = close
+        self._bars[symbol].append({"high": high, "low": low, "close": close, "volume": volume})
+        self._volumes[symbol].append(volume)
+        
+        # Calculate EMA iteratively
+        self._ema_9[symbol] = (close - self._ema_9[symbol]) * (2 / (9 + 1)) + self._ema_9[symbol]
+        self._ema_21[symbol] = (close - self._ema_21[symbol]) * (2 / (21 + 1)) + self._ema_21[symbol]
         
         # Calculate and store RSI for history if we have enough bars
         rsi_val = self.get_rsi(symbol)
@@ -263,6 +275,23 @@ class IndicatorManager:
             avg_close = sum(self._mtf_15m_buffer[symbol]) / len(self._mtf_15m_buffer[symbol])
             self._mtf_15m_closes[symbol].append(avg_close)
             self._mtf_15m_buffer[symbol] = []
+
+    def get_ema(self, symbol: str, period: int) -> Optional[float]:
+        if period == 9:
+            return self._ema_9.get(symbol)
+        elif period == 21:
+            return self._ema_21.get(symbol, None)
+
+    def get_volume_sma(self, symbol: str) -> Optional[float]:
+        if symbol not in self._volumes or len(self._volumes[symbol]) == 0:
+            return None
+        return sum(self._volumes[symbol]) / len(self._volumes[symbol])
+
+    def is_volume_spike(self, symbol: str, current_volume: float, threshold: float = 2.0) -> bool:
+        sma = self.get_volume_sma(symbol)
+        if sma is None or sma == 0:
+            return False
+        return current_volume > (sma * threshold)
 
     def get_last_price(self, symbol: str) -> Optional[float]:
         if symbol in self._bars and len(self._bars[symbol]) > 0:
@@ -541,13 +570,15 @@ class RealtimeExecutor:
         from strategy.vwap_reversion import VWAPReversionStrategy
         from strategy.bollinger_squeeze import BollingerSqueezeDetector
         from strategy.correlation_engine import CrossAssetCorrelationEngine
+        from risk_management.volume_profile import VolumeProfileManager
         self.orderbook_analyzer = OrderBookAnalyzer(imbalance_threshold=3.0)
         self.trailing_mgr = TrailingTakeProfitManager(activation_pct=0.005, trailing_pct=0.002)
+        self.volume_profile_mgr = VolumeProfileManager(bucket_size=50.0)
         self.fast_guardian = FastGuardian()
         # New strategies
         self.momentum_filter = MomentumAccelerationFilter(fast_period=5, slow_period=10)
         self.vwap_strategy = VWAPReversionStrategy(max_bars=200, entry_atr_mult=0.5, exit_atr_mult=0.3)
-        self.bollinger_detector = BollingerSqueezeDetector(period=20, std_dev=2.0, squeeze_threshold_pct=0.5)
+        self.bollinger_detector = BollingerSqueezeDetector(period=20, std_dev=2.0, squeeze_threshold_pct=0.02)
         self.correlation_engine = CrossAssetCorrelationEngine(window=30, min_correlation=0.65)
         self.alert_states: Dict[str, dict] = {}
         self._last_trailing_check = datetime.now(timezone.utc)
@@ -556,6 +587,7 @@ class RealtimeExecutor:
         self._mtf_trend_cache: Dict[str, dict] = {}
         self._mtf_cache_ttl_seconds: int = 3600  # Refresh every hour
         self.panic_cooldown_until: float = 0.0
+        self._reversal_wait_states: Dict[str, dict] = {}
 
     def _check_market_panic(self) -> bool:
         """
@@ -658,7 +690,9 @@ class RealtimeExecutor:
         last = self._last_order_time.get(symbol)
         if last is None:
             return False
-        elapsed = (datetime.now(timezone.utc) - last).total_seconds()
+        
+        now_time = getattr(self, 'current_time', datetime.now(timezone.utc))
+        elapsed = (now_time - last).total_seconds()
         is_crypto = symbol.endswith("USD")
         cooldown_target = 15 if is_crypto else ORDER_COOLDOWN_SECONDS
         return elapsed < cooldown_target
@@ -721,7 +755,7 @@ class RealtimeExecutor:
             logger.error(f"[WS] Error in trailing stop manager: {e}")
 
     def _execute_order(self, symbol: str, price: float, change_pct: float,
-                       bias_info: Dict, is_short: bool = False, atr: float = 0.0) -> Optional[str]:
+                       bias_info: dict, is_short: bool = False, atr: float = 0.0) -> str:
         """Places a Bracket Order with dynamic TP/SL."""
         risk_config = RiskConfigReader.read()
 
@@ -808,9 +842,33 @@ class RealtimeExecutor:
         # Load typed config for position sizer
         typed_config = config_manager.load_risk_settings()
         
-        size_usd = PositionSizer.calculate_micro_size(
-            symbol, typed_config, total_equity, buying_power
-        )
+        if is_crypto:
+            # --- NEW STRATEGY: Fixed Risk Sizing (5% of Equity) ---
+            risk_pct = 0.05
+            risk_usd = total_equity * risk_pct
+            
+            bands = self.bollinger_detector._calc_bands(symbol)
+            if bands:
+                sma = bands["sma"]
+                # Stop loss is placed at SMA
+                distance = abs(price - sma)
+                dist_pct = distance / price if price > 0 else 0.01
+                
+                # Minimum distance clamp to avoid infinite size (e.g. 0.5%)
+                if dist_pct < 0.005:
+                    dist_pct = 0.005
+                    
+                size_usd = risk_usd / dist_pct
+                logger.info(f"[RISK MANAGER] Risk {risk_pct*100:.1f}% (${risk_usd:.2f}) with SL distance {dist_pct*100:.2f}%. Required Size: ${size_usd:.2f}")
+            else:
+                # Fallback
+                size_usd = PositionSizer.calculate_micro_size(
+                    symbol, typed_config, total_equity, buying_power
+                )
+        else:
+            size_usd = PositionSizer.calculate_micro_size(
+                symbol, typed_config, total_equity, buying_power
+            )
 
         # Apply MTF Confluence multiplier (0.5 if macro trend is DOWN, else 1.0)
         if mtf_size_multiplier != 1.0:
@@ -965,14 +1023,20 @@ class RealtimeExecutor:
                     atr_sl_mult = risk_config.get("atr_stop_loss_multiplier", 2.0)
 
                     if is_crypto:
-                        micro_tp_pct = risk_config.get("crypto_micro_tp_pct", 0.50) / 100.0
+                        base_tp = risk_config.get("crypto_micro_tp_pct", 0.50)
+                        micro_tp_pct = getattr(self, 'crypto_micro_tp_pct', base_tp) / 100.0
+                        
+                        # Fetch SMA for Stop Loss
+                        bands = self.bollinger_detector._calc_bands(symbol)
+                        sma_sl = bands["sma"] if bands else None
+                        
                         if is_short:
                             tp_price = round(price * (1.0 - micro_tp_pct), 2)
-                            sl_price = round(price * 1.05, 2) # Wide 5% SL for grid
+                            sl_price = round(sma_sl, 2) if sma_sl else round(price * 1.05, 2)
                             side = OrderSide.SELL
                         else:
                             tp_price = round(price * (1.0 + micro_tp_pct), 2)
-                            sl_price = round(price * 0.95, 2) # Wide 5% SL for grid
+                            sl_price = round(sma_sl, 2) if sma_sl else round(price * 0.95, 2)
                             side = OrderSide.BUY
                     else:
                         # Determine dynamic TP multiplier from regime if passed
@@ -1070,7 +1134,7 @@ class RealtimeExecutor:
             pass
 
         # Set cooldown
-        self._last_order_time[symbol] = datetime.now(timezone.utc)
+        self._last_order_time[symbol] = getattr(self, 'current_time', datetime.now(timezone.utc))
         return order_id
 
     def on_bar(self, bar):
@@ -1087,6 +1151,8 @@ class RealtimeExecutor:
         # Ensure timezone-aware
         if bar_time.tzinfo is None:
             bar_time = bar_time.replace(tzinfo=timezone.utc)
+            
+        self.current_time = bar_time
 
         # Confirmation Filter for High Alerts
         alert = self.alert_states.get(symbol)
@@ -1117,7 +1183,9 @@ class RealtimeExecutor:
         high = float(bar.high) if hasattr(bar, "high") else price
         low = float(bar.low) if hasattr(bar, "low") else price
         volume = float(bar.volume) if hasattr(bar, "volume") else 0.0
-        self.indicator_mgr.update(symbol, high, low, price)
+        self.indicator_mgr.update(symbol, high, low, price, volume=volume)
+        if volume > 0:
+            self.volume_profile_mgr.add_volume(symbol, price, volume)
 
         # Update new strategy modules
         self.momentum_filter.update(symbol, price)
@@ -1210,114 +1278,59 @@ class RealtimeExecutor:
             
         dip_pct = trailing_dip if alpha_smart_trailing else immediate_dip
 
-        if dip_pct is not None or spike_pct is not None:
-            if dip_pct is not None:
-                logger.info(f"[WS DIP] {symbol} dropped {dip_pct:.2f}% in {DIP_WINDOW_SECONDS}s. Price: ${price:.2f}")
-            if spike_pct is not None:
-                logger.info(f"[WS SPIKE] {symbol} jumped {spike_pct:.2f}% in {DIP_WINDOW_SECONDS}s. Price: ${price:.2f}")
-
+        # --- NEW STRATEGY: ALTCOIN MOMENTUM BREAKOUT (SOLUSD) ---
+        is_crypto = symbol.endswith("USD")
+        if is_crypto:
+            # We focus on Momentum Breakouts for Crypto
+            
             # Check cooldown
             if self._is_on_cooldown(symbol):
-                logger.info(f"[WS] {symbol} is on cooldown — skipping trigger.")
-                # Pass 0.0 for change_pct just to log
-                WSTradeLogger.log_trigger(symbol, price, dip_pct or spike_pct or 0.0, "COOLDOWN", 0.0, "Cooldown active", "", False)
                 return
 
-            # Read AI bias
             bias_info = BiasReader.get_bias_for_symbol(symbol)
             bias = bias_info.get("bias", "NEUTRAL")
-            sentiment_score = bias_info.get("sentiment_score", 0.0)
-
-            logger.info(f"[WS] {symbol} bias check: {bias} (score: {sentiment_score:.2f})")
-
-            # Logic 1: DIP + BULLISH = BUY (or just DIP for Crypto Scalping)
-            is_crypto = symbol.endswith("USD")
-            crypto_buy_condition = is_crypto and dip_pct is not None
-            stock_buy_condition = not is_crypto and dip_pct is not None and bias == "BULLISH" and sentiment_score >= 0.75
             
-            if crypto_buy_condition or stock_buy_condition:
-                if not True:
-                    if is_crypto and rsi > 45:
-                        logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>45). Skipping CRYPTO BUY to wait for oversold momentum.")
+            # 1. Update Bollinger Squeeze Detector and ask if we just broke out
+            self.bollinger_detector.update(symbol, price)
+            signal = self.bollinger_detector.check_signal(symbol, price)
+            
+            if signal == "SQUEEZE_BUY":
+                # 2. Check for Volume Spike Confirmation
+                vol_thresh = getattr(self, 'volume_spike_multiplier', 2.0)
+                if self.indicator_mgr.is_volume_spike(symbol, volume, threshold=vol_thresh):
+                    logger.info(f"[WS TRIGGER] CONFIRMED SQUEEZE BREAKOUT UP with Volume Spike for {symbol}! Triggering BUY.")
+                    WSTradeLogger.write_logbook(f"[MOMENTUM] Esplosione rialzista su {symbol} con Spike di Volumi. Esecuzione BUY (Leva).")
+                    
+                    # We pass the signal as 'dip_pct' argument just for logging signature compatibility
+                    self._execute_order(symbol, price, 0.0, bias_info, is_short=False, atr=atr)
+                else:
+                    logger.info(f"[WS FILTER] {symbol} broke out UP but volume ({volume}) was too low. Ignoring.")
+            
+            elif signal == "SQUEEZE_SHORT":
+                vol_thresh = getattr(self, 'volume_spike_multiplier', 2.0)
+                if self.indicator_mgr.is_volume_spike(symbol, volume, threshold=vol_thresh):
+                    logger.info(f"[WS TRIGGER] CONFIRMED SQUEEZE BREAKOUT DOWN with Volume Spike for {symbol}! Triggering SHORT.")
+                    WSTradeLogger.write_logbook(f"[MOMENTUM] Crollo ribassista su {symbol} con Spike di Volumi. Esecuzione SHORT (Leva).")
+                    
+                    self._execute_order(symbol, price, 0.0, bias_info, is_short=True, atr=atr)
+                else:
+                    logger.info(f"[WS FILTER] {symbol} broke out DOWN but volume ({volume}) was too low. Ignoring.")
+                    
+        else:
+            # Legacy Stock Logic (DIP)
+            if dip_pct is not None:
+                if self._is_on_cooldown(symbol):
+                    return
+                bias_info = BiasReader.get_bias_for_symbol(symbol)
+                bias = bias_info.get("bias", "NEUTRAL")
+                sentiment_score = bias_info.get("sentiment_score", 0.0)
+                
+                stock_buy_condition = bias == "BULLISH" and sentiment_score >= 0.75
+                if stock_buy_condition:
+                    if rsi > 70:
                         return
-                    elif not is_crypto and rsi > 70:
-                        logger.info(f"[WS FILTER] {symbol} RSI is {rsi:.2f} (>70). Skipping STOCK BUY to avoid overbought entry.")
-                        return
-
-                    # === Momentum Acceleration Filter ===
-                    if risk_config.get("strategy_momentum_filter_enabled", True):
-                        if not self.momentum_filter.should_allow_buy(symbol):
-                            WSTradeLogger.log_trigger(symbol, price, dip_pct or 0.0, "MOMENTUM_BLOCK", 0.0, "Momentum still accelerating downward", "", False)
-                            return
-
-                # === Multi-TF RSI Confluence Boost ===
-                mtf_score, mtf_desc = self.indicator_mgr.get_mtf_rsi_confluence(symbol)
-                if mtf_score > 0:
-                    logger.info(f"[MTF RSI] {symbol} {mtf_desc} — boosting position size")
-
-                # RSI Divergence Filter (The Holy Grail)
-                has_divergence = False
-                if is_crypto:
-                    has_divergence = self.indicator_mgr.detect_bullish_divergence(symbol)
-                    if has_divergence:
-                        logger.info(f"[WS DIVERGENCE] Bullish RSI Divergence detected for {symbol}! Prioritizing trade.")
-                        WSTradeLogger.write_logbook(f"[WS DIVERGENCE] Rilevata Divergenza Rialzista su {symbol}. Size potenziata.")
-
-                # MTF Confluence Filter (1H EMA50)
-                if is_crypto:
-                    mtf_trend = self._check_mtf_trend(symbol)
-                    bias_info = dict(bias_info)
-                    if has_divergence:
-                        logger.info(f"[MTF FILTER] {symbol} has divergence. Ignoring macro trend {mtf_trend} and assigning full size.")
-                        bias_info["_mtf_size_multiplier"] = 1.0
-                    else:
-                        if mtf_trend == "DOWN":
-                            logger.info(f"[MTF FILTER] {symbol} macro trend is DOWN (1H EMA50) without divergence. Halving position size.")
-                            bias_info["_mtf_size_multiplier"] = 0.5
-                        elif mtf_trend == "UP":
-                            logger.info(f"[MTF FILTER] {symbol} macro trend is UP (1H EMA50). Full size authorized.")
-
-                # === Apply MTF RSI Confluence multiplier ===
-                if mtf_score >= 2:
-                    bias_info = dict(bias_info)
-                    current_mult = bias_info.get("_mtf_size_multiplier", 1.0)
-                    bias_info["_mtf_size_multiplier"] = current_mult * 1.5
-                    logger.info(f"[MTF RSI] Triple confluence on {symbol}! Size boosted 1.5x")
-                elif mtf_score >= 1:
-                    bias_info = dict(bias_info)
-                    current_mult = bias_info.get("_mtf_size_multiplier", 1.0)
-                    bias_info["_mtf_size_multiplier"] = current_mult * 1.2
-                    logger.info(f"[MTF RSI] Double confluence on {symbol}! Size boosted 1.2x")
-
-                logger.info(f"[WS TRIGGER] DIP confirmed for {symbol}! Executing BUY order...")
-                self._execute_order(symbol, price, dip_pct, bias_info, is_short=False, atr=atr)
-
-                # === Cross-Asset Correlation Lead-Lag ===
-                if dip_pct is not None and risk_config.get("strategy_correlation_enabled", True):
-                    lag_signals = self.correlation_engine.get_lead_lag_signals(symbol, dip_pct)
-                    for sig in lag_signals:
-                        follower = sig["symbol"]
-                        if sig["direction"] == "BUY" and not self._is_on_cooldown(follower):
-                            follower_price = self.indicator_mgr.get_last_price(follower)
-                            follower_atr = self.indicator_mgr.get_atr(follower)
-                            if follower_price and follower_atr:
-                                follower_bias = BiasReader.get_bias_for_symbol(follower)
-                                logger.info(f"[CORRELATION TRIGGER] {symbol} dip → Anticipatory BUY on {follower} (corr: {sig['correlation']:.3f})")
-                                self._execute_order(follower, follower_price, dip_pct, follower_bias, is_short=False, atr=follower_atr)
-                                self._last_order_time[follower] = datetime.now(timezone.utc)
-            
-            # Logic 2: SPIKE + BEARISH = SHORT
-            elif spike_pct is not None and bias == "BEARISH" and sentiment_score <= -0.75:
-                logger.info(f"[WS TRIGGER] SPIKE + BEARISH confirmed for {symbol}! Executing SHORT order...")
-                self._execute_order(symbol, price, spike_pct, bias_info, is_short=True, atr=atr)
-            
-            else:
-                change = dip_pct if dip_pct is not None else spike_pct
-                logger.info(f"[WS] {symbol} fluctuation detected but bias is {bias} — ignoring.")
-                WSTradeLogger.log_trigger(
-                    symbol, price, change, bias, sentiment_score,
-                    bias_info.get("reasoning", ""), "", False
-                )
+                    logger.info(f"[WS TRIGGER] DIP confirmed for {symbol}! Executing BUY order...")
+                    self._execute_order(symbol, price, dip_pct, bias_info, is_short=False, atr=atr)
 
         # === VWAP Reversion Strategy (independent signal source) ===
         if risk_config.get("strategy_vwap_enabled", True):
@@ -1331,7 +1344,7 @@ class RealtimeExecutor:
                     bias_info = BiasReader.get_bias_for_symbol(symbol)
                     logger.info(f"[VWAP TRIGGER] Mean-reversion BUY on {symbol} at ${price:.2f}")
                     self._execute_order(symbol, price, 0.0, bias_info, is_short=False, atr=atr)
-                    self._last_order_time[symbol] = datetime.now(timezone.utc)
+                    self._last_order_time[symbol] = getattr(self, 'current_time', datetime.now(timezone.utc))
 
         # === Bollinger Squeeze Breakout (independent signal source) ===
         if risk_config.get("strategy_bollinger_enabled", True):
@@ -1345,14 +1358,14 @@ class RealtimeExecutor:
                     bias_info = BiasReader.get_bias_for_symbol(symbol)
                     logger.info(f"[BOLLINGER TRIGGER] Squeeze breakout BUY on {symbol} at ${price:.2f}")
                     self._execute_order(symbol, price, 0.0, bias_info, is_short=False, atr=atr)
-                    self._last_order_time[symbol] = datetime.now(timezone.utc)
+                    self._last_order_time[symbol] = getattr(self, 'current_time', datetime.now(timezone.utc))
             elif bb_signal == "SQUEEZE_SHORT":
                 bias_info = BiasReader.get_bias_for_symbol(symbol)
                 bias = bias_info.get("bias", "NEUTRAL")
                 if bias == "BEARISH" and not self._is_on_cooldown(symbol):
                     logger.info(f"[BOLLINGER TRIGGER] Squeeze breakout SHORT on {symbol} at ${price:.2f}")
                     self._execute_order(symbol, price, 0.0, bias_info, is_short=True, atr=atr)
-                    self._last_order_time[symbol] = datetime.now(timezone.utc)
+                    self._last_order_time[symbol] = getattr(self, 'current_time', datetime.now(timezone.utc))
 
     def on_stock_bar(self, bar):
         """

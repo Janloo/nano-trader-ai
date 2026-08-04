@@ -95,13 +95,18 @@ class BollingerSqueezeDetector:
         upper = bands["upper"]
         lower = bands["lower"]
         sma = bands["sma"]
+        std = bands["std"]
 
+        if not hasattr(self, '_armed_for_breakout'):
+            self._armed_for_breakout = {}
+            
         # Check if currently in squeeze
         is_squeezed = bandwidth < self.squeeze_threshold_pct
 
         if is_squeezed:
             self._squeeze_count[symbol] = self._squeeze_count.get(symbol, 0) + 1
             self._was_in_squeeze[symbol] = True
+            self._armed_for_breakout[symbol] = 0
             return None  # Still in squeeze, no signal yet
 
         # Check for breakout AFTER squeeze
@@ -109,27 +114,34 @@ class BollingerSqueezeDetector:
         squeeze_bars = self._squeeze_count.get(symbol, 0)
 
         if was_squeezed and squeeze_bars >= self.min_squeeze_bars:
-            # Squeeze just released — check direction
+            # Squeeze just released — arm for breakout for next 5 bars
             self._was_in_squeeze[symbol] = False
             self._squeeze_count[symbol] = 0
+            self._armed_for_breakout[symbol] = 5
 
-            if current_price > upper:
+        # Check if armed for breakout
+        if self._armed_for_breakout.get(symbol, 0) > 0:
+            self._armed_for_breakout[symbol] -= 1
+            
+            if current_price > sma + std:
+                self._armed_for_breakout[symbol] = 0
                 logger.info(
                     f"[BOLLINGER] {symbol} SQUEEZE BREAKOUT UP! "
-                    f"Price: ${current_price:.2f} > Upper: ${upper:.2f} "
-                    f"(Squeeze lasted {squeeze_bars} bars, BW: {bandwidth*100:.3f}%)"
+                    f"Price: ${current_price:.2f} > Upper/2: ${sma+std:.2f} "
+                    f"(BW: {bandwidth*100:.3f}%)"
                 )
                 return "SQUEEZE_BUY"
 
-            elif current_price < lower:
+            elif current_price < sma - std:
+                self._armed_for_breakout[symbol] = 0
                 logger.info(
                     f"[BOLLINGER] {symbol} SQUEEZE BREAKOUT DOWN! "
-                    f"Price: ${current_price:.2f} < Lower: ${lower:.2f} "
-                    f"(Squeeze lasted {squeeze_bars} bars, BW: {bandwidth*100:.3f}%)"
+                    f"Price: ${current_price:.2f} < Lower/2: ${sma-std:.2f} "
+                    f"(BW: {bandwidth*100:.3f}%)"
                 )
                 return "SQUEEZE_SHORT"
 
-        # Reset squeeze counter if not in squeeze and no breakout
+        # Reset squeeze counter if not in squeeze
         if not is_squeezed:
             self._squeeze_count[symbol] = 0
             self._was_in_squeeze[symbol] = False
