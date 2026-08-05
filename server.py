@@ -222,17 +222,15 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
 
         # Serve dashboard
         if clean_path in ["/", "/dashboard.html"]:
-            filepath = "dashboard.html"
-            if not os.path.exists(filepath):
-                self.send_error(404, "dashboard.html not found")
-                return
-            with open(filepath, "rb") as f:
-                content = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html")
-            self.send_cors_headers()
-            self.end_headers()
-            self._safe_write(content)
+            try:
+                rendered_html = render_template("dashboard.html")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.send_cors_headers()
+                self.end_headers()
+                self._safe_write(rendered_html)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
             return
 
         # Serve checkpoints
