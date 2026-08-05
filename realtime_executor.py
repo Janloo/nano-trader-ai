@@ -546,9 +546,9 @@ class WSTradeLogger:
             logger.error(f"[WS] Failed to log price history: {e}")
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# WebSocket Executor â€” Main process
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ————————————————————————————————————————————————
+# WebSocket Executor — Main process
+# ————————————————————————————————————————————————
 class RealtimeExecutor:
     """
     Connects to Alpaca CryptoDataStream, monitors prices, and executes
@@ -604,9 +604,9 @@ class RealtimeExecutor:
             return True
 
         risk_config = RiskConfigReader.read()
-        threshold_pct = risk_config.get("guardian_panic_threshold_pct", -0.30)
+        threshold_pct = risk_config.get("guardian_panic_threshold_pct", -1.20)
         required_count = risk_config.get("guardian_panic_asset_count", 3)
-        cooldown_min = risk_config.get("guardian_panic_cooldown_min", 5)
+        cooldown_min = risk_config.get("guardian_panic_cooldown_min", 3)
 
         panic_count = 0
         dipping_assets = []
@@ -1673,4 +1673,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

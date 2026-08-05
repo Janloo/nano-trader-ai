@@ -51,7 +51,13 @@ class AlpacaClientWrapper:
         is_crypto = any(c in symbol.upper() for c in ["BTC", "ETH", "SOL", "DOGE"]) or "/" in symbol
         
         if is_crypto:
-            mapped_symbols = [s.replace("BTCUSD", "BTC/USD") for s in symbols]
+            mapped_symbols = []
+            for s in symbols:
+                if "USD" in s and "/" not in s:
+                    mapped_symbols.append(s.replace("USD", "/USD"))
+                else:
+                    mapped_symbols.append(s)
+                    
             request_params = CryptoBarsRequest(
                 symbol_or_symbols=mapped_symbols,
                 timeframe=timeframe,

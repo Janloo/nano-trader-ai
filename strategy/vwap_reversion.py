@@ -59,7 +59,8 @@ class VWAPReversionStrategy:
         total_v = sum(v for _, v in data)
 
         if total_v <= 0:
-            return None
+            # Fallback to Simple Moving Average if volume is exactly 0
+            return sum(p for p, _ in data) / len(data)
 
         return total_pv / total_v
 
