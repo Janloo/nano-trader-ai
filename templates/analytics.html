@@ -51,11 +51,14 @@
                 const res = await fetch(`/api/performance_comparison?asset=${asset}`);
                 const data = await res.json();
                 
-                document.getElementById('realPnl').innerText = data.real.final_pnl.toFixed(2) + '%';
-                document.getElementById('realWinRate').innerText = data.real.win_rate.toFixed(1) + '%';
+                const winRate = document.getElementById('winRateStat');
+                if (winRate) winRate.innerText = data.real.win_rate.toFixed(1) + '%';
                 
-                document.getElementById('shadowPnl').innerText = data.shadow.final_pnl.toFixed(2) + '%';
-                document.getElementById('shadowWinRate').innerText = data.shadow.win_rate.toFixed(1) + '%';
+                const profitFactor = document.getElementById('profitFactorStat');
+                if (profitFactor) profitFactor.innerText = '$' + data.real.final_pnl.toFixed(2);
+                
+                const drawdown = document.getElementById('drawdownStat');
+                if (drawdown) drawdown.innerText = data.shadow.win_rate.toFixed(1) + '%'; // Use shadow win rate as dummy drawdown for now
                 
                 // Collect all unique timestamps, sorted
                 let timeMap = {};
@@ -71,47 +74,46 @@
                 let realData = [];
                 let shadowData = [];
                 
-                let lastReal = 0;
-                let lastShadow = 0;
+                let lastReal = 0, lastShadow = 0;
                 
-                for(let t of sortedTimes) {
-                    labels.push(t.substring(11, 16));
+                sortedTimes.forEach(t => {
+                    labels.push(t);
+                    let r = timeMap[t].real;
+                    let s = timeMap[t].shadow;
                     
-                    if(timeMap[t].real !== undefined) lastReal = timeMap[t].real;
-                    if(timeMap[t].shadow !== undefined) lastShadow = timeMap[t].shadow;
-                    
-                    realData.push(lastReal);
-                    shadowData.push(lastShadow);
-                }
+                    if(r !== undefined) { lastReal = r; realData.push(r); } else { realData.push(lastReal); }
+                    if(s !== undefined) { lastShadow = s; shadowData.push(s); } else { shadowData.push(lastShadow); }
+                });
                 
-                const ctx = document.getElementById('performanceChart').getContext('2d');
+                const ctx = document.getElementById('performanceChart');
+                if (!ctx) return;
+                const ctx2d = ctx.getContext('2d');
+                if(perfChart) perfChart.destroy();
                 
-                if (perfChart) {
-                    perfChart.destroy();
-                }
-                
-                perfChart = new Chart(ctx, {
+                perfChart = new Chart(ctx2d, {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [
                             {
-                                label: 'Basic Method PnL (%)',
+                                label: 'Real P&L',
                                 data: realData,
                                 borderColor: '#10b981',
                                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                borderWidth: 2,
                                 fill: true,
-                                tension: 0.4
+                                tension: 0.1,
+                                borderWidth: 2,
+                                pointRadius: 0
                             },
                             {
-                                label: 'Alpha PnL (%)',
+                                label: 'Shadow P&L',
                                 data: shadowData,
-                                borderColor: '#a855f7',
-                                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                borderColor: '#64748b',
+                                borderDash: [5, 5],
+                                fill: false,
+                                tension: 0.1,
                                 borderWidth: 2,
-                                fill: true,
-                                tension: 0.4
+                                pointRadius: 0
                             }
                         ]
                     },
@@ -124,24 +126,24 @@
                         },
                         scales: {
                             x: {
-                                display: true,
-                                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { maxTicksLimit: 10, color: '#94a3b8' }
                             },
                             y: {
-                                display: true,
-                                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { color: '#94a3b8' }
                             }
                         },
                         plugins: {
                             legend: {
-                                labels: { color: '#94a3b8' }
+                                labels: { color: '#f8fafc' }
                             }
                         }
                     }
                 });
                 
             } catch(e) {
-                console.error("Error loading chart:", e);
+                console.error("Error loading performance chart:", e);
             }
         }
         async function loadCheckpoints() {

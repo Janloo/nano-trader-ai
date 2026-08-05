@@ -1,50 +1,56 @@
-{% extends 'base.html' %}
-
-{% set active_page = 'hft_chart' %}
-
-{% block title %}NanoTrader AI - HFT Chart{% endblock %}
-
-{% block content %}
-<div style="padding: 20px; max-width: 1600px; margin: 0 auto;">
-    <div class="controls-bar" style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 10px 20px; border-radius: 8px; border: 1px solid var(--panel-border);">
-      <label style="color: var(--text-secondary);">Asset:</label>
-      <select id="sym-select" onchange="onSymChange()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-main); padding: 5px 10px; border-radius: 6px;">
-        <option value="BTCUSD">BTC/USD</option>
-        <option value="ETHUSD">ETH/USD</option>
-        <option value="DOGEUSD">DOGE/USD</option>
-        <option value="SOLUSD">SOL/USD</option>
-      </select>
-      <div style="width: 1px; height: 20px; background: var(--panel-border);"></div>
-      <label style="color: var(--text-secondary);">Ultimi bars:</label>
-      <input type="range" id="zoom-range" min="20" max="200" value="200" step="10" oninput="onZoom()" style="accent-color: var(--accent-blue);">
-      <span id="zoom-val" style="font-size:12px;color:var(--text-muted)">200</span>
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NanoTrader AI - HFT Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="brand-container">
+            <div class="brand-logo">N</div>
+            <div class="brand-text">NanoTrader AI</div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/analytics" class="nav-link ">Analytics</a>
+                <a href="/advanced-chart" class="nav-link ">Advanced Chart</a>
+                <a href="/hft-chart" class="nav-link active">HFT Chart</a>
+            </div>
+        </div>
+        <div class="nav-controls">
+            <div class="status-badge">
+                <div class="pulse-dot"></div>
+                Live Engine Active
+            </div>
+        </div>
+    </nav>
+    <div class="dashboard-grid" style="display: block; padding: 20px; max-width: 1600px; margin: 0 auto;">
+        
+        <div class="panel" style="margin-bottom: 20px;">
+            <div class="panel-header">
+                <div class="panel-title">High-Frequency Execution Chart (HFT)</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span id="loadingIndicator" style="color: var(--accent-blue); display: none;">Loading...</span>
+                    <button id="refreshBtn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-main); padding: 5px 10px; border-radius: 6px; cursor: pointer;">Refresh</button>
+                    <label style="color: var(--text-secondary); font-size: 0.9rem;"><input type="checkbox" id="autoRefresh" checked> Auto</label>
+                </div>
+            </div>
+            <div style="height: 600px; width: 100%;">
+                <canvas id="hftChart"></canvas>
+            </div>
+        </div>
+        
     </div>
-
-    <div class="legend" id="legend" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;"></div>
-
-    <div id="chart-wrap" style="position: relative; width: 100%; height: 500px; border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
-      <div id="chart" style="width: 100%; height: 100%;"></div>
-      <div id="tooltip" style="position: absolute; display: none; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--panel-border); border-radius: 4px; padding: 10px; color: var(--text-main); z-index: 1000; pointer-events: none; font-size: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);"></div>
-    </div>
-
-    <div id="stats-bar" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
-      <div class="panel" style="text-align: center;"><div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">Buy Eseguiti</div><div style="color: #10b981; font-size: 1.5rem; font-weight: bold;" id="s-buys">-</div><div style="color: var(--text-muted); font-size: 0.7rem;">ordini inviati</div></div>
-      <div class="panel" style="text-align: center;"><div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">Trailing TP Hit</div><div style="color: #06b6d4; font-size: 1.5rem; font-weight: bold;" id="s-trails">-</div><div style="color: var(--text-muted); font-size: 0.7rem;">chiusure trailing</div></div>
-      <div class="panel" style="text-align: center;"><div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">RSI Filter Block</div><div style="color: #f97316; font-size: 1.5rem; font-weight: bold;" id="s-rsi">-</div><div style="color: var(--text-muted); font-size: 0.7rem;">trade bloccati RSI</div></div>
-      <div class="panel" style="text-align: center;"><div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">L2 Aggr. DCA</div><div style="color: #a78bfa; font-size: 1.5rem; font-weight: bold;" id="s-l2">-</div><div style="color: var(--text-muted); font-size: 0.7rem;">x2.0 Bullish Wall</div></div>
-      <div class="panel" style="text-align: center;"><div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">MTF Filter</div><div style="color: #3b82f6; font-size: 1.5rem; font-weight: bold;" id="s-mtf">-</div><div style="color: var(--text-muted); font-size: 0.7rem;">filtri macro-trend</div></div>
-      <div class="panel" style="text-align: center;"><div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">DCA Layers</div><div style="color: #ec4899; font-size: 1.5rem; font-weight: bold;" id="s-dca">-</div><div style="color: var(--text-muted); font-size: 0.7rem;">smart DCA attivati</div></div>
-    </div>
-
-    <div class="panel">
-        <div id="events-feed" style="max-height: 400px; overflow-y: auto;"><div id="no-data" style="padding: 20px; text-align: center; color: var(--text-muted);">Caricamento...</div></div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-<script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+        <script>
 const MECHS=[
   {id:'buy',    label:'BUY Eseguito',       color:'#10b981'},
   {id:'sell',   label:'SELL / Scale-Out',   color:'#06b6d4'},
@@ -174,11 +180,11 @@ function renderMarkers(){
     if(active.has('dip')&&msg.includes('[WS DIP]')&&msg.includes(sym3))
       markers.push({time:ts,position:'belowBar',color:'#f59e0b',shape:'circle',text:'DIP',size:1});
     if(active.has('rsi')&&msg.includes('[WS FILTER]')&&msg.includes(sym3))
-      markers.push({time:ts,position:'belowBar',color:'#f97316',shape:'circle',text:'RSI✗',size:1});
+      markers.push({time:ts,position:'belowBar',color:'#f97316',shape:'circle',text:'RSIÔ£ù',size:1});
     if(active.has('trail')&&msg.includes('trailing activated')&&msg.includes(sym))
-      markers.push({time:ts,position:'aboveBar',color:'#8b5cf6',shape:'circle',text:'▲TRAIL',size:1});
+      markers.push({time:ts,position:'aboveBar',color:'#8b5cf6',shape:'circle',text:'Ôû▓TRAIL',size:1});
     if(active.has('trail')&&msg.includes('hit trail trigger')&&msg.includes(sym))
-      markers.push({time:ts,position:'aboveBar',color:'#06b6d4',shape:'circle',text:'⊗HIT',size:2});
+      markers.push({time:ts,position:'aboveBar',color:'#06b6d4',shape:'circle',text:'ÔèùHIT',size:2});
     if(active.has('dca')&&msg.includes('Smart DCA')&&msg.includes(sym))
       markers.push({time:ts,position:'belowBar',color:'#ec4899',shape:'circle',text:'DCA',size:1});
     if(active.has('l2')&&msg.includes('Bullish Wall')&&msg.includes(sym3))
@@ -211,7 +217,7 @@ function updateStats(){
 
 const TAG_META={
   '[WS TRIGGER]':   {label:'BUY',   bg:'rgba(16,185,129,.2)', color:'#10b981'},
-  '[WS FILTER]':    {label:'RSI✗',  bg:'rgba(249,115,22,.2)', color:'#f97316'},
+  '[WS FILTER]':    {label:'RSIÔ£ù',  bg:'rgba(249,115,22,.2)', color:'#f97316'},
   '[TRAILING TP]':  {label:'TRAIL', bg:'rgba(6,182,212,.2)',  color:'#06b6d4'},
   '[WS L2]':        {label:'L2',    bg:'rgba(139,92,246,.2)', color:'#8b5cf6'},
   '[MTF FILTER]':   {label:'MTF',   bg:'rgba(59,130,246,.2)', color:'#3b82f6'},
@@ -281,4 +287,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   setInterval(()=>loadData(),60000);
 });
 </script>
-{% endblock %}
+</body>
+</html>

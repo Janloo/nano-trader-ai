@@ -29,4 +29,58 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script>
+    let advChart = null;
+    
+    async function fetchChartData() {
+        const timeRange = document.getElementById('timeRange').value;
+        try {
+            const response = await fetch(`/api/portfolio-advanced?range=${timeRange}`);
+            if (response.ok) {
+                const data = await response.json();
+                
+                const labels = data.map(d => {
+                    const parts = d.timestamp.split('T');
+                    return parts.length > 1 ? parts[1].substring(0, 5) : d.timestamp;
+                });
+                const equityData = data.map(d => d.equity);
+                
+                const ctx = document.getElementById('advancedChart').getContext('2d');
+                if (advChart) advChart.destroy();
+                
+                advChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Portfolio Equity',
+                            data: equityData,
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#f8fafc' } }
+                        }
+                    }
+                });
+            }
+        } catch(e) {
+            console.error("Error loading advanced chart data", e);
+        }
+    }
+    
+    // Auto load on init
+    fetchChartData();
+</script>
 {% endblock %}
