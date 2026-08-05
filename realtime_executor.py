@@ -578,7 +578,10 @@ class RealtimeExecutor:
         # New strategies
         self.momentum_filter = MomentumAccelerationFilter(fast_period=5, slow_period=10)
         self.vwap_strategy = VWAPReversionStrategy(max_bars=200, entry_atr_mult=0.5, exit_atr_mult=0.3)
-        self.bollinger_detector = BollingerSqueezeDetector(period=20, std_dev=2.0, squeeze_threshold_pct=0.005)
+        from risk_management.risk_manager import RiskConfigReader
+        risk_config = RiskConfigReader.read()
+        squeeze_threshold = risk_config.get("squeeze_threshold_pct", 0.005)
+        self.bollinger_detector = BollingerSqueezeDetector(period=20, std_dev=2.0, squeeze_threshold_pct=squeeze_threshold)
         self.correlation_engine = CrossAssetCorrelationEngine(window=30, min_correlation=0.65)
         self.alert_states: Dict[str, dict] = {}
         self._last_trailing_check = datetime.now(timezone.utc)
@@ -1348,6 +1351,7 @@ class RealtimeExecutor:
 
         # === Bollinger Squeeze Breakout (independent signal source) ===
         if risk_config.get("strategy_bollinger_enabled", True):
+            self.bollinger_detector.squeeze_threshold_pct = risk_config.get("squeeze_threshold_pct", 0.005)
             bb_signal = self.bollinger_detector.check_signal(symbol, price)
             if bb_signal == "SQUEEZE_BUY" and not self._is_on_cooldown(symbol):
                 momentum_ok = True

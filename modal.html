@@ -1,0 +1,29 @@
+﻿    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Live Engine Settings</div>
+                <button class="close-btn" onclick="closeSettings()">&times;</button>
+            </div>
+            <div class="setting-group">
+                <label><input type="checkbox" id="set_vwap"> Enable VWAP Strategy</label>
+            </div>
+            <div class="setting-group">
+                <label>Bollinger Squeeze Threshold (%)</label>
+                <input type="number" id="set_squeeze" step="0.001" value="0.005">
+            </div>
+            <div class="setting-group">
+                <label>HFT Budget (%)</label>
+                <input type="number" id="set_hft_budget" step="0.01" value="0.4">
+            </div>
+            <div class="setting-group">
+                <label>ATR Stop Loss Multiplier</label>
+                <input type="number" id="set_sl_mult" step="0.1" value="2.0">
+            </div>
+            <div class="setting-group">
+                <label>Max Capital Per Trade (%)</label>
+                <input type="number" id="set_max_cap" step="0.01" value="0.05">
+            </div>
+            <button class="save-btn" onclick="saveSettings()">Apply Settings</button>
+        </div>
+    </div>

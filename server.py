@@ -47,6 +47,25 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
     def _do_GET_internal(self):
         clean_path = self.path.split("?")[0]
         
+        # Serve static files
+        if clean_path.startswith("/static/"):
+            filepath = clean_path.lstrip("/")
+            if not os.path.exists(filepath):
+                self.send_error(404, f"{filepath} not found")
+                return
+            try:
+                with open(filepath, "rb") as f:
+                    file_content = f.read()
+                self.send_response(200)
+                if filepath.endswith(".css"):
+                    self.send_header("Content-Type", "text/css")
+                self.send_cors_headers()
+                self.end_headers()
+                self._safe_write(file_content)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
+            return
+            
         # Serve analytics
         if clean_path == "/analytics":
             filepath = "analytics.html"
