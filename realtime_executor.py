@@ -578,7 +578,6 @@ class RealtimeExecutor:
         # New strategies
         self.momentum_filter = MomentumAccelerationFilter(fast_period=5, slow_period=10)
         self.vwap_strategy = VWAPReversionStrategy(max_bars=200, entry_atr_mult=0.5, exit_atr_mult=0.3)
-        from risk_management.risk_manager import RiskConfigReader
         risk_config = RiskConfigReader.read()
         squeeze_threshold = risk_config.get("squeeze_threshold_pct", 0.005)
         self.bollinger_detector = BollingerSqueezeDetector(period=20, std_dev=2.0, squeeze_threshold_pct=squeeze_threshold)
