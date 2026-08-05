@@ -1,35 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NanoTrader AI - HFT Chart</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/styles.css">
-    <style>
-        
-    </style>
-</head>
-<body>
-    <nav>
-        <div class="brand-container">
-            <div class="brand-logo">N</div>
-            <div class="brand-text">NanoTrader AI</div>
-            <div class="nav-links">
-                <a href="/" class="nav-link">Dashboard</a>
-                <a href="/analytics" class="nav-link ">Analytics</a>
-                <a href="/advanced-chart" class="nav-link ">Advanced Chart</a>
-                <a href="/hft-chart" class="nav-link active">HFT Chart</a>
-            </div>
-        </div>
-        <div class="nav-controls">
-            <div class="status-badge">
-                <div class="pulse-dot"></div>
-                Live Engine Active
-            </div>
-        </div>
-    </nav>
-    <div class="dashboard-grid" style="display: block; padding: 20px; max-width: 1600px; margin: 0 auto;">
+{% extends 'base.html' %}
+
+{% set active_page = 'hft_chart' %}
+
+{% block title %}NanoTrader AI - HFT Chart{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" style="display: block; padding: 20px; max-width: 1600px; margin: 0 auto;">
         
         <div class="panel" style="margin-bottom: 20px;">
             <div class="panel-header">
@@ -46,11 +22,10 @@
         </div>
         
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
-        <script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
 const MECHS=[
   {id:'buy',    label:'BUY Eseguito',       color:'#10b981'},
   {id:'sell',   label:'SELL / Scale-Out',   color:'#06b6d4'},
@@ -287,5 +262,4 @@ document.addEventListener('DOMContentLoaded',()=>{
   setInterval(()=>loadData(),60000);
 });
 </script>
-</body>
-</html>
+{% endblock %}

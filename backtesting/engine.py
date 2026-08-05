@@ -183,47 +183,53 @@ class BacktestEngine:
                 self.low = low
                 self.volume = volume
         
-        # Optimize loop using itertuples instead of iterrows for massive speedup
-        for row in flat_bars.itertuples():
-            sym = row.symbol
-            bar_dict = {
-                't': row.timestamp.isoformat() if hasattr(row.timestamp, 'isoformat') else str(row.timestamp),
-                'o': row.open,
-                'h': row.high,
-                'l': row.low,
-                'c': row.close,
-                'v': row.volume,
-                'vw': getattr(row, 'vwap', row.close),
-                'n': getattr(row, 'trade_count', 0)
-            }
-            close = float(row.close)
-            ts = row.timestamp
-            
-            self.current_time = ts
-            sym_clean = sym.replace("/", "")
-            self.broker.set_simulated_time(
-                ts, 
-                price_dict={sym_clean: close},
-                high_dict={sym_clean: row.high},
-                low_dict={sym_clean: row.low}
-            )
-            
-            bar = MockBar(sym, close, ts, row.high, row.low, row.volume)
-            # Feed bar to executor
-            try:
-                executor.on_bar(bar)
-            except Exception as e:
-                logger.error(f"Error processing HFT bar: {e}")
-            
-            # Record equity at the end of each day
-            if ts.hour == 23 and ts.minute == 59:
-                account = self.broker.get_account_info()
-                self.equity_curve.append({
-                    'date': ts.strftime("%Y-%m-%d"),
-                    'equity': float(account.equity),
-                    'cash': float(account.cash)
-                })
+        class MockDateTime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return self.current_time
+
+        with patch('realtime_executor.datetime', MockDateTime):
+            # Optimize loop using itertuples instead of iterrows for massive speedup
+            for row in flat_bars.itertuples():
+                sym = row.symbol
+                bar_dict = {
+                    't': row.timestamp.isoformat() if hasattr(row.timestamp, 'isoformat') else str(row.timestamp),
+                    'o': row.open,
+                    'h': row.high,
+                    'l': row.low,
+                    'c': row.close,
+                    'v': row.volume,
+                    'vw': getattr(row, 'vwap', row.close),
+                    'n': getattr(row, 'trade_count', 0)
+                }
+                close = float(row.close)
+                ts = row.timestamp
                 
+                self.current_time = ts
+                sym_clean = sym.replace("/", "")
+                self.broker.set_simulated_time(
+                    ts, 
+                    price_dict={sym_clean: close},
+                    high_dict={sym_clean: row.high},
+                    low_dict={sym_clean: row.low}
+                )
+                
+                bar = MockBar(sym, close, ts, row.high, row.low, row.volume)
+                # Feed bar to executor
+                try:
+                    executor.on_bar(bar)
+                except Exception as e:
+                    logger.error(f"Error processing HFT bar: {e}")
+                
+                # Record equity at the end of each day
+                if ts.hour == 23 and ts.minute == 59:
+                    account = self.broker.get_account_info()
+                    self.equity_curve.append({
+                        'date': ts.strftime("%Y-%m-%d"),
+                        'equity': float(account.equity),
+                        'cash': float(account.cash)
+                    })
+                    
         logger.info("HFT Scalper Backtest Complete.")
         return self.equity_curve
 

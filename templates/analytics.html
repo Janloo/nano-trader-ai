@@ -1,35 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NanoTrader AI - Analytics</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/styles.css">
-    <style>
-        .dashboard-grid { grid-template-columns: repeat(3, 1fr); }
-    </style>
-</head>
-<body>
-    <nav>
-        <div class="brand-container">
-            <div class="brand-logo">N</div>
-            <div class="brand-text">NanoTrader AI</div>
-            <div class="nav-links">
-                <a href="/" class="nav-link">Dashboard</a>
-                <a href="/analytics" class="nav-link active">Analytics</a>
-                <a href="/advanced-chart" class="nav-link ">Advanced Chart</a>
-                <a href="/hft-chart" class="nav-link ">HFT Chart</a>
-            </div>
-        </div>
-        <div class="nav-controls">
-            <div class="status-badge">
-                <div class="pulse-dot"></div>
-                Live Engine Active
-            </div>
-        </div>
-    </nav>
-    <div class="dashboard-grid" style="display: block; padding: 20px; max-width: 1600px; margin: 0 auto;">
+{% extends 'base.html' %}
+
+{% set active_page = 'analytics' %}
+
+{% block title %}NanoTrader AI - Analytics{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" style="display: block; padding: 20px; max-width: 1600px; margin: 0 auto;">
         
         <div class="panel" style="margin-bottom: 20px;">
             <div class="panel-header">
@@ -64,7 +40,10 @@
         </div>
         
     </div>
-    <script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
         let perfChart = null;
 
         async function loadPerformanceChart(asset) {
@@ -206,5 +185,4 @@
         loadPerformanceChart('ALL');
         loadCheckpoints();
     </script>
-</body>
-</html>
+{% endblock %}

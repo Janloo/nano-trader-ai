@@ -160,7 +160,7 @@ class SimulatedAlpacaClient(AlpacaClientWrapper):
         if side == OrderSide.BUY:
             cost = qty * price
             if cost > self.cash:
-                raise Exception("insufficient balance")
+                raise Exception(f"insufficient balance: cost {cost} > cash {self.cash} (qty: {qty}, price: {price})")
             self.cash -= cost
             
             if symbol not in self.positions:

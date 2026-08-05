@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% set active_page = 'advanced_chart' %}
+
+{% block title %}NanoTrader AI - Advanced Chart{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" style="display: block; padding: 20px; max-width: 1600px; margin: 0 auto;">
+        
+        <div class="panel" style="margin-bottom: 20px;">
+            <div class="panel-header">
+                <div class="panel-title">Advanced Price & Technicals</div>
+                <div>
+                    <select id="timeRange" onchange="fetchChartData()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-main); padding: 5px 10px; border-radius: 6px;">
+                        <option value="1h">1 Hour</option>
+                        <option value="4h">4 Hours</option>
+                        <option value="12h">12 Hours</option>
+                        <option value="24h" selected>24 Hours</option>
+                        <option value="7d">7 Days</option>
+                    </select>
+                </div>
+            </div>
+            <div style="height: 600px; width: 100%;">
+                <canvas id="advancedChart"></canvas>
+            </div>
+        </div>
+        
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% endblock %}

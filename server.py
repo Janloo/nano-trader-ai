@@ -2,8 +2,18 @@ import json
 import os
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from jinja2 import Environment, FileSystemLoader
 import threading
 from config.settings import logger
+
+
+# Setup Jinja2 environment
+templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
+jinja_env = Environment(loader=FileSystemLoader(templates_dir))
+
+def render_template(template_name, **context):
+    template = jinja_env.get_template(template_name)
+    return template.render(**context).encode('utf-8')
 
 class DashboardHTTPHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -68,10 +78,16 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             
         # Serve analytics
         if clean_path == "/analytics":
-            filepath = "analytics.html"
-            if not os.path.exists(filepath):
-                self.send_error(404, "analytics.html not found")
-                return
+            try:
+                rendered_html = render_template("analytics.html")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.send_cors_headers()
+                self.end_headers()
+                self._safe_write(rendered_html)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
+            return
             try:
                 with open(filepath, "rb") as f:
                     file_content = f.read()
@@ -86,10 +102,16 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             
         # Serve Advanced Chart
         if clean_path == "/advanced-chart":
-            filepath = "advanced_chart.html"
-            if not os.path.exists(filepath):
-                self.send_error(404, "advanced_chart.html not found")
-                return
+            try:
+                rendered_html = render_template("advanced_chart.html")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.send_cors_headers()
+                self.end_headers()
+                self._safe_write(rendered_html)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
+            return
             try:
                 with open(filepath, "rb") as f:
                     file_content = f.read()
@@ -122,10 +144,16 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 self.send_error(500, f"Server error: {e}")
             return
         if clean_path == "/hft-chart":
-            filepath = "hft_chart.html"
-            if not os.path.exists(filepath):
-                self.send_error(404, "hft_chart.html not found")
-                return
+            try:
+                rendered_html = render_template("hft_chart.html")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.send_cors_headers()
+                self.end_headers()
+                self._safe_write(rendered_html)
+            except Exception as e:
+                self.send_error(500, f"Server error: {e}")
+            return
             try:
                 with open(filepath, "rb") as f:
                     file_content = f.read()

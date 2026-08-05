@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-realtime_executor.py — Hybrid Async Architecture: Micro (Fast) Process
+realtime_executor.py â€” Hybrid Async Architecture: Micro (Fast) Process
 
 Connects to Alpaca's CryptoDataStream WebSocket and monitors real-time
 1-minute bars for DIP opportunities. When a DIP is detected and the
@@ -31,9 +31,9 @@ from strategy.bollinger_squeeze import BollingerSqueezeDetector
 logging.getLogger("asyncio").setLevel(logging.CRITICAL)
 logging.getLogger("websockets").setLevel(logging.CRITICAL)
 
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Configuration
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 DIP_THRESHOLD_PCT = -0.20      # Minimum % drop to trigger a DIP signal
 SPIKE_THRESHOLD_PCT = 0.20     # Minimum % rise to trigger a SPIKE signal
 DIP_WINDOW_SECONDS = 300      # 5-minute rolling window
@@ -47,9 +47,9 @@ WS_LOG_FILE = os.path.join("data", "state", "ws_triggers.json")
 LOGBOOK_FILE = os.path.join("data", "archives", "human_logbook.txt")
 
 
-# ─────────────────────────────────────────────
-# BiasReader — Safe concurrent file reader
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# BiasReader â€” Safe concurrent file reader
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class BiasReader:
     """Reads market_bias.json safely, handling concurrent writes and expiry."""
 
@@ -96,9 +96,9 @@ class BiasReader:
         return {"bias": "NEUTRAL", "sentiment_score": 0.0, "reasoning": f"{symbol} not in current AI selection."}
 
 
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # RiskConfigReader
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 from config.config_manager import config_manager, RiskSettings
 import dataclasses
 
@@ -124,9 +124,9 @@ class RegimeConfigReader:
         except Exception as e:
             return {}
 
-# ─────────────────────────────────────────────
-# VolatilityDetector — Rolling window micro-fluctuation detector
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# VolatilityDetector â€” Rolling window micro-fluctuation detector
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class VolatilityDetector:
     """Tracks prices over a rolling window and detects DIP and SPIKE events."""
 
@@ -175,6 +175,8 @@ class VolatilityDetector:
         immediate_dip_pct = None
         if window_high > 0:
             pct_change_high = ((price - window_high) / window_high) * 100.0
+        if window_high > 0 and len(window) > 1:
+            t_state["imm_dip_pct"] = ((price - window[-2][1]) / window[-2][1]) * 100.0
             
             # Immediate trigger
             if pct_change_high <= active_dip_threshold:
@@ -218,9 +220,9 @@ class VolatilityDetector:
 
         return immediate_dip_pct, dip_pct, spike_pct
 
-# ─────────────────────────────────────────────
-# IndicatorManager — ATR & RSI Calculation
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# IndicatorManager â€” ATR & RSI Calculation
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class IndicatorManager:
     """Calculates ATR, RSI, and Multi-Timeframe RSI Confluence from incoming OHLC bars."""
     def __init__(self, period=14):
@@ -434,9 +436,9 @@ class IndicatorManager:
             return (1, f"Double RSI Confluence ({', '.join(parts)})")
         return (0, "No MTF RSI Confluence")
 
-# ─────────────────────────────────────────────
-# Trade Logger — Writes to trades.json and ws_triggers.json
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Trade Logger â€” Writes to trades.json and ws_triggers.json
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class WSTradeLogger:
     """Logs WebSocket-triggered trades to the shared trades.json and ws_triggers.json."""
 
@@ -544,9 +546,9 @@ class WSTradeLogger:
             logger.error(f"[WS] Failed to log price history: {e}")
 
 
-# ─────────────────────────────────────────────
-# WebSocket Executor — Main process
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# WebSocket Executor â€” Main process
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class RealtimeExecutor:
     """
     Connects to Alpaca CryptoDataStream, monitors prices, and executes
@@ -609,7 +611,7 @@ class RealtimeExecutor:
         panic_count = 0
         dipping_assets = []
         for sym, state in self.vol_detector._trailing_state.items():
-            if sym.endswith("USD") and state.get("dip_pct", 0) <= threshold_pct:
+            if sym.endswith("USD") and state.get("imm_dip_pct", 0) <= threshold_pct:
                 panic_count += 1
                 dipping_assets.append(sym)
 
@@ -665,7 +667,7 @@ class RealtimeExecutor:
                 else:
                     trend = "NEUTRAL"
 
-                logger.info(f"[MTF] {symbol} — EMA50(1H): {ema50:.4f}, Last: {last_close:.4f} → Trend: {trend}")
+                logger.info(f"[MTF] {symbol} â€” EMA50(1H): {ema50:.4f}, Last: {last_close:.4f} â†’ Trend: {trend}")
             else:
                 trend = "NEUTRAL"
 
@@ -931,7 +933,7 @@ class RealtimeExecutor:
 
         # Pre-flight Balance Check
         if not is_short:
-            if size_usd > buying_power:
+            if size_usd >= buying_power * 0.98:
                 size_usd = buying_power * 0.95  # Leave 5% buffer
             if size_usd < 10.0:
                 logger.warning(f"[WS] Insufficient balance for {symbol} (Requires > $10, Available: ${buying_power:.2f})")
@@ -1106,9 +1108,11 @@ class RealtimeExecutor:
             except Exception as e:
                 error_msg = str(e).lower()
                 if "insufficient balance" in error_msg:
-                    logger.error(f"[WS] Insufficient balance error caught for {symbol}.")
-                    self._global_buy_cooldown_until = time.time() + 3600
-                    WSTradeLogger.write_logbook("[API WARNING] Liquidità esaurita (da API)! Acquisti in pausa per 1 ora.")
+                    logger.error(f"[WS] Insufficient balance error caught for {symbol}. Reason: {e}")
+                    import datetime as _dt
+                    now_ts = _dt.datetime.now(_dt.timezone.utc).timestamp()
+                    self._global_buy_cooldown_until = now_ts + 3600
+                    WSTradeLogger.write_logbook("[API WARNING] LiquiditÃ  esaurita (da API)! Acquisti in pausa per 1 ora.")
                 else:
                     logger.error(f"[WS] Order execution failed for {symbol}: {e}")
                     WSTradeLogger.write_logbook(f"[WS ERROR] Ordine fallito su {symbol}: {e}")
@@ -1235,7 +1239,7 @@ class RealtimeExecutor:
         
         alpha_smart_trailing = risk_config.get("alpha_smart_trailing", False)
         
-        # Alpha logging for trailing buy — cooldown checked via DB so it survives restarts
+        # Alpha logging for trailing buy â€” cooldown checked via DB so it survives restarts
         shadow_cooldown = 1800  # 30 minutes
         dip_condition = (not alpha_smart_trailing and trailing_dip is not None) or \
                         (alpha_smart_trailing and immediate_dip is not None)
@@ -1587,7 +1591,7 @@ class RealtimeExecutor:
                             
                             if eval_result != "IGNORE":
                                 logger.critical(f"[GUARDIAN ALERT] {eval_result} detected for {symbols_in_news}!")
-                                WSTradeLogger.write_logbook(f"🚨 [GUARDIAN ALERT] {eval_result}: {news.headline} ({symbols_in_news})")
+                                WSTradeLogger.write_logbook(f"ðŸš¨ [GUARDIAN ALERT] {eval_result}: {news.headline} ({symbols_in_news})")
                                 now = datetime.now(timezone.utc)
                                 for sym in symbols_in_news:
                                     self.alert_states[sym] = {"type": eval_result, "timestamp": now}
@@ -1669,3 +1673,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
