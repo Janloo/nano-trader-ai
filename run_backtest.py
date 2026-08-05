@@ -6,9 +6,9 @@ from backtesting.metrics import BacktestMetrics
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
 
 def run_dry_run():
-    # Backtest last 7 days
+    # Backtest last 3 days
     end_date = datetime.now(timezone.utc)
-    start_date = end_date - timedelta(days=7)
+    start_date = end_date - timedelta(days=3)
     
     print("===========================================")
     print("      DRY-RUN BACKTEST (HFT SCALPER)       ")
@@ -16,8 +16,9 @@ def run_dry_run():
     
     engine = BacktestEngine(start_date, end_date, initial_cash=10000.0)
     
-    # We will run HFT on BTCUSD
-    equity_curve = engine.run_hft_scalper(["BTCUSD"])
+    # We will run HFT on SOL/USD with Squeeze 0.005
+    params = {'squeeze_threshold': 0.005}
+    equity_curve = engine.run_hft_scalper(["SOL/USD"], hyperparameters=params)
     
     metrics = BacktestMetrics.calculate_metrics(equity_curve)
     

@@ -578,7 +578,7 @@ class RealtimeExecutor:
         # New strategies
         self.momentum_filter = MomentumAccelerationFilter(fast_period=5, slow_period=10)
         self.vwap_strategy = VWAPReversionStrategy(max_bars=200, entry_atr_mult=0.5, exit_atr_mult=0.3)
-        self.bollinger_detector = BollingerSqueezeDetector(period=20, std_dev=2.0, squeeze_threshold_pct=0.002)
+        self.bollinger_detector = BollingerSqueezeDetector(period=20, std_dev=2.0, squeeze_threshold_pct=0.005)
         self.correlation_engine = CrossAssetCorrelationEngine(window=30, min_correlation=0.65)
         self.alert_states: Dict[str, dict] = {}
         self._last_trailing_check = datetime.now(timezone.utc)
