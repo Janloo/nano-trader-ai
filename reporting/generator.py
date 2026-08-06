@@ -43,6 +43,17 @@ def get_dashboard_data():
     starting_equity = 100000.00
     cumulative_pnl = 0.00
     pnl_pct = 0.00
+    allocated_capital = 0.0
+    
+    hft_budget_pct = 0.4
+    risk_config_path = os.path.join("config", "risk_settings.json")
+    if os.path.exists(risk_config_path):
+        try:
+            with open(risk_config_path, "r", encoding="utf-8") as f:
+                r_config = json.load(f)
+                hft_budget_pct = r_config.get("hft_budget_pct", 0.4)
+        except Exception:
+            pass
 
     if history:
         last_snap = history[-1]
@@ -50,10 +61,19 @@ def get_dashboard_data():
         current_buying_power = last_snap.get("buying_power", 400000.00)
         current_unrealized_pnl = last_snap.get("unrealized_pnl", 0.00)
         
+        allocated_capital = current_equity * hft_budget_pct
+        
         starting_snap = history[0]
         starting_equity = starting_snap.get("equity", 100000.00)
+        starting_allocated_capital = starting_equity * hft_budget_pct
         cumulative_pnl = current_equity - starting_equity
-        pnl_pct = (cumulative_pnl / starting_equity) * 100.0 if starting_equity > 0 else 0.0
+        pnl_pct = (cumulative_pnl / starting_allocated_capital) * 100.0 if starting_allocated_capital > 0 else 0.0
+        
+        # Override history equity with allocated_capital to accurately plot the bot's budget curve
+        for d in history:
+            d_equity = d.get("equity", starting_equity)
+            d_pnl = d_equity - starting_equity
+            d["equity"] = (starting_equity * hft_budget_pct) + d_pnl
 
     # Build Trades History HTML Rows
     trades_rows = []
@@ -453,6 +473,7 @@ def get_dashboard_data():
 
     return {
         'current_equity': current_equity,
+        'allocated_capital': allocated_capital,
         'current_buying_power': current_buying_power,
         'cumulative_pnl': cumulative_pnl,
         'pnl_pct': pnl_pct,

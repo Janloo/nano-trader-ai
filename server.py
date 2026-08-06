@@ -584,9 +584,21 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 risk_data = json.loads(post_data.decode('utf-8'))
                 
                 config_path = os.path.join("config", "risk_settings.json")
+                
+                # Merge with existing settings if the file exists
+                existing_settings = {}
+                if os.path.exists(config_path):
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        try:
+                            existing_settings = json.load(f)
+                        except json.JSONDecodeError:
+                            pass
+                            
+                existing_settings.update(risk_data)
+                
                 temp_path = config_path + ".tmp"
-                with open(temp_path, 'w') as f:
-                    json.dump(risk_data, f, indent=4)
+                with open(temp_path, 'w', encoding="utf-8") as f:
+                    json.dump(existing_settings, f, indent=4)
                 os.replace(temp_path, config_path)
                 
                 logger.info("Risk settings updated from dashboard (atomic save).")

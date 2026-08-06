@@ -34,46 +34,138 @@
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal-overlay">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <div class="modal-title">Live Engine Settings</div>
                 <button class="close-btn" onclick="closeSettings()">&times;</button>
             </div>
-            <div class="setting-group">
-                <label><input type="checkbox" id="set_vwap"> Enable VWAP Strategy</label>
+            
+            <div class="setting-group" style="margin-bottom: 20px;">
+                <label style="font-weight: bold; margin-bottom: 10px; display: block;">Profilo Strategico Attivo</label>
+                <select id="strategy_profile_select" onchange="updateStrategyDetails()" style="width: 100%; padding: 10px; background: var(--panel-bg); color: #fff; border: 1px solid var(--panel-border); border-radius: 6px; font-size: 1rem;">
+                    <option value="micro_scalping">Micro-Scalping (Consigliato)</option>
+                    <option value="deep_dca">Deep Martingale DCA</option>
+                    <option value="breakout">Breakout Iper-Sensibile</option>
+                </select>
             </div>
-            <div class="setting-group">
-                <label>Bollinger Squeeze Threshold (%)</label>
-                <input type="number" id="set_squeeze" step="0.001" value="0.005">
+            
+            <div id="strategy_details_card" style="background: rgba(0,0,0,0.2); border: 1px solid var(--panel-border); border-radius: 8px; padding: 15px; margin-bottom: 20px; font-size: 0.9rem;">
+                <!-- Dettagli iniettati via JS -->
             </div>
-            <div class="setting-group">
-                <label>HFT Budget (%)</label>
-                <input type="number" id="set_hft_budget" step="0.01" value="0.4">
-            </div>
-            <div class="setting-group">
-                <label>ATR Stop Loss Multiplier</label>
-                <input type="number" id="set_sl_mult" step="0.1" value="2.0">
-            </div>
-            <div class="setting-group">
-                <label>Max Capital Per Trade (%)</label>
-                <input type="number" id="set_max_cap" step="0.01" value="0.05">
-            </div>
-            <button class="save-btn" onclick="saveSettings()">Apply Settings</button>
+            
+            <button class="save-btn" onclick="saveSettings()" style="width: 100%;">Apply Settings</button>
         </div>
     </div>
     
     <script>
+        const STRATEGY_PROFILES = {
+            "micro_scalping": {
+                name: "Micro-Scalping",
+                ranking: "🥇 1° Posto (+120.46%)",
+                description: "Altissima frequenza con Target Profit e Stop Loss strettissimi. 'Mangia' il rumore di mercato reagendo a variazioni minime.",
+                pros: "Alta win-rate, profitto costante anche in fasi laterali. Massimizza l'efficienza sui micro-capitali ($300).",
+                cons: "Taglia precocemente i profitti sui grandi trend, costi di transazione alti (spread sensitive).",
+                ideal: "Mercati laterali (ranging) o di micro-volatilità.",
+                payload: {
+                    "crypto_micro_tp_pct": 0.15,
+                    "atr_stop_loss_multiplier": 0.8,
+                    "max_risk_per_trade_pct": 0.05,
+                    "kelly_fraction_multiplier": 1.0,
+                    "strategy_vwap_enabled": true
+                }
+            },
+            "deep_dca": {
+                name: "Deep Martingale DCA",
+                ranking: "🥈 2° Posto (+119.13%)",
+                description: "Accumulo progressivo profondo sui dip con grid espanso. Se il prezzo scende, compra sempre di più abbassando il prezzo medio.",
+                pros: "Ottimo per recuperare posizioni in rosso e cavalcare i rimbalzi. Molto resiliente ai falsi breakdown.",
+                cons: "Esposizione prolungata, richiede pazienza, rischio di stallo se il trend è unidirezionale negativo prolungato.",
+                ideal: "Mercati con forti ritracciamenti seguiti da rimbalzi (mean-reverting).",
+                payload: {
+                    "crypto_max_grid_layers": 10,
+                    "crypto_micro_dip_pct": 0.2,
+                    "crypto_micro_tp_pct": 0.3,
+                    "atr_stop_loss_multiplier": 2.0,
+                    "strategy_vwap_enabled": true
+                }
+            },
+            "breakout": {
+                name: "Breakout Iper-Sensibile",
+                ranking: "🥉 3° Posto (+116.88%)",
+                description: "Sfrutta la compressione delle Bollinger Bands (Squeeze) reagendo a micro-espansioni millimetriche.",
+                pros: "Cattura i movimenti esplosivi dal loro primissimo nascere prima che la massa entri a mercato.",
+                cons: "Rischio elevato di falsi segnali (whipsaws) in mercati instabili.",
+                ideal: "Mercati in esplosione direzionale (espansione di volatilità) dopo una forte congestione.",
+                payload: {
+                    "squeeze_threshold_pct": 0.001,
+                    "crypto_max_grid_layers": 5,
+                    "strategy_vwap_enabled": true
+                }
+            }
+        };
+
+        function updateStrategyDetails() {
+            const val = document.getElementById('strategy_profile_select').value;
+            const profile = STRATEGY_PROFILES[val];
+            if (!profile) return;
+            
+            const card = document.getElementById('strategy_details_card');
+            card.innerHTML = `
+                <div style="margin-bottom: 8px;"><strong>🏆 Ranking:</strong> <span style="color: var(--success-color);">${profile.ranking}</span></div>
+                <div style="margin-bottom: 8px; color: var(--text-muted);"><em>${profile.description}</em></div>
+                <div style="margin-bottom: 8px;"><strong>✅ Pregi:</strong> ${profile.pros}</div>
+                <div style="margin-bottom: 8px;"><strong>❌ Difetti:</strong> ${profile.cons}</div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
+                    <strong>🎯 Condizione Ideale:</strong> ${profile.ideal}
+                </div>
+            `;
+        }
+
         function openSettings() {
             document.getElementById('settingsModal').classList.add('active');
+            updateStrategyDetails(); // renderizziamo i dettagli della selezione attuale
         }
+        
         function closeSettings() {
             document.getElementById('settingsModal').classList.remove('active');
         }
-        function saveSettings() {
-            // Simulated save function for the frontend
-            alert('Settings applied successfully!');
-            closeSettings();
+        
+        async function saveSettings() {
+            const val = document.getElementById('strategy_profile_select').value;
+            const profile = STRATEGY_PROFILES[val];
+            if (!profile) return;
+            
+            const btn = document.querySelector('.save-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "Applying...";
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/risk-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profile.payload)
+                });
+                
+                if (response.ok) {
+                    alert(`Profilo '${profile.name}' applicato con successo!`);
+                    closeSettings();
+                } else {
+                    alert('Errore durante il salvataggio delle impostazioni.');
+                }
+            } catch (error) {
+                console.error("Settings save error:", error);
+                alert('Errore di connessione col server.');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
+        
+        // Inizializza la card al caricamento per sicurezza
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStrategyDetails();
+        });
     </script>
 
     {% block extra_scripts %}{% endblock %}
