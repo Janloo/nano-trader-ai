@@ -68,12 +68,7 @@ def get_dashboard_data():
         starting_allocated_capital = starting_equity * hft_budget_pct
         cumulative_pnl = current_equity - starting_equity
         pnl_pct = (cumulative_pnl / starting_allocated_capital) * 100.0 if starting_allocated_capital > 0 else 0.0
-        
-        # Override history equity with allocated_capital to accurately plot the bot's budget curve
-        for d in history:
-            d_equity = d.get("equity", starting_equity)
-            d_pnl = d_equity - starting_equity
-            d["equity"] = (starting_equity * hft_budget_pct) + d_pnl
+        # NOTE: history_raw is returned unmodified; the frontend computes the budget curve
 
     # Build Trades History HTML Rows
     trades_rows = []
@@ -492,6 +487,7 @@ def get_dashboard_data():
         'total_invested': total_invested,
         'alpaca_orders_rows': ''.join(alpaca_orders_rows),
         'starting_equity': starting_equity,
+        'hft_budget_pct': hft_budget_pct,
         'history_raw': history,
         'trades_raw': trades,
         'price_history_raw': price_history,

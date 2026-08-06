@@ -34,138 +34,290 @@
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">Live Engine Settings</div>
+                <div class="modal-title">⚙ Live Engine Settings</div>
                 <button class="close-btn" onclick="closeSettings()">&times;</button>
             </div>
-            
-            <div class="setting-group" style="margin-bottom: 20px;">
-                <label style="font-weight: bold; margin-bottom: 10px; display: block;">Profilo Strategico Attivo</label>
-                <select id="strategy_profile_select" onchange="updateStrategyDetails()" style="width: 100%; padding: 10px; background: var(--panel-bg); color: #fff; border: 1px solid var(--panel-border); border-radius: 6px; font-size: 1rem;">
-                    <option value="micro_scalping">Micro-Scalping (Consigliato)</option>
-                    <option value="deep_dca">Deep Martingale DCA</option>
-                    <option value="breakout">Breakout Iper-Sensibile</option>
+
+            <!-- === STRATEGY PROFILE === -->
+            <div class="settings-section">Profilo Strategico</div>
+            <div class="setting-group">
+                <label>Profilo Attivo</label>
+                <select id="strategy_profile_select" onchange="updateStrategyDetails()">
+                    <option value="micro_scalping">🥇 Micro-Scalping (Consigliato)</option>
+                    <option value="deep_dca">🥈 Deep Martingale DCA</option>
+                    <option value="breakout">🥉 Breakout Iper-Sensibile</option>
                 </select>
             </div>
-            
-            <div id="strategy_details_card" style="background: rgba(0,0,0,0.2); border: 1px solid var(--panel-border); border-radius: 8px; padding: 15px; margin-bottom: 20px; font-size: 0.9rem;">
-                <!-- Dettagli iniettati via JS -->
+            <div id="strategy_details_card" style="background: rgba(0,0,0,0.25); border: 1px solid var(--panel-border); border-radius: 8px; padding: 12px; margin-bottom: 6px; font-size: 0.85rem; line-height: 1.6;"></div>
+
+            <!-- === PROFILE-SPECIFIC PARAMS (dynamic) === -->
+            <div class="settings-section">Parametri del Profilo</div>
+            <div id="profile_params_container"></div>
+
+            <!-- === CAPITAL ALLOCATION === -->
+            <div class="settings-section">Allocazione Capitale</div>
+
+            <!-- Live summary bar: % e $ in tempo reale -->
+            <div class="capital-summary-bar">
+                <div class="cap-item">
+                    <div class="cap-label">Conto Totale</div>
+                    <div class="cap-value blue" id="cap_total_usd">—</div>
+                </div>
+                <div class="cap-item">
+                    <div class="cap-label">Budget Bot</div>
+                    <div class="cap-value green" id="cap_alloc_usd">—</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px" id="cap_alloc_pct">—%</div>
+                </div>
+                <div class="cap-item">
+                    <div class="cap-label">Max per Trade</div>
+                    <div class="cap-value amber" id="cap_trade_usd">—</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px" id="cap_trade_pct">—%</div>
+                </div>
             </div>
-            
-            <button class="save-btn" onclick="saveSettings()" style="width: 100%;">Apply Settings</button>
+
+            <div class="settings-grid-2col">
+                <!-- HFT Budget: % ↔ $ bidirectional -->
+                <div class="setting-group">
+                    <label>HFT Budget (%) — <span id="hft_budget_display">5%</span></label>
+                    <input type="number" id="set_hft_budget_pct" step="0.01" min="0.01" max="100" value="5"
+                           oninput="onBudgetPctChange()">
+                </div>
+                <div class="setting-group">
+                    <label>HFT Budget ($)</label>
+                    <input type="number" id="set_hft_budget_usd" step="1" min="1" value="0"
+                           oninput="onBudgetUsdChange()">
+                </div>
+
+                <!-- Max per Trade: % ↔ $ bidirectional -->
+                <div class="setting-group">
+                    <label>Max Capitale per Trade (%) — <span id="max_cap_display">0.3%</span></label>
+                    <input type="number" id="set_max_cap" step="0.001" min="0.001" max="100" value="0.3"
+                           oninput="onMaxCapPctChange()">
+                </div>
+                <div class="setting-group">
+                    <label>Max Capitale per Trade ($)</label>
+                    <input type="number" id="set_max_cap_usd" step="0.50" min="0.50" value="0"
+                           oninput="onMaxCapUsdChange()">
+                </div>
+
+                <!-- Max Rischio: plain % -->
+                <div class="setting-group" style="grid-column: span 2;">
+                    <label>Max Rischio per Trade (%)</label>
+                    <input type="number" id="set_max_risk" step="0.01" min="0.01" max="50" value="2">
+                </div>
+            </div>
+
+            <button class="save-btn" onclick="saveSettings()">✅ Apply Settings</button>
         </div>
     </div>
-    
+
     <script>
+        // Last known equity from dashboard API — updated by updateDashboard()
+        window._dashboardEquity = 0;
+
         const STRATEGY_PROFILES = {
             "micro_scalping": {
                 name: "Micro-Scalping",
-                ranking: "🥇 1° Posto (+120.46%)",
-                description: "Altissima frequenza con Target Profit e Stop Loss strettissimi. 'Mangia' il rumore di mercato reagendo a variazioni minime.",
-                pros: "Alta win-rate, profitto costante anche in fasi laterali. Massimizza l'efficienza sui micro-capitali ($300).",
-                cons: "Taglia precocemente i profitti sui grandi trend, costi di transazione alti (spread sensitive).",
+                ranking: "🥇 1° Posto — PnL +120.46% (6 mesi)",
+                description: "Altissima frequenza con TP e SL strettissimi. 'Mangia' il rumore del mercato reagendo a variazioni minime.",
+                pros: "Alta win-rate, profitto costante in fasi laterali. Ottimale su micro-capitali.",
+                cons: "Taglia precocemente i profitti sui grandi trend. Spread sensitive.",
                 ideal: "Mercati laterali (ranging) o di micro-volatilità.",
-                payload: {
-                    "crypto_micro_tp_pct": 0.15,
-                    "atr_stop_loss_multiplier": 0.8,
-                    "max_risk_per_trade_pct": 0.05,
-                    "kelly_fraction_multiplier": 1.0,
-                    "strategy_vwap_enabled": true
-                }
+                params: [
+                    { key: "crypto_micro_tp_pct", label: "TP % (Crypto)", type: "number", step: 0.01, value: 0.15 },
+                    { key: "atr_stop_loss_multiplier", label: "ATR Stop Loss Multiplier", type: "number", step: 0.1, value: 0.8 },
+                    { key: "kelly_fraction_multiplier", label: "Kelly Fraction Multiplier", type: "number", step: 0.1, value: 1.0 },
+                    { key: "strategy_vwap_enabled", label: "Abilita VWAP Filter", type: "checkbox", value: true }
+                ]
             },
             "deep_dca": {
                 name: "Deep Martingale DCA",
-                ranking: "🥈 2° Posto (+119.13%)",
+                ranking: "🥈 2° Posto — PnL +119.13% (6 mesi)",
                 description: "Accumulo progressivo profondo sui dip con grid espanso. Se il prezzo scende, compra sempre di più abbassando il prezzo medio.",
-                pros: "Ottimo per recuperare posizioni in rosso e cavalcare i rimbalzi. Molto resiliente ai falsi breakdown.",
-                cons: "Esposizione prolungata, richiede pazienza, rischio di stallo se il trend è unidirezionale negativo prolungato.",
+                pros: "Ottimo per recuperare posizioni in rosso e cavalcare i rimbalzi. Resiliente ai falsi breakdown.",
+                cons: "Esposizione prolungata, rischio di stallo su trend ribassisti prolungati.",
                 ideal: "Mercati con forti ritracciamenti seguiti da rimbalzi (mean-reverting).",
-                payload: {
-                    "crypto_max_grid_layers": 10,
-                    "crypto_micro_dip_pct": 0.2,
-                    "crypto_micro_tp_pct": 0.3,
-                    "atr_stop_loss_multiplier": 2.0,
-                    "strategy_vwap_enabled": true
-                }
+                params: [
+                    { key: "crypto_max_grid_layers", label: "Max Grid Layers", type: "number", step: 1, value: 10 },
+                    { key: "crypto_micro_dip_pct", label: "Dip Entry % (Crypto)", type: "number", step: 0.01, value: 0.2 },
+                    { key: "crypto_micro_tp_pct", label: "TP % (Crypto)", type: "number", step: 0.01, value: 0.3 },
+                    { key: "atr_stop_loss_multiplier", label: "ATR Stop Loss Multiplier", type: "number", step: 0.1, value: 2.0 },
+                    { key: "strategy_vwap_enabled", label: "Abilita VWAP Filter", type: "checkbox", value: true }
+                ]
             },
             "breakout": {
                 name: "Breakout Iper-Sensibile",
-                ranking: "🥉 3° Posto (+116.88%)",
+                ranking: "🥉 3° Posto — PnL +116.88% (6 mesi)",
                 description: "Sfrutta la compressione delle Bollinger Bands (Squeeze) reagendo a micro-espansioni millimetriche.",
                 pros: "Cattura i movimenti esplosivi dal loro primissimo nascere prima che la massa entri a mercato.",
                 cons: "Rischio elevato di falsi segnali (whipsaws) in mercati instabili.",
-                ideal: "Mercati in esplosione direzionale (espansione di volatilità) dopo una forte congestione.",
-                payload: {
-                    "squeeze_threshold_pct": 0.001,
-                    "crypto_max_grid_layers": 5,
-                    "strategy_vwap_enabled": true
-                }
+                ideal: "Mercati in esplosione direzionale dopo una forte congestione.",
+                params: [
+                    { key: "squeeze_threshold_pct", label: "Soglia Squeeze (%)", type: "number", step: 0.0001, value: 0.001 },
+                    { key: "crypto_max_grid_layers", label: "Max Grid Layers", type: "number", step: 1, value: 5 },
+                    { key: "strategy_vwap_enabled", label: "Abilita VWAP Filter", type: "checkbox", value: true }
+                ]
             }
         };
+
+        function fmt(n) {
+            return '$' + n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function _refreshSummary() {
+            const equity = window._dashboardEquity || 0;
+            const budgetPct = parseFloat(document.getElementById('set_hft_budget_pct').value) || 0;
+            const maxCapPct = parseFloat(document.getElementById('set_max_cap').value) || 0;
+            const allocUsd  = equity * (budgetPct / 100);
+            const tradeUsd  = allocUsd * (maxCapPct / 100);
+
+            document.getElementById('hft_budget_display').innerText = budgetPct.toFixed(2) + '%';
+            document.getElementById('max_cap_display').innerText    = maxCapPct.toFixed(3) + '%';
+
+            document.getElementById('cap_total_usd').innerText = equity > 0 ? fmt(equity) : '—';
+            document.getElementById('cap_alloc_usd').innerText = equity > 0 ? fmt(allocUsd) : '—';
+            document.getElementById('cap_alloc_pct').innerText = budgetPct.toFixed(2) + '% del conto';
+            document.getElementById('cap_trade_usd').innerText = equity > 0 ? fmt(tradeUsd) : '—';
+            document.getElementById('cap_trade_pct').innerText = maxCapPct.toFixed(3) + '% del budget';
+        }
+
+        // HFT Budget — % changed → update $
+        function onBudgetPctChange() {
+            const equity = window._dashboardEquity || 0;
+            const pct = parseFloat(document.getElementById('set_hft_budget_pct').value) || 0;
+            if (equity > 0)
+                document.getElementById('set_hft_budget_usd').value = (equity * pct / 100).toFixed(2);
+            _refreshSummary();
+        }
+
+        // HFT Budget — $ changed → update %
+        function onBudgetUsdChange() {
+            const equity = window._dashboardEquity || 0;
+            const usd = parseFloat(document.getElementById('set_hft_budget_usd').value) || 0;
+            if (equity > 0) {
+                const pct = (usd / equity) * 100;
+                document.getElementById('set_hft_budget_pct').value = pct.toFixed(4);
+            }
+            _refreshSummary();
+        }
+
+        // Max per Trade — % changed → update $
+        function onMaxCapPctChange() {
+            const equity = window._dashboardEquity || 0;
+            const budgetPct = parseFloat(document.getElementById('set_hft_budget_pct').value) || 0;
+            const pct = parseFloat(document.getElementById('set_max_cap').value) || 0;
+            const allocUsd = equity * (budgetPct / 100);
+            if (allocUsd > 0)
+                document.getElementById('set_max_cap_usd').value = (allocUsd * pct / 100).toFixed(2);
+            _refreshSummary();
+        }
+
+        // Max per Trade — $ changed → update %
+        function onMaxCapUsdChange() {
+            const equity = window._dashboardEquity || 0;
+            const budgetPct = parseFloat(document.getElementById('set_hft_budget_pct').value) || 0;
+            const usd = parseFloat(document.getElementById('set_max_cap_usd').value) || 0;
+            const allocUsd = equity * (budgetPct / 100);
+            if (allocUsd > 0) {
+                const pct = (usd / allocUsd) * 100;
+                document.getElementById('set_max_cap').value = pct.toFixed(4);
+            }
+            _refreshSummary();
+        }
+
+        // Legacy alias (called on open)
+        function onBudgetChange() { _refreshSummary(); }
 
         function updateStrategyDetails() {
             const val = document.getElementById('strategy_profile_select').value;
             const profile = STRATEGY_PROFILES[val];
             if (!profile) return;
-            
-            const card = document.getElementById('strategy_details_card');
-            card.innerHTML = `
-                <div style="margin-bottom: 8px;"><strong>🏆 Ranking:</strong> <span style="color: var(--success-color);">${profile.ranking}</span></div>
-                <div style="margin-bottom: 8px; color: var(--text-muted);"><em>${profile.description}</em></div>
-                <div style="margin-bottom: 8px;"><strong>✅ Pregi:</strong> ${profile.pros}</div>
-                <div style="margin-bottom: 8px;"><strong>❌ Difetti:</strong> ${profile.cons}</div>
-                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
-                    <strong>🎯 Condizione Ideale:</strong> ${profile.ideal}
+
+            document.getElementById('strategy_details_card').innerHTML = `
+                <div style="margin-bottom:6px"><strong>🏆 Ranking:</strong> <span style="color:var(--success-color)">${profile.ranking}</span></div>
+                <div style="margin-bottom:6px;color:var(--text-muted)"><em>${profile.description}</em></div>
+                <div style="margin-bottom:4px"><strong>✅</strong> ${profile.pros}</div>
+                <div style="margin-bottom:4px"><strong>❌</strong> ${profile.cons}</div>
+                <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);color:#94a3b8">
+                    <strong>🎯 Ideale per:</strong> ${profile.ideal}
                 </div>
             `;
+
+            // Render profile-specific params in 2-col grid
+            const container = document.getElementById('profile_params_container');
+            container.innerHTML = '<div class="settings-grid-2col" id="params_inner_grid"></div>';
+            const grid = document.getElementById('params_inner_grid');
+            for (const param of profile.params) {
+                const group = document.createElement('div');
+                group.className = 'setting-group';
+                if (param.type === 'checkbox') {
+                    // Checkboxes span full width
+                    group.style.gridColumn = 'span 2';
+                    group.innerHTML = `<label><input type="checkbox" id="param_${param.key}" ${param.value ? 'checked' : ''}> ${param.label}</label>`;
+                } else {
+                    group.innerHTML = `
+                        <label>${param.label}</label>
+                        <input type="number" id="param_${param.key}" step="${param.step}" value="${param.value}">
+                    `;
+                }
+                grid.appendChild(group);
+            }
         }
 
         function openSettings() {
             document.getElementById('settingsModal').classList.add('active');
-            updateStrategyDetails(); // renderizziamo i dettagli della selezione attuale
+            updateStrategyDetails();
+            onBudgetChange();
         }
-        
+
         function closeSettings() {
             document.getElementById('settingsModal').classList.remove('active');
         }
-        
+
         async function saveSettings() {
             const val = document.getElementById('strategy_profile_select').value;
             const profile = STRATEGY_PROFILES[val];
             if (!profile) return;
-            
+
+            const payload = {};
+            payload['hft_budget_pct'] = (parseFloat(document.getElementById('set_hft_budget_pct').value) || 0) / 100;
+            payload['max_capital_per_trade_pct'] = (parseFloat(document.getElementById('set_max_cap').value) || 0) / 100;
+            payload['max_risk_per_trade_pct'] = (parseFloat(document.getElementById('set_max_risk').value) || 0) / 100;
+
+            for (const param of profile.params) {
+                const el = document.getElementById(`param_${param.key}`);
+                if (!el) continue;
+                payload[param.key] = param.type === 'checkbox' ? el.checked : parseFloat(el.value);
+            }
+
             const btn = document.querySelector('.save-btn');
-            const originalText = btn.innerText;
-            btn.innerText = "Applying...";
+            const orig = btn.innerText;
+            btn.innerText = 'Applying...';
             btn.disabled = true;
-            
+
             try {
-                const response = await fetch('/api/risk-settings', {
+                const res = await fetch('/api/risk-settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(profile.payload)
+                    body: JSON.stringify(payload)
                 });
-                
-                if (response.ok) {
+                if (res.ok) {
                     alert(`Profilo '${profile.name}' applicato con successo!`);
                     closeSettings();
                 } else {
                     alert('Errore durante il salvataggio delle impostazioni.');
                 }
-            } catch (error) {
-                console.error("Settings save error:", error);
+            } catch (e) {
                 alert('Errore di connessione col server.');
             } finally {
-                btn.innerText = originalText;
+                btn.innerText = orig;
                 btn.disabled = false;
             }
         }
-        
-        // Inizializza la card al caricamento per sicurezza
-        document.addEventListener('DOMContentLoaded', () => {
-            updateStrategyDetails();
-        });
+
+        document.addEventListener('DOMContentLoaded', () => { updateStrategyDetails(); onBudgetChange(); });
     </script>
 
     {% block extra_scripts %}{% endblock %}
