@@ -5,5 +5,7 @@
     "crypto_micro_tp_pct": 0.15,
     "atr_stop_loss_multiplier": 0.8,
     "kelly_fraction_multiplier": 1,
-    "strategy_vwap_enabled": true
+    "strategy_vwap_enabled": true,
+    "win_rate_estimate": 0.4774,
+    "reward_risk_ratio_estimate": 3.0
 }
