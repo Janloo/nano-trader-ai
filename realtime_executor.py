@@ -592,6 +592,7 @@ class RealtimeExecutor:
         self._mtf_cache_ttl_seconds: int = 3600  # Refresh every hour
         self.panic_cooldown_until: float = 0.0
         self._reversal_wait_states: Dict[str, dict] = {}
+        self._last_ws_msg_time: float = time.time()
 
     def _check_market_panic(self) -> bool:
         """
@@ -1515,6 +1516,7 @@ class RealtimeExecutor:
 
         async def crypto_handler(bar):
             try:
+                self._last_ws_msg_time = time.time()
                 self.on_bar(bar)
             except Exception as e:
                 from utils.error_handler import log_system_error
@@ -1544,9 +1546,21 @@ class RealtimeExecutor:
                     crypto_stream.subscribe_bars(crypto_handler, *crypto_symbols_ws)
                     
                     async def orderbook_handler(orderbook):
+                        self._last_ws_msg_time = time.time()
                         self.orderbook_analyzer.update(orderbook.symbol, orderbook.bids, orderbook.asks)
                         
                     crypto_stream.subscribe_orderbooks(orderbook_handler, *crypto_symbols_ws)
+                    
+                    def watchdog_loop():
+                        import os
+                        while True:
+                            time.sleep(10)
+                            if time.time() - self._last_ws_msg_time > 60:
+                                logger.error("[WATCHDOG] No WS messages for 60 seconds. Freezed! Killing process for auto-restart.")
+                                os._exit(1)
+                                
+                    threading.Thread(target=watchdog_loop, daemon=True).start()
+                    
                     crypto_stream.run()
                 except Exception as e:
                     logger.error(f"[WS] Crypto stream error: {e}")
