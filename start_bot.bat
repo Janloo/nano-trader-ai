@@ -37,7 +37,7 @@ python realtime_executor.py
 echo.
 echo [SUPERVISOR] Il motore HFT e' andato in crash o e' stato killato dal Watchdog.
 echo [SUPERVISOR] Riavvio automatico tra 30 secondi (per evitare rate-limit Alpaca)...
-timeout /t 30
+ping 127.0.0.1 -n 31 > nul
 goto loop
 
 pause
