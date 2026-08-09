@@ -33,7 +33,7 @@ echo.
 echo [3/3] Avvio del Motore di Trading in Tempo Reale (Crypto)...
 :: Questo comando resta in ascolto all'infinito. In caso di crash (o kill dal Watchdog), riparte.
 :loop
-python realtime_executor.py
+python realtime_executor.py >> data\realtime_executor.log 2>&1
 echo.
 echo [SUPERVISOR] Il motore HFT e' andato in crash o e' stato killato dal Watchdog.
 echo [SUPERVISOR] Riavvio automatico tra 30 secondi (per evitare rate-limit Alpaca)...

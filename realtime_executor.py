@@ -1555,8 +1555,8 @@ class RealtimeExecutor:
                         import os
                         while True:
                             time.sleep(10)
-                            if time.time() - self._last_ws_msg_time > 60:
-                                logger.error("[WATCHDOG] No WS messages for 60 seconds. Freezed! Killing process for auto-restart.")
+                            if time.time() - self._last_ws_msg_time > 300:
+                                logger.error("[WATCHDOG] No WS messages for 300 seconds. Freezed! Killing process for auto-restart.")
                                 os._exit(1)
                                 
                     threading.Thread(target=watchdog_loop, daemon=True).start()
