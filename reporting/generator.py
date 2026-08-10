@@ -64,7 +64,7 @@ def get_dashboard_data():
         allocated_capital = current_equity * hft_budget_pct
         
         starting_allocated_capital = starting_equity * hft_budget_pct
-        cumulative_pnl = current_equity - starting_equity
+        cumulative_pnl = (current_equity - starting_equity) * hft_budget_pct
         pnl_pct = (cumulative_pnl / starting_allocated_capital) * 100.0 if starting_allocated_capital > 0 else 0.0
         # NOTE: history_raw is returned unmodified; the frontend computes the budget curve
 
