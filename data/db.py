@@ -149,8 +149,17 @@ def get_new_trades(last_id):
 def get_portfolio_history(limit=100):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM portfolio_history ORDER BY timestamp ASC LIMIT ?", (limit,))
-        return [dict(row) for row in cursor.fetchall()]
+        cursor.execute("SELECT * FROM portfolio_history ORDER BY timestamp DESC LIMIT ?", (limit,))
+        rows = [dict(row) for row in cursor.fetchall()]
+        rows.reverse()
+        return rows
+
+def get_starting_equity():
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT equity FROM portfolio_history ORDER BY timestamp ASC LIMIT 1")
+        row = cursor.fetchone()
+        return float(row['equity']) if row else 100000.00
 
 def get_ai_analytics(limit=50):
     with get_db() as conn:

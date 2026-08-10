@@ -1018,7 +1018,7 @@ class RealtimeExecutor:
                         symbol=symbol,
                         notional=round(size_usd, 2),
                         side=OrderSide.BUY,
-                        time_in_force=TimeInForce.DAY
+                        time_in_force=TimeInForce.GTC
                     )
                     res = self._trading_client.submit_order(req)
                     order_id = str(res.id)
@@ -1471,8 +1471,7 @@ class RealtimeExecutor:
                     try:
                         self.on_bar(bar)
                         # Regenerate dashboard to show visual changes
-                        from reporting.generator import generate_dashboard
-                        generate_dashboard()
+                        pass
                     except Exception as ex:
                         logger.error(f"[WS SIMULATION] Error running bar handler: {ex}")
                         
@@ -1555,9 +1554,8 @@ class RealtimeExecutor:
                         import os
                         while True:
                             time.sleep(10)
-                            if time.time() - self._last_ws_msg_time > 300:
-                                logger.error("[WATCHDOG] No WS messages for 300 seconds. Freezed! Killing process for auto-restart.")
-                                os._exit(1)
+                            if time.time() - self._last_ws_msg_time > 600:
+                                logger.warning("[WATCHDOG] No WS messages for 600 seconds. Connection might be silent.")
                                 
                     threading.Thread(target=watchdog_loop, daemon=True).start()
                     

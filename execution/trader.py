@@ -128,7 +128,7 @@ class AITrader:
                         symbol=order_symbol,
                         notional=round(trade_size_usd, 2),
                         side=OrderSide.BUY,
-                        time_in_force=TimeInForce.DAY
+                        time_in_force=TimeInForce.GTC
                     )
                     order = self.client.submit_order(order_data)
                     order_id = str(order.id)

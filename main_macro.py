@@ -396,8 +396,7 @@ def run_iteration(
         logger.error(f"Failed to auto-tune Kelly criterion: {e}")
 
     try:
-        from reporting.generator import generate_dashboard
-        generate_dashboard()
+        pass
     except Exception as e:
         logger.error(f"Error in DAS iteration: {e}")
         

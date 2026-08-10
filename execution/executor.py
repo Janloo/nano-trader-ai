@@ -85,7 +85,7 @@ class OrderExecutor:
                         symbol=order_symbol,
                         notional=TRADE_AMOUNT_USD,
                         side=OrderSide.BUY,
-                        time_in_force=TimeInForce.DAY
+                        time_in_force=TimeInForce.GTC
                     )
                     order = self.client.submit_order(order_data)
                     order_id = str(order.id)
@@ -132,7 +132,7 @@ class OrderExecutor:
                         symbol=order_symbol,
                         qty=qty,
                         side=OrderSide.SELL,
-                        time_in_force=TimeInForce.DAY
+                        time_in_force=TimeInForce.GTC
                     )
                     order = self.client.submit_order(order_data)
                     order_id = str(order.id)

@@ -9,7 +9,7 @@ def get_dashboard_data():
     """Returns a dictionary of all dynamic data fragments for the AJAX dashboard."""
     html_path = "dashboard.html"
 
-    from data.db import get_trades, get_portfolio_history, get_ai_analytics
+    from data.db import get_trades, get_portfolio_history, get_ai_analytics, get_starting_equity
     
     history = get_portfolio_history(limit=500)
     trades = get_trades(limit=100)
@@ -40,7 +40,7 @@ def get_dashboard_data():
     current_equity = 100000.00
     current_buying_power = 400000.00
     current_unrealized_pnl = 0.00
-    starting_equity = 100000.00
+    starting_equity = get_starting_equity()
     cumulative_pnl = 0.00
     pnl_pct = 0.00
     allocated_capital = 0.0
@@ -63,8 +63,6 @@ def get_dashboard_data():
         
         allocated_capital = current_equity * hft_budget_pct
         
-        starting_snap = history[0]
-        starting_equity = starting_snap.get("equity", 100000.00)
         starting_allocated_capital = starting_equity * hft_budget_pct
         cumulative_pnl = current_equity - starting_equity
         pnl_pct = (cumulative_pnl / starting_allocated_capital) * 100.0 if starting_allocated_capital > 0 else 0.0
