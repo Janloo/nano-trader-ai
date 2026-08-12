@@ -211,6 +211,12 @@ class RealtimeExecutor:
                 atr_pct = (atr_val / current_price) if atr_val and current_price > 0 else 0.0
                 
                 action = self.trailing_mgr.update_and_check(symbol, current_price, avg_entry, is_short, atr_pct)
+                
+                # Check if position is large enough to scale out (min Alpaca order is $10.5, so we need $21+)
+                pos_value = abs(qty) * current_price
+                if action == "SCALE_OUT" and pos_value < 22.0:
+                    action = "CLOSE_ALL"
+                    
                 if action == "SCALE_OUT":
                     logger.info(f"[WS] Trailing TP triggered for {symbol}! Scaling out 50%.")
                     from alpaca.trading.requests import MarketOrderRequest

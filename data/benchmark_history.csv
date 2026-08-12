@@ -1,0 +1,2 @@
+Timestamp,Note,Initial_Equity,Final_Equity,Total_Return_Pct,Max_Drawdown_Pct,Sharpe_Ratio,Days_Simulated
+2026-08-12 20:05:06,Baseline test for new HFT micro-dip engine,300.16,286.42,-4.58,-5.68,-2.43,56
