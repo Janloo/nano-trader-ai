@@ -5,7 +5,7 @@ TDD tests for hft/bar_processor.py
 """
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 class TestBarProcessor:
     def test_cataclysm_alert_returns_close_all_action(self):
@@ -44,6 +44,51 @@ class TestBarProcessor:
         assert len(actions) == 1
         assert actions[0]["action"] == "CLOSE_ALL"
         assert actions[0]["symbol"] == "BTCUSD"
+
+    def test_dip_real_trading_triggers_execute_action(self):
+        from hft.bar_processor import BarProcessor
+        from config.config_manager import RiskConfigReader
+        
+        # Override config
+        RiskConfigReader.read = MagicMock(return_value={
+            "crypto_micro_dip_real_trading": True,
+            "alpha_smart_trailing": False
+        })
+        
+        vol_detector = MagicMock()
+        # trailing_dip is -0.3%
+        vol_detector.update.return_value = (None, -0.3, None)
+        
+        indicator_mgr = MagicMock()
+        indicator_mgr.get_atr.return_value = 100.0
+        indicator_mgr.get_rsi.return_value = 50.0
+        
+        guard_mgr = MagicMock()
+        guard_mgr.is_symbol_in_cooldown.return_value = False
+        guard_mgr.check_and_update_panic_state.return_value = False
+        
+        # We need a BULLISH bias for DIP to trigger
+        with patch('data.bias_reader.BiasReader.get_bias_for_symbol', return_value={"bias": "BULLISH", "sentiment_score": 0.8}):
+            processor = BarProcessor(
+                vol_detector=vol_detector,
+                indicator_mgr=indicator_mgr,
+                guard_mgr=guard_mgr,
+                momentum_filter=MagicMock(),
+                vwap_strategy=MagicMock(),
+                bollinger_detector=MagicMock(),
+                correlation_engine=MagicMock(),
+                volume_profile_mgr=MagicMock()
+            )
+            
+            actions = processor.process_crypto_bar(
+                symbol="BTCUSD", price=50000.0, bar_time=datetime.now(timezone.utc),
+                high=50100.0, low=49900.0, volume=100.0, alert_states={}
+            )
+            
+            assert len(actions) == 1
+            assert actions[0]["action"] == "EXECUTE"
+            assert actions[0]["is_short"] == False
+            assert actions[0]["dip_pct"] == -0.3
 
     def test_warmup_period_blocks_execution(self):
         from hft.bar_processor import BarProcessor

@@ -521,14 +521,14 @@ class RealtimeExecutor:
             while True:
                 try:
                     logger.info(f"[WS] Connecting to Alpaca CryptoDataStream for {crypto_symbols_ws}...")
-                    crypto_stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
-                    crypto_stream.subscribe_bars(crypto_handler, *crypto_symbols_ws)
+                    self.crypto_stream = CryptoDataStream(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
+                    self.crypto_stream.subscribe_bars(crypto_handler, *crypto_symbols_ws)
                     
                     async def orderbook_handler(orderbook):
                         self._last_ws_msg_time = time.time()
                         self.orderbook_analyzer.update(orderbook.symbol, orderbook.bids, orderbook.asks)
                         
-                    crypto_stream.subscribe_orderbooks(orderbook_handler, *crypto_symbols_ws)
+                    self.crypto_stream.subscribe_orderbooks(orderbook_handler, *crypto_symbols_ws)
                     
                     def watchdog_loop():
                         import os
@@ -539,7 +539,7 @@ class RealtimeExecutor:
                                 
                     threading.Thread(target=watchdog_loop, daemon=True).start()
                     
-                    crypto_stream.run()
+                    self.crypto_stream.run()
                 except Exception as e:
                     logger.error(f"[WS] Crypto stream error: {e}")
                 
@@ -597,15 +597,60 @@ class RealtimeExecutor:
                 except Exception as e:
                     logger.error(f"[WS] News stream error: {e}")
                 time.sleep(5)
+                
+        def run_screener():
+            # Only run screener if configured to do so
+            risk_config = RiskConfigReader.read()
+            if not risk_config.get("dynamic_asset_screener_enabled", True):
+                return
+                
+            from data.asset_screener import DynamicAssetScreener
+            screener = DynamicAssetScreener()
+            
+            while True:
+                time.sleep(10) # Initial wait to let WS connect
+                try:
+                    new_symbols = screener.get_top_volatile_assets(limit=3)
+                    if new_symbols:
+                        old_crypto = [s for s in self.target_symbols if s.endswith("USD")]
+                        new_crypto = [s for s in new_symbols if s.endswith("USD")]
+                        
+                        if set(old_crypto) != set(new_crypto):
+                            logger.info(f"[SCREENER] Updating target crypto assets from {old_crypto} to {new_crypto}")
+                            
+                            # Update target_symbols
+                            self.target_symbols = [s for s in self.target_symbols if not s.endswith("USD")] + new_crypto
+                            
+                            to_unsub = [s.replace("USD", "/USD") for s in old_crypto if s not in new_crypto]
+                            to_sub = [s.replace("USD", "/USD") for s in new_crypto if s not in old_crypto]
+                            
+                            # Update crypto_symbols_ws so reconnects use new symbols
+                            crypto_symbols_ws.clear()
+                            crypto_symbols_ws.extend([s.replace("USD", "/USD") for s in new_crypto])
+                            
+                            # Update live stream if it exists
+                            if hasattr(self, 'crypto_stream') and self.crypto_stream:
+                                if to_unsub:
+                                    self.crypto_stream.unsubscribe_bars(*to_unsub)
+                                    self.crypto_stream.unsubscribe_orderbooks(*to_unsub)
+                                if to_sub:
+                                    self.crypto_stream.subscribe_bars(crypto_handler, *to_sub)
+                                    self.crypto_stream.subscribe_orderbooks(orderbook_handler, *to_sub)
+                except Exception as e:
+                    logger.error(f"[SCREENER] Error: {e}")
+                
+                time.sleep(3600) # Re-screen every hour
 
         t_crypto = threading.Thread(target=run_crypto, daemon=True)
         t_stock = threading.Thread(target=run_stock, daemon=True)
         t_news = threading.Thread(target=run_news, daemon=True)
+        t_screener = threading.Thread(target=run_screener, daemon=True)
 
         try:
             t_crypto.start()
             t_stock.start()
             t_news.start()
+            t_screener.start()
             
             last_snap_time = time.time()
             while t_crypto.is_alive() or t_stock.is_alive() or t_news.is_alive():

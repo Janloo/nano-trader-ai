@@ -105,48 +105,65 @@ class BarProcessor:
             
         immediate_dip, trailing_dip, spike_pct = self.vol_detector.update(symbol, price, bar_time, dynamic_dip_pct=dynamic_dip)
         
-        # Shadow Tracking for Dips
+        # DIP Tracking and Execution (Option B)
         alpha_smart_trailing = risk_config.get("alpha_smart_trailing", False)
         dip_condition = (not alpha_smart_trailing and trailing_dip is not None) or \
                         (alpha_smart_trailing and immediate_dip is not None)
                         
         if dip_condition:
-            from data.db import get_db, insert_ai_analytics
-            shadow_cooldown = 1800  # 30 minutes
-            with get_db() as _conn:
-                last_shadow_row = _conn.execute(
-                    "SELECT timestamp FROM ai_analytics WHERE action LIKE 'SHADOW_%' AND asset = ? ORDER BY timestamp DESC LIMIT 1",
-                    (symbol,)
-                ).fetchone()
-            can_shadow = True
-            if last_shadow_row:
-                try:
-                    last_ts = datetime.fromisoformat(last_shadow_row[0].replace("Z", "+00:00"))
-                    if last_ts.tzinfo is None:
-                        last_ts = last_ts.replace(tzinfo=timezone.utc)
-                    can_shadow = (datetime.now(timezone.utc) - last_ts).total_seconds() >= shadow_cooldown
-                except Exception:
-                    can_shadow = True
+            dip_pct = trailing_dip if not alpha_smart_trailing else immediate_dip
             
-            if can_shadow:
-                if not alpha_smart_trailing and trailing_dip is not None:
-                    insert_ai_analytics(
-                        timestamp=datetime.now(timezone.utc).isoformat(),
-                        asset=symbol, price=price, action="SHADOW_BUY",
-                        confidence=0.9, sentiment_score=0.0,
-                        prompt_tokens=0, completion_tokens=0,
-                        reasoning=f"Alpha Trailing Buy hit at {trailing_dip:.2f}%",
-                        return_1h=None, return_4h=None
-                    )
-                elif alpha_smart_trailing and immediate_dip is not None:
-                    insert_ai_analytics(
-                        timestamp=datetime.now(timezone.utc).isoformat(),
-                        asset=symbol, price=price, action="SHADOW_BUY",
-                        confidence=0.9, sentiment_score=0.0,
-                        prompt_tokens=0, completion_tokens=0,
-                        reasoning=f"Alpha Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
-                        return_1h=None, return_4h=None
-                    )
+            # Check if we should execute a real trade
+            real_trading = risk_config.get("crypto_micro_dip_real_trading", False)
+            if real_trading:
+                bias_info = BiasReader.get_bias_for_symbol(symbol)
+                bias = bias_info.get("bias", "NEUTRAL")
+                
+                # Only buy dips if the bias is BULLISH
+                if bias == "BULLISH" and not self.guard_mgr.is_symbol_in_cooldown(symbol, cooldown_seconds=60):
+                    actions.append({
+                        "action": "EXECUTE", "symbol": symbol, "is_short": False,
+                        "dip_pct": dip_pct, "atr": atr, "bias_info": bias_info
+                    })
+                    return actions # Stop evaluating other strategies for this bar if we execute
+            else:
+                # Original Shadow Tracking logic
+                from data.db import get_db, insert_ai_analytics
+                shadow_cooldown = 1800  # 30 minutes
+                with get_db() as _conn:
+                    last_shadow_row = _conn.execute(
+                        "SELECT timestamp FROM ai_analytics WHERE action LIKE 'SHADOW_%' AND asset = ? ORDER BY timestamp DESC LIMIT 1",
+                        (symbol,)
+                    ).fetchone()
+                can_shadow = True
+                if last_shadow_row:
+                    try:
+                        last_ts = datetime.fromisoformat(last_shadow_row[0].replace("Z", "+00:00"))
+                        if last_ts.tzinfo is None:
+                            last_ts = last_ts.replace(tzinfo=timezone.utc)
+                        can_shadow = (datetime.now(timezone.utc) - last_ts).total_seconds() >= shadow_cooldown
+                    except Exception:
+                        can_shadow = True
+                
+                if can_shadow:
+                    if not alpha_smart_trailing and trailing_dip is not None:
+                        insert_ai_analytics(
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            asset=symbol, price=price, action="SHADOW_BUY",
+                            confidence=0.9, sentiment_score=0.0,
+                            prompt_tokens=0, completion_tokens=0,
+                            reasoning=f"Alpha Trailing Buy hit at {trailing_dip:.2f}%",
+                            return_1h=None, return_4h=None
+                        )
+                    elif alpha_smart_trailing and immediate_dip is not None:
+                        insert_ai_analytics(
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            asset=symbol, price=price, action="SHADOW_BUY",
+                            confidence=0.9, sentiment_score=0.0,
+                            prompt_tokens=0, completion_tokens=0,
+                            reasoning=f"Alpha Classic Buy (No Trailing) hit at {immediate_dip:.2f}%",
+                            return_1h=None, return_4h=None
+                        )
         
         # 7. Evaluate strategies
         # (A) Bollinger Squeeze Breakout
