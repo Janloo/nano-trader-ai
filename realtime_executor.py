@@ -993,6 +993,16 @@ class RealtimeExecutor:
                             logger.info(f"[WS L2] Bullish Wall detected on {check_symbol}! Using conservative DCA multiplier (1.2x)")
 
                     size_usd = base_size_usd * (multiplier ** layer_int)
+                    
+                    # Re-apply global safety clamps after Martingale expansion
+                    max_allowed = buying_power * 0.95
+                    if is_crypto:
+                        available_crypto = max_crypto_usd - current_crypto_value
+                        max_allowed = min(max_allowed, available_crypto)
+                    if size_usd > max_allowed:
+                        logger.warning(f"[WS] Clamping Martingale size from ${size_usd:.2f} to max allowed ${max_allowed:.2f}")
+                        size_usd = max_allowed
+
                     logger.info(f"[WS] Smart DCA active for {check_symbol}: Layer {layer_int+1}, Base Size: ${base_size_usd:.2f} -> Scaled Size: ${size_usd:.2f}")
             except Exception as e:
                 pass # Usually implies no open position
