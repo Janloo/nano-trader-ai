@@ -9,7 +9,8 @@ import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock, patch
 
-from realtime_executor import BiasReader, RealtimeExecutor, WSTradeLogger
+from realtime_executor import RealtimeExecutor, WSTradeLogger
+from data.bias_reader import BiasReader
 
 SAMPLE_UNIVERSE_BIAS = {
     "target_assets": [
@@ -38,7 +39,7 @@ SAMPLE_UNIVERSE_BIAS = {
 def mock_bias_file(tmp_path):
     """Sets up a temporary market_bias.json file."""
     bias_path = tmp_path / "market_bias.json"
-    with patch("realtime_executor.BIAS_FILE", str(bias_path)):
+    with patch("data.bias_reader.BIAS_FILE", str(bias_path)):
         yield bias_path
 
 
@@ -98,12 +99,12 @@ def test_cooldown_logic():
     """Verify cooldown prevents immediate repeat orders on same symbol."""
     executor = RealtimeExecutor(symbols=["BTCUSD"], dry_run=True)
     
-    assert executor._is_on_cooldown("BTCUSD") is False
+    assert executor.guard_mgr.is_symbol_in_cooldown("BTCUSD") is False
     
     # Set last order time to now
-    executor._last_order_time["BTCUSD"] = datetime.now(timezone.utc)
-    assert executor._is_on_cooldown("BTCUSD") is True
+    executor.guard_mgr.register_trade("BTCUSD")
+    assert executor.guard_mgr.is_symbol_in_cooldown("BTCUSD") is True
     
-    # Set last order time to 6 minutes ago (cooldown is 5 mins)
-    executor._last_order_time["BTCUSD"] = datetime.now(timezone.utc) - timedelta(minutes=6)
-    assert executor._is_on_cooldown("BTCUSD") is False
+    # Set last order time to 6 minutes ago (cooldown is 60s max for non-crypto usually)
+    executor.guard_mgr._last_order_time["BTCUSD"] = datetime.now(timezone.utc) - timedelta(minutes=6)
+    assert executor.guard_mgr.is_symbol_in_cooldown("BTCUSD") is False

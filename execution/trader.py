@@ -85,7 +85,9 @@ class AITrader:
                 
             try:
                 from config.config_manager import config_manager
-                from risk_management.position_sizer import PositionSizer
+                from execution.position_sizer import PositionSizer
+                
+                # Fetch recent ATR and sentiment for position sizing
                 
                 typed_config = config_manager.load_risk_settings()
                 

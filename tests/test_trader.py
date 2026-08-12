@@ -20,7 +20,7 @@ def test_execute_ai_decision_buy():
         "reasoning": "Macro indicators are strong."
     }
     
-    with patch("risk_management.position_sizer.PositionSizer.calculate_kelly_size", return_value=5.00):
+    with patch("execution.position_sizer.PositionSizer.calculate_kelly_size", return_value=5.00):
         order_id = trader.execute_ai_decision("SPY", decision, 740.00, [], ["News Headline 1"])
         
     assert order_id == "order-ai-123"

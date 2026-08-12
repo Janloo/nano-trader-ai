@@ -69,3 +69,33 @@ class ConfigManager:
         return RiskSettings()
 
 config_manager = ConfigManager()
+
+
+import dataclasses
+
+class RiskConfigReader:
+    """Reads risk settings from disk and returns a plain dict. Safe fallback to defaults."""
+    @staticmethod
+    def read() -> dict:
+        try:
+            settings = config_manager.load_risk_settings()
+            return dataclasses.asdict(settings)
+        except Exception as e:
+            logger.error(f"[CONFIG] Error reading risk config: {e}")
+            return dataclasses.asdict(RiskSettings())
+
+
+class RegimeConfigReader:
+    """Reads market_regime.json from the data/state directory."""
+    REGIME_FILE = os.path.join("data", "state", "market_regime.json")
+
+    @staticmethod
+    def read() -> dict:
+        try:
+            path = RegimeConfigReader.REGIME_FILE
+            if not os.path.exists(path):
+                return {}
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}

@@ -1,8 +1,10 @@
 import os
 import json
 import unittest
+import pytest
 from unittest.mock import patch, mock_open
-from config.config_manager import ConfigManager, RiskSettings
+from config.config_manager import ConfigManager, RiskSettings, RiskConfigReader, RegimeConfigReader
+
 
 class TestConfigManager(unittest.TestCase):
     def setUp(self):
@@ -36,6 +38,44 @@ class TestConfigManager(unittest.TestCase):
             # Should retry 3 times and fallback to defaults
             self.assertEqual(m_open.call_count, 3)
             self.assertEqual(config.hft_budget_pct, 0.20)
+
+
+class TestRiskConfigReader:
+    def test_returns_dict(self):
+        result = RiskConfigReader.read()
+        assert isinstance(result, dict)
+        assert "hft_budget_pct" in result
+
+    def test_returns_defaults_on_missing_file(self, tmp_path):
+        # Point config path to non-existent file
+        with patch("config.config_manager.ConfigManager._config_path",
+                   str(tmp_path / "nonexistent.json")):
+            result = RiskConfigReader.read()
+        assert result["hft_budget_pct"] == 0.20
+
+
+class TestRegimeConfigReader:
+    def test_returns_empty_dict_when_file_missing(self, tmp_path):
+        with patch("config.config_manager.RegimeConfigReader.REGIME_FILE",
+                   str(tmp_path / "market_regime.json")):
+            result = RegimeConfigReader.read()
+        assert result == {}
+
+    def test_reads_regime_correctly(self, tmp_path):
+        regime_file = tmp_path / "market_regime.json"
+        regime_data = {"BTCUSD": {"regime": "BULL_TREND", "adx": 28.5}}
+        regime_file.write_text(json.dumps(regime_data))
+        with patch("config.config_manager.RegimeConfigReader.REGIME_FILE", str(regime_file)):
+            result = RegimeConfigReader.read()
+        assert result["BTCUSD"]["regime"] == "BULL_TREND"
+
+    def test_returns_empty_dict_on_corrupt_file(self, tmp_path):
+        regime_file = tmp_path / "market_regime.json"
+        regime_file.write_text("{ not valid json }")
+        with patch("config.config_manager.RegimeConfigReader.REGIME_FILE", str(regime_file)):
+            result = RegimeConfigReader.read()
+        assert result == {}
+
 
 if __name__ == "__main__":
     unittest.main()
