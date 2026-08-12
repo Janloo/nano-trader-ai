@@ -369,7 +369,7 @@ class RealtimeExecutor:
                 self._execute_order(
                     symbol=action["symbol"],
                     price=price,
-                    dip_pct=action["dip_pct"],
+                    change_pct=action.get("dip_pct", 0.0),
                     bias_info=action["bias_info"],
                     is_short=action["is_short"],
                     atr=action["atr"]
@@ -401,7 +401,7 @@ class RealtimeExecutor:
                 self._execute_order(
                     symbol=action["symbol"],
                     price=action["price"],
-                    dip_pct=action["dip_pct"],
+                    change_pct=action.get("dip_pct", 0.0),
                     bias_info=action["bias_info"],
                     is_short=action["is_short"],
                     atr=action["atr"]

@@ -28,7 +28,11 @@ class PositionSizer:
         size = hft_equity * 0.01
 
         # Check against absolute minimum
-        if size < 10.0:
+        if size < 11.0:
+            size = 11.0
+            
+        # If we can't even afford the minimum, return 0
+        if size > hft_equity:
             return 0.0
 
         # Cannot exceed buying power
@@ -119,7 +123,10 @@ class PositionSizer:
         hft_equity = total_equity * getattr(config, "hft_budget_pct", 0.20)
         effective_buying_power = min(buying_power, hft_equity)
         size = hft_equity * risk_fraction
-        if size > effective_buying_power or size < 10.0:
+        if size < 11.0:
+            size = 11.0
+            
+        if size > effective_buying_power:
             return 0.0
         return size
 
