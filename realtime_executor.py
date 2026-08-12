@@ -848,23 +848,16 @@ class RealtimeExecutor:
         typed_config = config_manager.load_risk_settings()
         
         if is_crypto:
-            # --- NEW STRATEGY: Fixed Risk Sizing (5% of Equity) ---
-            risk_pct = 0.05
-            risk_usd = total_equity * risk_pct
+            size_usd = PositionSizer.calculate_micro_size(
+                symbol, typed_config, total_equity, buying_power
+            )
             
             bands = self.bollinger_detector._calc_bands(symbol)
             if bands:
                 sma = bands["sma"]
-                # Stop loss is placed at SMA
                 distance = abs(price - sma)
                 dist_pct = distance / price if price > 0 else 0.01
-                
-                # Minimum distance clamp to avoid infinite size (e.g. 0.5%)
-                if dist_pct < 0.005:
-                    dist_pct = 0.005
-                    
-                size_usd = risk_usd / dist_pct
-                logger.info(f"[RISK MANAGER] Risk {risk_pct*100:.1f}% (${risk_usd:.2f}) with SL distance {dist_pct*100:.2f}%. Required Size: ${size_usd:.2f}")
+                logger.info(f"[RISK MANAGER] Calculated Size: ${size_usd:.2f} (SL distance {dist_pct*100:.2f}%)")
             else:
                 # Fallback
                 size_usd = PositionSizer.calculate_micro_size(

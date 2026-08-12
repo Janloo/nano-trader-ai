@@ -14,7 +14,7 @@ class RiskSettings:
     max_open_positions_per_asset: int = 1
     atr_stop_loss_multiplier: float = 2.0
     global_max_stocks_pct: float = 1.0
-    global_max_crypto_pct: float = 1.0
+    global_max_crypto_pct: float = 0.50
     global_min_cash_pct: float = 0.0
     hft_budget_pct: float = 0.20
     alpha_smart_trailing: bool = True
