@@ -61,11 +61,14 @@ def get_dashboard_data():
         current_buying_power = last_snap.get("buying_power", 400000.00)
         current_unrealized_pnl = last_snap.get("unrealized_pnl", 0.00)
         
-        allocated_capital = current_equity * hft_budget_pct
+        starting_snap = history[0]
+        session_start_equity = starting_snap.get("equity", current_equity)
         
-        starting_allocated_capital = starting_equity * hft_budget_pct
-        cumulative_pnl = (current_equity - starting_equity) * hft_budget_pct
-        pnl_pct = (cumulative_pnl / starting_allocated_capital) * 100.0 if starting_allocated_capital > 0 else 0.0
+        allocated_capital = current_equity * hft_budget_pct
+        session_allocated_capital = session_start_equity * hft_budget_pct
+        
+        cumulative_pnl = current_equity - session_start_equity
+        pnl_pct = (cumulative_pnl / session_allocated_capital) * 100.0 if session_allocated_capital > 0 else 0.0
         # NOTE: history_raw is returned unmodified; the frontend computes the budget curve
 
     # Build Trades History HTML Rows

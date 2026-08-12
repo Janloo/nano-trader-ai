@@ -1,0 +1,1 @@
+import sqlite3; conn = sqlite3.connect('data/trading_bot.db'); cursor = conn.cursor(); cursor.execute('SELECT timestamp, symbol, action, qty, price, notional FROM trades WHERE symbol=\"SOLUSD\" ORDER BY timestamp DESC LIMIT 5'); print(cursor.fetchall())
