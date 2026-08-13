@@ -59,6 +59,7 @@ from data.trade_logger import WSTradeLogger
 from execution.guard_checks import GuardManager
 from execution.order_builder import OrderBuilder
 from execution.order_executor import OrderExecutor
+from execution.emergency import EmergencyLiquidator
 from hft.bar_processor import BarProcessor
 
 class RealtimeExecutor:
@@ -372,6 +373,10 @@ class RealtimeExecutor:
                 except Exception:
                     pass
             elif action["action"] == "EXECUTE":
+                if EmergencyLiquidator.is_locked():
+                    status = EmergencyLiquidator.get_status()
+                    logger.warning(f"[EMERGENCY] Skipping EXECUTE on {action['symbol']} due to lockdown: {status}")
+                    continue
                 self._execute_order(
                     symbol=action["symbol"],
                     price=price,
@@ -403,6 +408,10 @@ class RealtimeExecutor:
         
         for action in actions:
             if action["action"] == "EXECUTE":
+                if EmergencyLiquidator.is_locked():
+                    status = EmergencyLiquidator.get_status()
+                    logger.warning(f"[EMERGENCY] Skipping EXECUTE on {action['symbol']} due to lockdown: {status}")
+                    continue
                 # We can't really execute short on QQQ here anyway, but it's passed as False
                 self._execute_order(
                     symbol=action["symbol"],

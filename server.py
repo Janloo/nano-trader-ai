@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from jinja2 import Environment, FileSystemLoader
 import threading
 from config.settings import logger
+from execution.emergency import EmergencyLiquidator
 
 
 # Setup Jinja2 environment
@@ -164,6 +165,22 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                 self._safe_write(file_content)
             except Exception as e:
                 self.send_error(500, f"Server error: {e}")
+            return
+
+        # Emergency Status API
+        if clean_path == "/api/emergency/status":
+            is_locked = EmergencyLiquidator.is_locked()
+            status_reason = EmergencyLiquidator.get_status()
+            
+            resp = {
+                "locked": is_locked,
+                "status": status_reason if is_locked else "ACTIVE"
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self._safe_write(json.dumps(resp).encode("utf-8"))
             return
 
         # HFT Chart Data API
@@ -551,6 +568,35 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
         self.send_error(404, "Not Found")
 
     def do_POST(self):
+        if self.path == "/api/emergency/hard_stop":
+            EmergencyLiquidator.trigger_lockdown("HARD STOP")
+            # Fire and forget liquidation in a separate thread so we don't block the UI
+            threading.Thread(target=EmergencyLiquidator.liquidate_all_positions, daemon=True).start()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self._safe_write(json.dumps({"status": "HARD_STOP_INITIATED"}).encode("utf-8"))
+            return
+
+        if self.path == "/api/emergency/soft_stop":
+            EmergencyLiquidator.trigger_lockdown("SOFT STOP")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self._safe_write(json.dumps({"status": "SOFT_STOP_INITIATED"}).encode("utf-8"))
+            return
+
+        if self.path == "/api/emergency/resume":
+            EmergencyLiquidator.clear_lockdown()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_cors_headers()
+            self.end_headers()
+            self._safe_write(json.dumps({"status": "RESUMED"}).encode("utf-8"))
+            return
+
         if self.path == "/api/config":
             try:
                 content_length = int(self.headers.get('Content-Length', 0))

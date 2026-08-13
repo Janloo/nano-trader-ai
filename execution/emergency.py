@@ -14,6 +14,17 @@ class EmergencyLiquidator:
         logger.critical(f"🚨 [EMERGENCY LOCKDOWN INITIATED] Reason: {reason}")
         
     @staticmethod
+    def get_status() -> str:
+        """Returns the current lockdown status reason ('HARD STOP', 'SOFT STOP', 'User Panic', etc) or None if not locked."""
+        if os.path.exists(LOCK_FILE):
+            try:
+                with open(LOCK_FILE, "r", encoding="utf-8") as f:
+                    return f.read().strip()
+            except:
+                return "LOCKED"
+        return None
+
+    @staticmethod
     def is_locked() -> bool:
         """Checks if the system is in lockdown mode."""
         return os.path.exists(LOCK_FILE)
